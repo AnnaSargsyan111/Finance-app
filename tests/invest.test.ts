@@ -543,4 +543,17 @@ describe("AC-B10 upstream cache: 100 concurrent users cause at most one upstream
     expect(rs.every((r) => r.status === 200)).toBe(true);
     expect(mock.countHost("api.cba.am") - before).toBe(1);
   });
+
+  it("readLatestSnapshot() single-flights concurrent callers: N concurrent calls share ONE load, not N redundant DB reads + JSON parses", async () => {
+    // deployment-readiness finding: readLatestSnapshot() used to have no protection against a thundering herd - every
+    // concurrent caller that arrived before the first had finished memoising independently re-read and re-parsed the
+    // whole snapshot payload. That is wasted work on every request in production, and made this file's 100-concurrent
+    // test above flaky in-process (all 100 racing to reload the ~60-stock synthetic snapshot at once). Proven here by
+    // object identity: single-flighted concurrent calls resolve to the exact same in-memory object, not separately
+    // deserialised copies.
+    const results = await Promise.all(Array.from({ length: 50 }, () => readLatestSnapshot()));
+    expect(results.every((r) => r !== null)).toBe(true);
+    expect(new Set(results).size).toBe(1); // every concurrent caller got back the SAME object reference
+    expect(results[0]).toBe(await readLatestSnapshot()); // and a later, non-concurrent call reuses the same memoised object
+  });
 });

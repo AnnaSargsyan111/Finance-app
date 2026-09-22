@@ -30,14 +30,28 @@ export async function readUsdAmdRate(): Promise<UsdAmdRate> {
 }
 
 let memo: LoadedSnapshot | null = null;
+let inflight: Promise<LoadedSnapshot | null> | null = null;
 
-/** The latest complete universe snapshot (null before the first successful nightly batch). Parsed copy is memoised per snapshot id. */
+/**
+ * The latest complete universe snapshot (null before the first successful nightly batch). Parsed copy is memoised
+ * per snapshot id, and concurrent callers share ONE in-flight load rather than each racing off to re-fetch and
+ * re-JSON-parse the snapshot themselves. Without this, N requests arriving before the first has finished memoising
+ * (e.g. many recommendation requests hitting a just-started serverless instance, or right after the nightly batch
+ * flips the pointer) would each independently pay for the DB read + parse of the whole payload - the same
+ * thundering-herd problem `market/cache.ts` solves with a lock for FX/news/stocks, just simpler here since this is
+ * a single in-process value, not a cross-instance cache.
+ */
 export async function readLatestSnapshot(): Promise<LoadedSnapshot | null> {
-  const id = await latestSnapshotPointer();
-  if (id === null) return null;
-  if (memo && memo.id === id) return memo;
-  memo = await loadSnapshotById(id);
-  return memo;
+  if (inflight) return inflight;
+  inflight = (async () => {
+    const id = await latestSnapshotPointer();
+    if (id === null) return (memo = null);
+    if (memo && memo.id === id) return memo;
+    return (memo = await loadSnapshotById(id));
+  })().finally(() => {
+    inflight = null;
+  });
+  return inflight;
 }
 
 /** Adjusted daily closes for several symbols from `fromDate` (inclusive), oldest first. */

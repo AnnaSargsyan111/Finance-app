@@ -43,7 +43,24 @@ const schema = z.object({
   UNIVERSE_LIMIT: optInt,
   /** Outbound calls disabled entirely (offline tests): every provider throws UPSTREAM_UNAVAILABLE. */
   OFFLINE: bool(false),
+}).refine((v) => v.NODE_ENV !== "production" || !isLoopbackUrl(v.APP_BASE_URL), {
+  // APP_BASE_URL drives both Better Auth's own base URL (reset-link generation) AND the CSRF allow-list
+  // (src/auth/csrf.ts). Deploying with the localhost default left in place does not merely produce wrong links: it
+  // makes assertSameOrigin() reject the Origin header of every real browser request to the deployed site, so
+  // EVERY state-changing route (sign-up, sign-in, every PUT/POST) starts returning 403 CSRF_ORIGIN_MISMATCH with no
+  // other symptom. Fail at boot instead of failing silently in front of a user.
+  message: "APP_BASE_URL must be set to the deployed https:// origin in production (a localhost/127.0.0.1 value breaks CSRF for every real request - see DEPLOYMENT.md)",
+  path: ["APP_BASE_URL"],
 });
+
+function isLoopbackUrl(url: string): boolean {
+  try {
+    const h = new URL(url).hostname;
+    return h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "[::1]" || h === "0.0.0.0";
+  } catch {
+    return false;
+  }
+}
 
 export type Env = z.infer<typeof schema>;
 
