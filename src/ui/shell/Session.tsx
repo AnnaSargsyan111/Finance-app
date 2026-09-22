@@ -11,6 +11,8 @@ import { Splash } from "./Splash";
 interface SessionCtx {
   user: User;
   signOut: () => Promise<void>;
+  /** Updates the cached user everywhere it's shown (top-bar initials, greeting, Settings) without a reload. */
+  updateUser: (user: User) => void;
 }
 
 const Ctx = createContext<SessionCtx | null>(null);
@@ -53,7 +55,9 @@ export function SessionGate({ children }: { children: ReactNode }) {
     }
   }, [router]);
 
-  const value = useMemo(() => (state.user ? { user: state.user, signOut } : null), [state.user, signOut]);
+  const updateUser = useCallback((user: User) => setState((s) => (s.user ? { ...s, user } : s)), []);
+
+  const value = useMemo(() => (state.user ? { user: state.user, signOut, updateUser } : null), [state.user, signOut, updateUser]);
 
   if (state.status === "error") {
     return (

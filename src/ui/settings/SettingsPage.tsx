@@ -1,28 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { getPasswordRules, updateProfile } from "../api/auth";
+import { errorMessage, isApiError } from "../api/client";
+import { DEFAULT_RULES } from "../auth/password-rules";
 import { Button } from "../components/Button";
 import { Card } from "../components/Display";
 import { Note } from "../components/Feedback";
+import { TextField } from "../components/Fields";
 import { IconLogout } from "../components/Icons";
 import { PageHeader } from "../shell/AppShell";
 import { useSession } from "../shell/Session";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import s from "./settings.module.css";
 
-function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={s.field}>
-      <dt className={s.label}>{label}</dt>
-      <dd className={s.value}>{value || "-"}</dd>
-    </div>
-  );
-}
-
-/** Read-only profile (v1): the details collected at registration, plus sign-out. */
+/** Profile: First Name and Last Name are editable; Email is fixed (shown with a tooltip explaining why). */
 export function SettingsPage() {
-  const { user, signOut } = useSession();
-  const [busy, setBusy] = useState(false);
+  const { user, signOut, updateUser } = useSession();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const [rules, setRules] = useState<{ id: string; label: string }[]>(DEFAULT_RULES);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    getPasswordRules(ctrl.signal)
+      .then((p) => {
+        if (p.rules?.length) setRules(p.rules);
+      })
+      .catch(() => undefined);
+    return () => ctrl.abort();
+  }, []);
+
+  // ---- editable name fields -------------------------------------------------------------------
+  const [firstName, setFirstName] = useState(user.firstName);
+  const [lastName, setLastName] = useState(user.lastName);
+  const [savedFirstName, setSavedFirstName] = useState(user.firstName);
+  const [savedLastName, setSavedLastName] = useState(user.lastName);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; lastName?: string }>({});
+  const [savedNotice, setSavedNotice] = useState(false);
+
+  const dirty = firstName.trim() !== savedFirstName || lastName.trim() !== savedLastName;
+
+  async function saveProfile(e: FormEvent) {
+    e.preventDefault();
+    // per spec: clicking Save while nothing changed must be a no-op (the button is also disabled while clean)
+    if (!dirty || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    setFieldErrors({});
+    setSavedNotice(false);
+    try {
+      const { user: updated } = await updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() });
+      updateUser(updated); // refreshes the top-bar initials and greeting immediately, no reload needed
+      setFirstName(updated.firstName);
+      setLastName(updated.lastName);
+      setSavedFirstName(updated.firstName);
+      setSavedLastName(updated.lastName);
+      setSavedNotice(true);
+    } catch (err) {
+      if (isApiError(err) && err.fields) setFieldErrors(err.fields);
+      else setSaveError(errorMessage(err, "We couldn't save your changes. Please try again."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ---- change password modal -------------------------------------------------------------------
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwNotice, setPwNotice] = useState(false);
+  // captured via e.currentTarget on click (not document.activeElement): some browsers, e.g. Safari, never focus a
+  // button on a mouse click, so this is the only reliable way to know what to return focus to when the modal closes
+  const pwTriggerRef = useRef<HTMLButtonElement | null>(null);
+
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase() || "F";
+
   return (
     <>
       <PageHeader title="Settings / Profile" subtitle="The details you gave when you created your account." greet={false} />
@@ -39,30 +91,110 @@ export function SettingsPage() {
               <p className={s.mail}>{user.email}</p>
             </div>
           </div>
-          <dl className={s.fields}>
-            <ReadOnlyField label="First Name" value={user.firstName} />
-            <ReadOnlyField label="Last Name" value={user.lastName} />
-            <ReadOnlyField label="Email" value={user.email} />
-          </dl>
-          <div style={{ marginTop: 24 }}>
-            <Note>Profile details are read-only for now. Editing your profile and changing your password aren&apos;t available in this version.</Note>
+
+          <form className={s.editForm} onSubmit={saveProfile} noValidate>
+            {saveError ? <Note tone="error">{saveError}</Note> : null}
+            <div className={s.editGrid}>
+              <TextField
+                label="First Name"
+                name="firstName"
+                autoComplete="given-name"
+                maxLength={60}
+                value={firstName}
+                onChange={(e) => {
+                  setFirstName(e.target.value);
+                  setSavedNotice(false);
+                }}
+                error={fieldErrors.firstName}
+                required
+              />
+              <TextField
+                label="Last Name"
+                name="lastName"
+                autoComplete="family-name"
+                maxLength={60}
+                value={lastName}
+                onChange={(e) => {
+                  setLastName(e.target.value);
+                  setSavedNotice(false);
+                }}
+                error={fieldErrors.lastName}
+                required
+              />
+            </div>
+            <TextField
+              label="Email"
+              name="email"
+              type="email"
+              value={user.email}
+              readOnly
+              title="Email address cannot be changed."
+              hint="Email address cannot be changed."
+            />
+            <div className={s.saveRow}>
+              <Button type="submit" variant="primary" loading={saving} disabled={!dirty}>
+                Save changes
+              </Button>
+              {savedNotice ? (
+                <span role="status" style={{ color: "var(--accent)", fontSize: 14, fontWeight: 500 }}>
+                  Your changes have been saved.
+                </span>
+              ) : null}
+            </div>
+          </form>
+        </Card>
+
+        <Card title="Security" eyebrow="Password & session">
+          <div className={s.securityActions}>
+            <div>
+              <p className={s.sessionText}>Change the password you use to log in. This won&apos;t sign you out of this device.</p>
+              <Button
+                variant="secondary"
+                onClick={(e) => {
+                  pwTriggerRef.current = e.currentTarget;
+                  setPwNotice(false);
+                  setPwOpen(true);
+                }}
+              >
+                Change Password
+              </Button>
+              {pwNotice ? (
+                <p role="status" style={{ color: "var(--accent)", fontSize: 14, fontWeight: 500, marginTop: 12 }}>
+                  Password changed. Your other sessions have been signed out.
+                </p>
+              ) : null}
+            </div>
+
+            <hr className={s.divider} style={{ width: "100%" }} />
+
+            <div>
+              <p className={s.sessionText}>Signing out ends your session on this device. You&apos;ll need to log in again to see your data.</p>
+              <Button
+                variant="secondary"
+                loading={signingOut}
+                onClick={async () => {
+                  setSigningOut(true);
+                  await signOut();
+                }}
+              >
+                <IconLogout size={16} />
+                Sign out
+              </Button>
+            </div>
           </div>
         </Card>
-        <Card title="Session" eyebrow="Security">
-          <p className={s.sessionText}>Signing out ends your session on this device. You&apos;ll need to log in again to see your data.</p>
-          <Button
-            variant="secondary"
-            loading={busy}
-            onClick={async () => {
-              setBusy(true);
-              await signOut();
-            }}
-          >
-            <IconLogout size={16} />
-            Sign out
-          </Button>
-        </Card>
       </div>
+
+      <ChangePasswordModal
+        open={pwOpen}
+        rules={rules}
+        onClose={() => setPwOpen(false)}
+        onSuccess={() => {
+          setPwOpen(false);
+          setPwNotice(true);
+        }}
+        triggerRef={pwTriggerRef}
+      />
     </>
   );
 }

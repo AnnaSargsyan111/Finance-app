@@ -271,3 +271,175 @@ describe("AC-B1 forgot / reset password", () => {
     expect(statuses).toEqual([202, 202, 202, 429, 429]);
   });
 });
+
+describe("POST /api/auth/change-password", () => {
+  it("401 without a session; strict schema rejects unknown fields", async () => {
+    const anon = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "x", newPassword: "y" } });
+    expect(anon.status).toBe(401);
+    expect(anon.body.error.code).toBe("UNAUTHENTICATED");
+    const u = await registerUser("cpw-strict");
+    const extra = await call(R.changePassword.POST, "POST", "/api/auth/change-password", {
+      json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd", note: "hi" },
+      jar: u.jar,
+    });
+    expect(extra.status).toBe(400);
+    expect(extra.body.error.code).toBe("VALIDATION_ERROR");
+    expect(extra.body.error.fields.note).toBeTruthy();
+  });
+
+  it("each newPassword composition rule is enforced (400 VALIDATION_ERROR, fields.newPassword, via the shared password-rules message)", async () => {
+    const u = await registerUser("cpw-rules");
+    for (const bad of ["Sh0rt!", "lowercase1!", "UPPERCASE1!", "NoNumbers!!", "NoSymbols123"]) {
+      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: bad }, jar: u.jar });
+      expect(r.status, bad).toBe(400);
+      expect(r.body.error.code).toBe("VALIDATION_ERROR");
+      expect(r.body.error.fields.newPassword).toBeTruthy();
+      expect(JSON.stringify(r.body)).not.toContain(bad); // password never echoed
+    }
+    expect((await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD }, jar: u.jar })).status).toBe(400);
+  });
+
+  it("wrong current password -> 401 INVALID_CREDENTIALS with fields.currentPassword; the new password is never applied", async () => {
+    const u = await registerUser("cpw-wrong");
+    const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "TotallyWrong!1", newPassword: "N3w!Passw0rd" }, jar: u.jar });
+    expect(r.status).toBe(401);
+    expect(r.body.error.code).toBe("INVALID_CREDENTIALS");
+    expect(r.body.error.message).toBe("Current password is incorrect.");
+    expect(r.body.error.fields).toEqual({ currentPassword: "Current password is incorrect." });
+    // the old password still works
+    const login = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: VALID_PASSWORD }, ip: freshIp() });
+    expect(login.status).toBe(200);
+  });
+
+  it("rate limited after 5 wrong currentPassword attempts within 15 min, keyed per user (a different user is unaffected)", async () => {
+    const u = await registerUser("cpw-rate");
+    const other = await registerUser("cpw-rate-other");
+    for (let i = 1; i <= 5; i++) {
+      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "Wrong!Passw0rd", newPassword: "N3w!Passw0rd" }, jar: u.jar });
+      expect(r.status, `attempt ${i}`).toBe(401);
+    }
+    const sixth = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd" }, jar: u.jar });
+    expect(sixth.status).toBe(429);
+    expect(sixth.body.error.code).toBe("RATE_LIMITED");
+    expect(Number(sixth.headers.get("retry-after"))).toBeGreaterThan(0);
+    // a different user's own counter is untouched
+    const otherOk = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd" }, jar: other.jar });
+    expect(otherOk.status).toBe(200);
+  });
+
+  it("success: 200 {ok:true}, revokes every OTHER session but keeps the caller's own session valid (no forced re-login), rotates the password", async () => {
+    const u = await registerUser("cpw-success");
+    // a second, independent session for the same account (e.g. another device)
+    const otherJar = new Jar();
+    const otherLogin = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: VALID_PASSWORD }, jar: otherJar, ip: freshIp() });
+    expect(otherLogin.status).toBe(200);
+    expect((await call(R.session.GET, "GET", "/api/auth/session", { jar: otherJar })).status).toBe(200);
+
+    const NEW = "N3w!Str0ngPassw0rd";
+    const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: NEW }, jar: u.jar });
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ ok: true });
+
+    // the caller's own session (possibly rotated) keeps working, with no re-login required
+    const mine = await call(R.session.GET, "GET", "/api/auth/session", { jar: u.jar });
+    expect(mine.status).toBe(200);
+    expect(mine.body.user.email).toBe(u.email);
+
+    // the OTHER session is revoked
+    const otherAfter = await call(R.session.GET, "GET", "/api/auth/session", { jar: otherJar });
+    expect(otherAfter.status).toBe(401);
+
+    // old password rejected, new password accepted, from a fresh login
+    const oldLogin = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: VALID_PASSWORD }, ip: freshIp() });
+    expect(oldLogin.status).toBe(401);
+    const newLogin = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: NEW }, ip: freshIp() });
+    expect(newLogin.status).toBe(200);
+
+    // password is stored only as a scrypt hash (same policy as every other password write)
+    const db = await getDb();
+    const rows = (await db.execute(sql`select password from auth.account where account_id = ${u.id}`)).rows as { password: string }[];
+    expect(rows[0].password.startsWith("scrypt$131072$8$1$")).toBe(true);
+  });
+
+  it("a successful change clears this user's failure counter (attempts do not carry over)", async () => {
+    const u = await registerUser("cpw-clear");
+    for (let i = 0; i < 4; i++) {
+      await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "Wrong!Passw0rd", newPassword: "N3w!Passw0rd" }, jar: u.jar });
+    }
+    const ok = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd1" }, jar: u.jar });
+    expect(ok.status).toBe(200);
+    // 4 more wrong attempts against the NEW password would have hit the limit if the old counter had carried over (4+4=8 > 5)
+    for (let i = 0; i < 4; i++) {
+      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "Wrong!Passw0rd", newPassword: "N3w!Passw0rd2" }, jar: u.jar });
+      expect(r.status, `post-success attempt ${i}`).toBe(401);
+    }
+  });
+});
+
+describe("PATCH /api/auth/profile", () => {
+  it("401 without a session; strict schema rejects an email field (and any other unknown field)", async () => {
+    const anon = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "A", lastName: "B" } });
+    expect(anon.status).toBe(401);
+    const u = await registerUser("profile-strict");
+    const withEmail = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "A", lastName: "B", email: "new@example.com" }, jar: u.jar });
+    expect(withEmail.status).toBe(400);
+    expect(withEmail.body.error.code).toBe("VALIDATION_ERROR");
+    expect(withEmail.body.error.fields.email).toBeTruthy();
+    // the email must not have changed
+    const sess = await call(R.session.GET, "GET", "/api/auth/session", { jar: u.jar });
+    expect(sess.body.user.email).toBe(u.email);
+    const extra = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "A", lastName: "B", isAdmin: true }, jar: u.jar });
+    expect(extra.status).toBe(400);
+    expect(extra.body.error.fields.isAdmin).toBeTruthy();
+  });
+
+  it("validation: required, trimmed, length 1-60 (same rules as sign-up)", async () => {
+    const u = await registerUser("profile-validate");
+    const bad = async (firstName: unknown, lastName: unknown) =>
+      (await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName, lastName }, jar: u.jar })).status;
+    expect(await bad("", "B")).toBe(400);
+    expect(await bad("A", "")).toBe(400);
+    expect(await bad("x".repeat(61), "B")).toBe(400);
+    expect(await bad("x".repeat(60), "B")).toBe(200);
+    const trimmed = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "  Anna  ", lastName: "  Sargsyan  " }, jar: u.jar });
+    expect(trimmed.status).toBe(200);
+    expect(trimmed.body.user).toMatchObject({ firstName: "Anna", lastName: "Sargsyan" });
+  });
+
+  it("success: 200 {user} in the exact GET /api/auth/session shape, and the session reflects it immediately", async () => {
+    const u = await registerUser("profile-success");
+    const r = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "Annie", lastName: "Newlast" }, jar: u.jar });
+    expect(r.status).toBe(200);
+    expect(Object.keys(r.body.user).sort()).toEqual(["email", "firstName", "id", "lastName"]);
+    expect(r.body.user).toEqual({ id: u.id, firstName: "Annie", lastName: "Newlast", email: u.email });
+    const sess = await call(R.session.GET, "GET", "/api/auth/session", { jar: u.jar });
+    expect(sess.body.user).toEqual(r.body.user);
+    // `name` is kept in sync server-side
+    const db = await getDb();
+    const rows = (await db.execute(sql`select name from auth."user" where id = ${u.id}`)).rows as { name: string }[];
+    expect(rows[0].name).toBe("Annie Newlast");
+  });
+
+  it("two-user isolation: user B's update never affects user A's row, and vice versa", async () => {
+    const A = await registerUser("profile-A");
+    const B = await registerUser("profile-B");
+    const rA = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "Alpha", lastName: "One" }, jar: A.jar });
+    expect(rA.status).toBe(200);
+    const rB = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: "Beta", lastName: "Two" }, jar: B.jar });
+    expect(rB.status).toBe(200);
+    const sessA = await call(R.session.GET, "GET", "/api/auth/session", { jar: A.jar });
+    const sessB = await call(R.session.GET, "GET", "/api/auth/session", { jar: B.jar });
+    expect(sessA.body.user).toMatchObject({ id: A.id, firstName: "Alpha", lastName: "One" });
+    expect(sessB.body.user).toMatchObject({ id: B.id, firstName: "Beta", lastName: "Two" });
+    expect(sessA.body.user.id).not.toBe(sessB.body.user.id);
+  });
+
+  it("stores hostile strings inertly (names are data, returned verbatim)", async () => {
+    const u = await registerUser("profile-xss");
+    const evil = `<img src=x onerror=alert(1)>'); DROP TABLE auth."user"; --`.slice(0, 60);
+    const r = await call(R.profile.PATCH, "PATCH", "/api/auth/profile", { json: { firstName: evil, lastName: "B" }, jar: u.jar });
+    expect(r.status).toBe(200);
+    expect(r.body.user.firstName).toBe(evil);
+    expect(r.headers.get("content-type")).toMatch(/application\/json/);
+  });
+});

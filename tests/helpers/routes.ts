@@ -5,11 +5,13 @@ import * as signOut from "@/app/api/auth/sign-out/route";
 import * as forgot from "@/app/api/auth/forgot-password/route";
 import * as reset from "@/app/api/auth/reset-password/route";
 import * as session from "@/app/api/auth/session/route";
+import * as changePassword from "@/app/api/auth/change-password/route";
+import * as profile from "@/app/api/auth/profile/route";
 import * as pfPeriods from "@/app/api/pf/periods/route";
 import * as pfPeriod from "@/app/api/pf/period/route";
 import { call, Jar, freshIp, type CallResult } from "./api";
 
-export const R = { signUp, signIn, signOut, forgot, reset, session, pfPeriods, pfPeriod };
+export const R = { signUp, signIn, signOut, forgot, reset, session, changePassword, profile, pfPeriods, pfPeriod };
 
 export const VALID_PASSWORD = "Str0ng!Passw0rd";
 

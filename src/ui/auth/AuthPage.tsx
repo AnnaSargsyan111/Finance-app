@@ -8,35 +8,14 @@ import type { PasswordPolicy } from "../api/types";
 import { Button } from "../components/Button";
 import { Note } from "../components/Feedback";
 import { PasswordField, TextField } from "../components/Fields";
-import { IconCheck, Logo } from "../components/Icons";
+import { Logo } from "../components/Icons";
 import { Splash } from "../shell/Splash";
-import { cx } from "../lib/cx";
+import { PasswordChecklist } from "./PasswordChecklist";
 import { checkPassword, DEFAULT_RULES, EMAIL_RE } from "./password-rules";
 import s from "./auth.module.css";
 
 type Mode = "signup" | "login" | "forgot" | "reset";
 const MODES: Mode[] = ["signup", "login", "forgot", "reset"];
-
-function PasswordChecklist({ password, rules }: { password: string; rules: { id: string; label: string }[] }) {
-  const { results } = checkPassword(password, rules);
-  return (
-    <div>
-      <ul className={s.checklist} aria-label="Password requirements">
-        {results.map((r) => (
-          <li key={r.id} className={cx(s.rule, r.ok && s.ruleOk)}>
-            <span className={s.ruleMark} aria-hidden="true">
-              <IconCheck size={12} strokeWidth={3} />
-            </span>
-            <span>
-              {r.label}
-              <span className="sr-only">{r.ok ? " (met)" : " (not met yet)"}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 interface FormProps {
   rules: { id: string; label: string }[];

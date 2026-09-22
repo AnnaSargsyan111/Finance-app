@@ -34,6 +34,12 @@ export const forgotSchema = z.object({ email: emailField }).strict();
 export const resetSchema = z
   .object({ token: z.string().min(10).max(200), newPassword })
   .strict();
+/** currentPassword is checked against the stored hash, not against composition rules - only newPassword uses those. */
+export const changePasswordSchema = z
+  .object({ currentPassword: z.string().min(1, "Required").max(PASSWORD_MAX_LENGTH), newPassword })
+  .strict();
+/** Same name validator as sign-up. No email field on purpose - see updateProfile(). */
+export const updateProfileSchema = z.object({ firstName: name, lastName: name }).strict();
 
 type AuthResult = { user: SessionUser; setCookies: string[] };
 
@@ -136,4 +142,71 @@ export async function resetPassword(input: z.infer<typeof resetSchema>): Promise
   } catch {
     throw new ApiError("TOKEN_INVALID_OR_EXPIRED", 400, "This reset link is invalid or has expired.");
   }
+}
+
+/**
+ * Change the signed-in user's password (Settings page). Uses Better Auth's own `changePassword` primitive: it
+ * checks `currentPassword` against the stored hash with our overridden scrypt verify() (src/auth/password-hash.ts),
+ * and - with `revokeOtherSessions: true` - revokes every OTHER session for the user and issues a fresh session for
+ * the CALLER (same "old sessions revoked" policy as the emailed reset flow's `revokeSessionsOnPasswordReset:true`,
+ * just without signing the caller out). The new cookie (if any) is returned as `setCookies` for the route to forward
+ * - route()'s existing plumbing appends it to the response exactly like every other auth route.
+ * Brute-forcing currentPassword through a stolen session cookie is rate-limited per user, same numbers as login
+ * (5 failures / 15 min -> 429 on the 6th), checked BEFORE verifying so a correct password on attempt 6 still 429s.
+ */
+export async function changePassword(userId: string, input: z.infer<typeof changePasswordSchema>, headers: Headers): Promise<string[]> {
+  const windowMs = APP.auth.loginWindowMinutes * MIN;
+  await enforceLimit({ scope: "change-password-fail", key: userId, limit: APP.auth.loginFailuresPerWindow, windowMs });
+  const auth = await getAuth();
+  let res;
+  try {
+    res = await auth.api.changePassword({
+      body: { currentPassword: input.currentPassword, newPassword: input.newPassword, revokeOtherSessions: true },
+      headers,
+      returnHeaders: true,
+    });
+  } catch (e) {
+    const code = (e as { body?: { code?: string } })?.body?.code ?? "";
+    if (code === "INVALID_PASSWORD") {
+      await recordEvent("change-password-fail", userId);
+      // ApiError.code stays INVALID_CREDENTIALS (same family as sign-in's wrong-password error) but, unlike sign-in,
+      // this IS attributable to one field: the caller already proved account ownership via their session, so there is
+      // no user-enumeration concern in naming `currentPassword` specifically.
+      throw new ApiError("INVALID_CREDENTIALS", 401, "Current password is incorrect.", { currentPassword: "Current password is incorrect." });
+    }
+    log.error("change-password failed", { code, message: e instanceof Error ? e.message : String(e) });
+    throw new ApiError("INTERNAL_ERROR", 500, "Could not change the password.");
+  }
+  // success clears this user's failure counter
+  const db = await getDb();
+  await db.delete(rateEvent).where(and(eq(rateEvent.scope, "change-password-fail"), eq(rateEvent.key, userId)));
+  return res.headers.getSetCookie();
+}
+
+/**
+ * Update the signed-in user's first/last name (Settings page). Email is never accepted: updateProfileSchema is
+ * .strict() with no email field (a client sending one gets 400 VALIDATION_ERROR before this runs at all), and this
+ * function only ever forwards the two validated fields to Better Auth - never the raw request body - so there is no
+ * path for an email to reach the underlying primitive either. Uses Better Auth's `updateUser` (verified against the
+ * additionalFields firstName/lastName registered in src/auth/auth.ts); `name` is kept in sync as
+ * "<firstName> <lastName>", the same construction sign-up already uses.
+ */
+export async function updateProfile(
+  current: SessionUser,
+  input: z.infer<typeof updateProfileSchema>,
+  headers: Headers,
+): Promise<{ user: SessionUser; setCookies: string[] }> {
+  const auth = await getAuth();
+  let res;
+  try {
+    res = await auth.api.updateUser({
+      body: { name: `${input.firstName} ${input.lastName}`.trim(), firstName: input.firstName, lastName: input.lastName },
+      headers,
+      returnHeaders: true,
+    });
+  } catch (e) {
+    log.error("update-profile failed", { message: e instanceof Error ? e.message : String(e) });
+    throw new ApiError("INTERNAL_ERROR", 500, "Could not update the profile.");
+  }
+  return { user: { ...current, firstName: input.firstName, lastName: input.lastName }, setCookies: res.headers.getSetCookie() };
 }

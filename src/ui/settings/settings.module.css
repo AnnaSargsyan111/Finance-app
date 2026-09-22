@@ -76,3 +76,53 @@
   color: var(--text-2);
   margin-bottom: var(--s-5);
 }
+
+/* ---------- editable profile form ---------- */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.editGrid {
+  display: grid;
+  gap: var(--s-4);
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 720px) {
+  .editGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  padding-top: var(--s-2);
+}
+
+/* ---------- security section (divider between Change Password and Sign out) ---------- */
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border-faint);
+  margin: var(--s-5) 0;
+}
+.securityActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  align-items: flex-start;
+}
+
+/* ---------- change-password modal ---------- */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.modalActions {
+  display: flex;
+  gap: var(--s-3);
+  justify-content: flex-end;
+  margin-top: var(--s-2);
+}

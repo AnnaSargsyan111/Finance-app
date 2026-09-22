@@ -36,9 +36,9 @@ describe("investment request (AC-F6)", () => {
 });
 
 describe("mock registry", () => {
-  it("has one boolean per endpoint and is fully LIVE after the backend delivered", () => {
+  it("has one boolean per endpoint and is fully LIVE (backend delivered everything, including profile edit)", () => {
     const entries = Object.entries(MOCK);
-    expect(entries.length).toBeGreaterThanOrEqual(25);
+    expect(entries.length).toBeGreaterThanOrEqual(27);
     for (const [, v] of entries) expect(typeof v).toBe("boolean");
     expect(entries.filter(([, v]) => v).map(([k]) => k)).toEqual([]);
   });
