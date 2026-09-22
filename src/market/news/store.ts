@@ -37,10 +37,17 @@ export async function persistPool(poolIn: (NewsItemDto & { feedId: string })[], 
         set: {
           title: sqlExcluded("title"),
           source: sqlExcluded("source"),
+          region: sqlExcluded("region"),
           category: sqlExcluded("category"),
           topic: sqlExcluded("topic"),
           summary: sqlExcluded("summary"),
           imageUrl: sqlExcluded("image_url"),
+          // BUG (QA-002): publishedAt was missing here, so a row's timestamp froze at whatever it was on the
+          // FIRST insert. A later refresh could pick a different cluster representative (or the raw feed simply
+          // updated its own pubDate) with a new publishedAt, and the list would show it - but the stored row, and
+          // therefore GET /api/market/news/:id, silently kept the old one. Every field the detail route serves must
+          // be refreshed on conflict, not just a subset.
+          publishedAt: sqlExcluded("published_at"),
           lastSeenAt: now,
         },
       });

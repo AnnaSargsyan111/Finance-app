@@ -6,7 +6,8 @@ import { registerUser, type TestUser } from "./helpers/routes";
 import { resetCache } from "./helpers/db";
 import { fixture } from "./helpers/fetch-mock";
 import { makeSummary, parseFeed, pickImage } from "@/market/news/rss";
-import { setNewsFetchers } from "@/market/news/service";
+import { getNews, setNewsFetchers } from "@/market/news/service";
+import { findNewsItem, persistPool } from "@/market/news/store";
 import type { FeedConfig } from "@/market/news/config";
 import * as newsRoute from "@/app/api/market/news/route";
 import * as detailRoute from "@/app/api/market/news/[id]/route";
@@ -108,5 +109,70 @@ describe("AC-B12 GET /api/market/news/:id", () => {
     const db = await getDb();
     const left = (await db.execute(sql`select count(*)::int as n from market.news_item where id = ${id}`)).rows[0] as { n: number };
     expect(left.n).toBe(0);
+  });
+});
+
+describe("QA-002 regression: a re-selected id is fully refreshed on conflict, not just source/summary/image", () => {
+  it("persistPool: a second upsert for the same id overwrites EVERY served field, including publishedAt and region (not just the ones that happened to change first)", async () => {
+    const id = "a0a2002000000001"; // 16 hex chars, as required by findNewsItem's id format check
+    const first = {
+      id, title: "Synthetic Regression A", source: "Outlet A", url: "https://example.test/qa002/regression",
+      publishedAt: "2026-09-21T10:00:00.000Z", region: "global" as const, topic: "macro", category: "Economy",
+      summary: "first summary", imageUrl: "https://example.test/img/a.jpg", feedId: "yahoo",
+    };
+    await persistPool([first], new Date("2026-09-21T10:05:00Z"));
+    expect(await findNewsItem(id, new Date("2026-09-21T10:06:00Z"))).toMatchObject({ publishedAt: first.publishedAt, region: "global", title: "Synthetic Regression A" });
+
+    // a later refresh re-selects the SAME id (same URL -> same id) with a NEW publishedAt (the feed updated its
+    // timestamp, or a different cluster member became the representative) and different region/title/etc.
+    const second = { ...first, title: "Synthetic Regression B", publishedAt: "2026-09-21T14:30:00.000Z", region: "armenia" as const, topic: "armenia_economy", category: "Armenia", summary: "second summary", imageUrl: "https://example.test/img/b.jpg" };
+    await persistPool([second], new Date("2026-09-21T14:35:00Z"));
+    const after = await findNewsItem(id, new Date("2026-09-21T14:36:00Z"));
+    expect(after).toMatchObject({
+      id, title: "Synthetic Regression B", publishedAt: second.publishedAt, region: "armenia", topic: "armenia_economy",
+      category: "Armenia", summary: "second summary", imageUrl: "https://example.test/img/b.jpg",
+    });
+    expect(after!.publishedAt).not.toBe(first.publishedAt); // the whole point of the regression: this must have moved
+  });
+
+  it("end to end: GET /api/market/news/:id tracks the CURRENT list publishedAt across refreshes, not the first-ever one", async () => {
+    const url = "https://example.test/qa002/e2e-story";
+    const feed = (pubDate: string) =>
+      `<?xml version="1.0" encoding="UTF-8"?><rss xmlns:media="http://search.yahoo.com/mrss/" version="2.0"><channel><title>t</title><link>https://example.test/</link><description>d</description><language>en-US</language><ttl>5</ttl>` +
+      `<item><title>Synthetic Regression Story: central bank holds interest rate steady</title><link>${url}</link><pubDate>${pubDate}</pubDate>` +
+      `<source url="https://example.test/outlets/reg">Regression Outlet</source><guid isPermaLink="false">qa002-e2e</guid></item></channel></rss>`;
+    // every OTHER feed fails, so this single controlled item is the only candidate and is guaranteed to be selected
+    const only = (pubDate: string) => async (f: FeedConfig) => {
+      if (f.id !== "yahoo") throw new Error("disabled for this regression test");
+      return feed(pubDate);
+    };
+
+    await resetCache();
+    setNewsFetchers({ now: () => NOW, fetchFeed: only(new Date(NOW.getTime() - 1 * 3_600_000).toISOString()) });
+    const list1 = await getNews();
+    expect(list1.data.items).toHaveLength(1);
+    const id = list1.data.items[0].id;
+    const detail1 = await findNewsItem(id, NOW);
+    expect(detail1!.publishedAt).toBe(list1.data.items[0].publishedAt);
+
+    // a later refresh: the SAME url/id, but a NEW publishedAt (e.g. the feed edited its timestamp)
+    const later = new Date(NOW.getTime() + 6 * 3_600_000);
+    await resetCache();
+    setNewsFetchers({ now: () => later, fetchFeed: only(new Date(later.getTime() - 1 * 3_600_000).toISOString()) });
+    const list2 = await getNews();
+    expect(list2.data.items).toHaveLength(1);
+    expect(list2.data.items[0].id).toBe(id); // same story, same id
+    expect(list2.data.items[0].publishedAt).not.toBe(list1.data.items[0].publishedAt); // the feed really did move
+
+    const detail2 = await findNewsItem(id, later);
+    // this is exactly QA-002: before the fix, detail2.publishedAt stayed equal to detail1's (the first-ever insert)
+    expect(detail2!.publishedAt).toBe(list2.data.items[0].publishedAt);
+    expect(detail2!.publishedAt).not.toBe(detail1!.publishedAt);
+    // and every other list-card field the route serves matches too (id, title, source, url, region, topic, category, summary, imageUrl)
+    expect({ id: detail2!.id, title: detail2!.title, source: detail2!.source, url: detail2!.url, region: detail2!.region, topic: detail2!.topic, category: detail2!.category, summary: detail2!.summary, imageUrl: detail2!.imageUrl }).toEqual({
+      id: list2.data.items[0].id, title: list2.data.items[0].title, source: list2.data.items[0].source, url: list2.data.items[0].url,
+      region: list2.data.items[0].region, topic: list2.data.items[0].topic, category: list2.data.items[0].category,
+      summary: list2.data.items[0].summary, imageUrl: list2.data.items[0].imageUrl,
+    });
   });
 });
