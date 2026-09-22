@@ -1,0 +1,132 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "meta": {
+    "symbol": "MSFT",
+    "interval": "1day",
+    "currency": "USD"
+  },
+  "values": [
+    {
+      "datetime": "2026-09-10",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "453.33",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-09",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "452.88",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-08",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "452.44",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-07",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "452.00",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-04",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "450.66",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-03",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "450.22",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-02",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "449.77",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-01",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "449.33",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-31",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "448.88",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-28",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "447.55",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-27",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "447.11",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-26",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "446.66",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-25",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "446.22",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-24",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "445.77",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-21",
+      "open": 444.44,
+      "high": 444.44,
+      "low": 444.44,
+      "close": "444.44",
+      "volume": "1000"
+    }
+  ],
+  "status": "ok"
+}

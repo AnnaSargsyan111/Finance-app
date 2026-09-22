@@ -1,0 +1,17 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "metric": {
+    "peTTM": 20,
+    "epsTTM": 22.22,
+    "dividendYieldIndicatedAnnual": 1.5,
+    "dividendPerShareAnnual": 6.67,
+    "52WeekHigh": 464.44,
+    "52WeekLow": 414.44,
+    "beta": 1.11,
+    "revenueGrowthTTMYoy": 10,
+    "netProfitMarginTTM": 25
+  },
+  "series": {},
+  "symbol": "MSFT"
+}

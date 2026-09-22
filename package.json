@@ -1,0 +1,42 @@
+{
+  "name": "finance-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Finance app backend (Personal Finance, Market Information, Investment) - Next.js Route Handlers API",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "job:fx": "tsx scripts/job.ts fx",
+    "job:news": "tsx scripts/job.ts news",
+    "job:universe": "tsx scripts/job.ts universe",
+    "job:stocks": "tsx scripts/job.ts stocks"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "better-auth": "^1.7.5",
+    "drizzle-orm": "^0.45.3",
+    "fast-xml-parser": "^5.11.1",
+    "next": "^16.3.5",
+    "pg": "^8.23.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "recharts": "^3.10.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

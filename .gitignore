@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+# next
+.next/
+out/
+next-env.d.ts
+# secrets - never commit
+.env
+.env.local
+.env.*.local
+# local database (PGlite)
+.data/
+# misc
+*.tsbuildinfo
+coverage/
+.DS_Store
+npm-debug.log*
+.next-*/

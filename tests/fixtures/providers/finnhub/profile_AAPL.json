@@ -1,0 +1,9 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "name": "Apple Inc",
+  "ticker": "AAPL",
+  "currency": "USD",
+  "marketCapitalization": 222220,
+  "shareOutstanding": 1000
+}

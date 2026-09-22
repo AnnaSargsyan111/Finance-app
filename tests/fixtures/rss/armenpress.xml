@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC TEST DATA - invented text, not real news -->
+<rss xmlns:atom="https://www.w3.org/2005/Atom" version="2.0"><channel><atom:link href="https://example.test/armenpress/rss" rel="self" type="application/rss+xml" /><title>Synthetic Agency Feed G</title><link>https://example.test/armenpress</link><description>Invented feed</description><language>en</language><item><title>
+   <![CDATA[Synthetic Headline 951: Dram holds steady against the dollar in Yerevan trading at Dunqinta Roqinta Linqinta]]>
+  </title><link>https://example.test/armenpress/article/951?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 17:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/951</guid><enclosure url="https://example.test/img/armenpress/951.webp" length="100951" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 952: State budget revenue exceeds plan on higher tax collection at Faqinta Gorqinta Kavexta]]>
+  </title><link>https://example.test/armenpress/article/952?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 10:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/952</guid><enclosure url="https://example.test/img/armenpress/952.webp" length="100952" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 953: Mining output rises as copper prices firm in Armenia at Velvexta Torvexta Mivexta]]>
+  </title><link>https://example.test/armenpress/article/953?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 03:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/953</guid><enclosure url="https://example.test/img/armenpress/953.webp" length="100953" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1000: Dram holds steady against the dollar in Yerevan trading at Gorqinpa Kavexpa Velvexpa]]>
+  </title><link>https://example.test/armenpress/article/1000?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 18:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1000</guid><enclosure url="https://example.test/img/armenpress/1000.webp" length="101000" type="image/webp"/><categories><category>Economy</category><category>Financial Markets</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1001: Central bank of Armenia keeps refinancing rate unchanged at Torvexpa Mivexpa Savexpa]]>
+  </title><link>https://example.test/armenpress/article/1001?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 12:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1001</guid><enclosure url="https://example.test/img/armenpress/1001.webp" length="101001" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1002: Armenia GDP growth accelerates in the first half at Dunvexpa Rovexpa Linvexpa]]>
+  </title><link>https://example.test/armenpress/article/1002?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 01:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1002</guid><enclosure url="https://example.test/img/armenpress/1002.webp" length="101002" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1003: State budget revenue exceeds plan on higher tax collection at Favexpa Gorvexpa Kalopa]]>
+  </title><link>https://example.test/armenpress/article/1003?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 15:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1003</guid><enclosure url="https://example.test/img/armenpress/1003.webp" length="101003" type="image/webp"/><categories><category>Economy</category><category>Financial Markets</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1004: Armenian exports to neighbouring markets rise at Vellopa Torlopa Milopa]]>
+  </title><link>https://example.test/armenpress/article/1004?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 01:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1004</guid><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1005: IT sector salaries outpace inflation in Armenia at Salopa Dunlopa Rolopa]]>
+  </title><link>https://example.test/armenpress/article/1005?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 09:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1005</guid><enclosure url="https://example.test/img/armenpress/1005.webp" length="101005" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1006: Mining output rises as copper prices firm in Armenia at Linlopa Falopa Gorlopa]]>
+  </title><link>https://example.test/armenpress/article/1006?utm_source=ap</link><pubDate>Fri, 18 Sep 2026 18:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1006</guid><enclosure url="https://example.test/img/armenpress/1006.webp" length="101006" type="image/webp"/><categories><category>Economy</category><category>Financial Markets</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1007: Fuel prices edge up at Yerevan stations at Katanpa Veltanpa Tortanpa]]>
+  </title><link>https://example.test/armenpress/article/1007?utm_source=ap</link><pubDate>Thu, 17 Sep 2026 22:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1007</guid><enclosure url="https://example.test/img/armenpress/1007.webp" length="101007" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1008: Banks in Armenia report higher mortgage lending at Mitanpa Satanpa Duntanpa]]>
+  </title><link>https://example.test/armenpress/article/1008?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 16:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1008</guid><enclosure url="https://example.test/img/armenpress/1008.webp" length="101008" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1009: Energy tariff review planned in Armenia next quarter at Rotanpa Lintanpa Fatanpa]]>
+  </title><link>https://example.test/armenpress/article/1009?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 06:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1009</guid><enclosure url="https://example.test/img/armenpress/1009.webp" length="101009" type="image/webp"/><categories><category>Economy</category><category>Financial Markets</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1010: Armenia investment forum attracts new pledges at Gortanpa Kabripa Velbripa]]>
+  </title><link>https://example.test/armenpress/article/1010?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 19:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1010</guid><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1011: Pension fund assets grow in Armenia at Torbripa Mibripa Sabripa]]>
+  </title><link>https://example.test/armenpress/article/1011?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 19:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1011</guid><enclosure url="https://example.test/img/armenpress/1011.webp" length="101011" type="image/webp"/><categories><category>Economy</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1100: Ministers attend national holiday reception in Yerevan at Dunbripa Robripa Linbripa]]>
+  </title><link>https://example.test/armenpress/article/1100?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 20:00:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1100</guid><enclosure url="https://example.test/img/armenpress/1100.webp" length="101100" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1101: Folk festival opens in Gyumri at Fabripa Gorbripa Kazupa]]>
+  </title><link>https://example.test/armenpress/article/1101?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 18:18:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1101</guid><enclosure url="https://example.test/img/armenpress/1101.webp" length="101101" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1102: Delegation discusses regional cooperation in Armenia at Velzupa Torzupa Mizupa]]>
+  </title><link>https://example.test/armenpress/article/1102?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 16:36:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1102</guid><enclosure url="https://example.test/img/armenpress/1102.webp" length="101102" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1103: Sports team returns to Yerevan after a friendly match at Sazupa Dunzupa Rozupa]]>
+  </title><link>https://example.test/armenpress/article/1103?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 14:54:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1103</guid><enclosure url="https://example.test/img/armenpress/1103.webp" length="101103" type="image/webp"/><categories><category>Culture</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1104: Ministers attend national holiday reception in Yerevan at Linzupa Fazupa Gorzupa]]>
+  </title><link>https://example.test/armenpress/article/1104?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 13:12:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1104</guid><enclosure url="https://example.test/img/armenpress/1104.webp" length="101104" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1105: Folk festival opens in Gyumri at Kapelpa Velpelpa Torpelpa]]>
+  </title><link>https://example.test/armenpress/article/1105?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 11:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1105</guid><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1106: Delegation discusses regional cooperation in Armenia at Mipelpa Sapelpa Dunpelpa]]>
+  </title><link>https://example.test/armenpress/article/1106?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 09:48:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1106</guid><enclosure url="https://example.test/img/armenpress/1106.webp" length="101106" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1107: Sports team returns to Yerevan after a friendly match at Ropelpa Linpelpa Fapelpa]]>
+  </title><link>https://example.test/armenpress/article/1107?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 08:06:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1107</guid><enclosure url="https://example.test/img/armenpress/1107.webp" length="101107" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1108: Ministers attend national holiday reception in Yerevan at Gorpelpa Kanorpa Velnorpa]]>
+  </title><link>https://example.test/armenpress/article/1108?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 06:24:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1108</guid><enclosure url="https://example.test/img/armenpress/1108.webp" length="101108" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1109: Folk festival opens in Gyumri at Tornorpa Minorpa Sanorpa]]>
+  </title><link>https://example.test/armenpress/article/1109?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 04:42:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1109</guid><enclosure url="https://example.test/img/armenpress/1109.webp" length="101109" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1110: Delegation discusses regional cooperation in Armenia at Dunnorpa Ronorpa Linnorpa]]>
+  </title><link>https://example.test/armenpress/article/1110?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 03:00:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1110</guid><enclosure url="https://example.test/img/armenpress/1110.webp" length="101110" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1111: Sports team returns to Yerevan after a friendly match at Fanorpa Gornorpa Kakypa]]>
+  </title><link>https://example.test/armenpress/article/1111?utm_source=ap</link><pubDate>Mon, 21 Sep 2026 01:18:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1111</guid><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1112: Ministers attend national holiday reception in Yerevan at Velkypa Torkypa Mikypa]]>
+  </title><link>https://example.test/armenpress/article/1112?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 23:36:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1112</guid><enclosure url="https://example.test/img/armenpress/1112.webp" length="101112" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1113: Folk festival opens in Gyumri at Sakypa Dunkypa Rokypa]]>
+  </title><link>https://example.test/armenpress/article/1113?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 21:54:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1113</guid><enclosure url="https://example.test/img/armenpress/1113.webp" length="101113" type="image/webp"/><categories><category>Culture</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1114: Delegation discusses regional cooperation in Armenia at Linkypa Fakypa Gorkypa]]>
+  </title><link>https://example.test/armenpress/article/1114?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 20:12:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1114</guid><enclosure url="https://example.test/img/armenpress/1114.webp" length="101114" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1115: Sports team returns to Yerevan after a friendly match at Kamarul Velmarul Tormarul]]>
+  </title><link>https://example.test/armenpress/article/1115?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 18:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1115</guid><enclosure url="https://example.test/img/armenpress/1115.webp" length="101115" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1116: Ministers attend national holiday reception in Yerevan at Mimarul Samarul Dunmarul]]>
+  </title><link>https://example.test/armenpress/article/1116?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 16:48:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1116</guid><enclosure url="https://example.test/img/armenpress/1116.webp" length="101116" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1117: Folk festival opens in Gyumri at Romarul Linmarul Famarul]]>
+  </title><link>https://example.test/armenpress/article/1117?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 15:06:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1117</guid><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1118: Delegation discusses regional cooperation in Armenia at Gormarul Kaqinul Velqinul]]>
+  </title><link>https://example.test/armenpress/article/1118?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 13:24:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1118</guid><enclosure url="https://example.test/img/armenpress/1118.webp" length="101118" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1119: Sports team returns to Yerevan after a friendly match at Torqinul Miqinul Saqinul]]>
+  </title><link>https://example.test/armenpress/article/1119?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 11:42:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1119</guid><enclosure url="https://example.test/img/armenpress/1119.webp" length="101119" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1120: Ministers attend national holiday reception in Yerevan at Dunqinul Roqinul Linqinul]]>
+  </title><link>https://example.test/armenpress/article/1120?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 10:00:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1120</guid><enclosure url="https://example.test/img/armenpress/1120.webp" length="101120" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1121: Folk festival opens in Gyumri at Faqinul Gorqinul Kavexul]]>
+  </title><link>https://example.test/armenpress/article/1121?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 08:18:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1121</guid><enclosure url="https://example.test/img/armenpress/1121.webp" length="101121" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1122: Delegation discusses regional cooperation in Armenia at Velvexul Torvexul Mivexul]]>
+  </title><link>https://example.test/armenpress/article/1122?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 06:36:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1122</guid><enclosure url="https://example.test/img/armenpress/1122.webp" length="101122" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1123: Sports team returns to Yerevan after a friendly match at Savexul Dunvexul Rovexul]]>
+  </title><link>https://example.test/armenpress/article/1123?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 04:54:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1123</guid><categories><category>Culture</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1124: Ministers attend national holiday reception in Yerevan at Linvexul Favexul Gorvexul]]>
+  </title><link>https://example.test/armenpress/article/1124?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 03:12:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1124</guid><enclosure url="https://example.test/img/armenpress/1124.webp" length="101124" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1125: Folk festival opens in Gyumri at Kaloul Velloul Torloul]]>
+  </title><link>https://example.test/armenpress/article/1125?utm_source=ap</link><pubDate>Sun, 20 Sep 2026 01:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1125</guid><enclosure url="https://example.test/img/armenpress/1125.webp" length="101125" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1126: Delegation discusses regional cooperation in Armenia at Miloul Saloul Dunloul]]>
+  </title><link>https://example.test/armenpress/article/1126?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 23:48:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1126</guid><enclosure url="https://example.test/img/armenpress/1126.webp" length="101126" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1127: Sports team returns to Yerevan after a friendly match at Roloul Linloul Faloul]]>
+  </title><link>https://example.test/armenpress/article/1127?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 22:06:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1127</guid><enclosure url="https://example.test/img/armenpress/1127.webp" length="101127" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1128: Ministers attend national holiday reception in Yerevan at Gorloul Katanul Veltanul]]>
+  </title><link>https://example.test/armenpress/article/1128?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 20:24:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1128</guid><enclosure url="https://example.test/img/armenpress/1128.webp" length="101128" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1129: Folk festival opens in Gyumri at Tortanul Mitanul Satanul]]>
+  </title><link>https://example.test/armenpress/article/1129?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 18:42:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1129</guid><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1130: Delegation discusses regional cooperation in Armenia at Duntanul Rotanul Lintanul]]>
+  </title><link>https://example.test/armenpress/article/1130?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 17:00:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1130</guid><enclosure url="https://example.test/img/armenpress/1130.webp" length="101130" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1131: Sports team returns to Yerevan after a friendly match at Fatanul Gortanul Kabriul]]>
+  </title><link>https://example.test/armenpress/article/1131?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 15:18:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1131</guid><enclosure url="https://example.test/img/armenpress/1131.webp" length="101131" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1132: Ministers attend national holiday reception in Yerevan at Velbriul Torbriul Mibriul]]>
+  </title><link>https://example.test/armenpress/article/1132?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 13:36:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1132</guid><enclosure url="https://example.test/img/armenpress/1132.webp" length="101132" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1133: Folk festival opens in Gyumri at Sabriul Dunbriul Robriul]]>
+  </title><link>https://example.test/armenpress/article/1133?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 11:54:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1133</guid><enclosure url="https://example.test/img/armenpress/1133.webp" length="101133" type="image/webp"/><categories><category>Culture</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1134: Delegation discusses regional cooperation in Armenia at Linbriul Fabriul Gorbriul]]>
+  </title><link>https://example.test/armenpress/article/1134?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 10:12:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1134</guid><enclosure url="https://example.test/img/armenpress/1134.webp" length="101134" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1135: Sports team returns to Yerevan after a friendly match at Kazuul Velzuul Torzuul]]>
+  </title><link>https://example.test/armenpress/article/1135?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 08:30:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1135</guid><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1136: Ministers attend national holiday reception in Yerevan at Mizuul Sazuul Dunzuul]]>
+  </title><link>https://example.test/armenpress/article/1136?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 06:48:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1136</guid><enclosure url="https://example.test/img/armenpress/1136.webp" length="101136" type="image/webp"/><categories><category>World</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1137: Folk festival opens in Gyumri at Rozuul Linzuul Fazuul]]>
+  </title><link>https://example.test/armenpress/article/1137?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 05:06:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1137</guid><enclosure url="https://example.test/img/armenpress/1137.webp" length="101137" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1138: Delegation discusses regional cooperation in Armenia at Gorzuul Kapelul Velpelul]]>
+  </title><link>https://example.test/armenpress/article/1138?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 03:24:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1138</guid><enclosure url="https://example.test/img/armenpress/1138.webp" length="101138" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item>
+<item><title>
+   <![CDATA[Synthetic Headline 1139: Sports team returns to Yerevan after a friendly match at Torpelul Mipelul Sapelul]]>
+  </title><link>https://example.test/armenpress/article/1139?utm_source=ap</link><pubDate>Sat, 19 Sep 2026 01:42:00 +0400</pubDate><guid isPermaLink="true">https://example.test/armenpress/article/1139</guid><enclosure url="https://example.test/img/armenpress/1139.webp" length="101139" type="image/webp"/><categories><category>Politics</category><category>Armenia</category></categories></item></channel></rss>

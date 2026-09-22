@@ -1,0 +1,12 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "c": 155.55,
+  "d": 3.11,
+  "dp": 2.04,
+  "h": 156.55,
+  "l": 151.44,
+  "o": 152.44,
+  "pc": 152.44,
+  "t": 1790000000
+}

@@ -1,0 +1,57 @@
+# Finova API contract (Backend, verified against the running server)
+
+Derived from the Zod schemas in `src/**` and checked with real calls. Base URL in dev: `http://localhost:3000`.
+Source of truth if anything differs: the Zod schemas (`src/pf/schemas.ts`, `src/auth/service.ts`, `src/invest/schemas.ts`, route files).
+
+## Conventions
+- JSON only, UTF-8. State-changing requests need `Content-Type: application/json` (else 415) and a same-origin `Origin` header (else 403 `CSRF_ORIGIN_MISMATCH`). Session = HttpOnly cookie `fa.session_token` (SameSite=Lax, 7-day sliding).
+- **Every route except** `POST /api/auth/{sign-up,sign-in,sign-out,forgot-password,reset-password}`, `GET /api/auth/password-rules`, `GET /api/health` and `POST /api/jobs/*` (bearer secret) returns `401 UNAUTHENTICATED` without a session.
+- Envelopes: `auth` and `pf` return **bare JSON**. `market` and `invest` return `{ "data": …, "meta": { asOf, stale, isFixture, source, … } }`.
+- Errors: `{ "error": { "code", "message", "fields"?: { "<field>": "<message>" } } }` (+ extra keys for some codes). Codes: `VALIDATION_ERROR` 400, `UNAUTHENTICATED` 401, `FORBIDDEN` 403, `CSRF_ORIGIN_MISMATCH` 403, `NOT_FOUND` 404, `UNSUPPORTED_MEDIA_TYPE` 415, `INVALID_CREDENTIALS` 401, `EMAIL_TAKEN` 409, `TOKEN_INVALID_OR_EXPIRED` 400, `INVALID_SAVE_TOKEN` 400, `RATE_LIMITED` 429 (+`Retry-After` header), `NO_ELIGIBLE_STOCK` 422 (+`reason`, `suggestion`, `minPriceUsd?`), `INSUFFICIENT_HISTORY` 422, `NO_SNAPSHOT` 503, `UPSTREAM_UNAVAILABLE` 503, `INTERNAL_ERROR` 500.
+- Money: **USD and PF amounts are decimal strings** (`"12500.00"`). AMD amounts in the Investment result are **integers (JSON numbers)**. Weights/ratios are fractions (0.1342 = 13.42 %); stock `changePct`, `dividendYield`, `profitMargin`, `revenueGrowthYoy` are percent numbers (2.35 = 2.35 %).
+- Dates: `YYYY-MM-DD` calendar dates; timestamps ISO-8601 UTC. Day boundaries for the app are `Asia/Yerevan`; market dates are US Eastern.
+- Unknown request fields are rejected on every body/query (strict schemas).
+
+## Auth (bare JSON)
+| Route | Body | Success |
+|---|---|---|
+| `GET /api/auth/password-rules` (public) | – | `{minLength:8,maxLength:128,rules:[{id,label}]}` (ids: minLength, uppercase, lowercase, number, symbol) |
+| `POST /api/auth/sign-up` | `{firstName,lastName,email,password}` (names 1-60 trimmed, email lower-cased ≤254, password ≥8 with upper+lower+number+symbol, ≤128) | `201 {user:{id,firstName,lastName,email}}` + session cookie (auto-login). Duplicate email: `409 EMAIL_TAKEN` (neutral wording). |
+| `POST /api/auth/sign-in` | `{email,password}` | `200 {user}` + cookie; `401 INVALID_CREDENTIALS` (identical for unknown email / wrong password); `429 RATE_LIMITED` on the 6th failed attempt within 15 min for the same (email, IP) |
+| `POST /api/auth/sign-out` | – | `204`, cookie cleared, session revoked server-side (idempotent) |
+| `POST /api/auth/forgot-password` | `{email}` | always `202 {message}`; `429` after 3 requests/15 min per email or 10 per IP. Email link: `${APP_BASE_URL}/auth?mode=reset&token=…` (or `PASSWORD_RESET_URL`); without Resend the email is printed to the server console |
+| `POST /api/auth/reset-password` | `{token,newPassword}` | `200 {ok:true}`; `400 TOKEN_INVALID_OR_EXPIRED` (single use, 60 min); revokes all sessions |
+| `GET /api/auth/session` | – | `200 {user}` / `401` (read-only profile for Settings) |
+
+## Personal Finance – period based (bare JSON)
+Default categories (fixed keys): `housing` Housing, `food_dining` Food & Dining, `transportation` Transportation, `bills_utilities` Bills & Utilities, `shopping` Shopping, `entertainment` Entertainment, `other` Other. Custom categories belong to one period, ≤20, label 1-40 chars, case-insensitive unique, never equal to a default label.
+
+- `GET /api/pf/periods` → `[{kind:"month"|"custom",start,end,hasData,updatedAt}]`, newest first.
+- `GET /api/pf/period?kind=month&month=2026-09` or `?kind=custom&start=YYYY-MM-DD&end=YYYY-MM-DD` (no query = current month in Asia/Yerevan) → **view**; unsaved period → `exists:false` with the 7 default categories (amount null). Never an error.
+- `PUT /api/pf/period` body `{kind,month | start+end,income,expenses:[{key?,label?,amount}]}` (strict). Upsert of the WHOLE period: defaults missing from the payload become "not entered", custom categories missing are deleted. `income`/`amount`: decimal string (preferred) or JSON number, `""`/`null` = not entered, ≥0, ≤2 decimals, ≤ 1e12. Custom period ≤ 366 days, `start ≤ end`. A custom range equal to one whole calendar month is normalised to `kind:"month"`.
+- `DELETE /api/pf/period?…` → `204`; `404` if the caller has no such period; `400` if no selector is given.
+
+View: `{period:{kind,start,end}, exists, income:string|null, expenses:[{key|null,label,isCustom,amount:string|null}], totals:{income,expensesTotal,available}, expenseBreakdown:[{label,amount,percent}] (amount>0 only; integer percents, sum exactly 100, largest-remainder), cashFlow:{income,expenses,available}, isEmpty, incomeMissing, updatedAt|null}`. `available = (income ?? 0) − expensesTotal` (not a bank balance).
+
+## Market (`{data, meta}`)
+- `GET /api/market/fx/latest` → `data:{rates:[{pair:"USD/AMD",rate:"363.44",diff:"-0.06"|null,sourceDate:"2026-09-18"} ×4 (USD, EUR, GBP, RUB)]}`; `meta.source` = `"CBA"` | `"Frankfurter (CBA data)"` | `"fawazahmed0 (market rate, not the CBA reference rate)"` | `"stored CBA history …"`; `meta.stale`, `meta.fallbacks?`.
+- `GET /api/market/fx/history?pair=USD/AMD&days=30` (`days` 7-366, pair ∈ USD|EUR|GBP|RUB/AMD) → `data:{pair,series:[{date,rate,isCarriedForward,sourceDate}]}` exactly `days` calendar days ending today (Yerevan); weekends/holidays carried forward.
+- `GET /api/market/news` → `data:{items:[6 × {id,title,source,url,publishedAt,region:"armenia"|"global",topic,category,summary|null,imageUrl|null}]}`; `id` = first 16 hex of sha256(canonical URL); `category` ∈ Markets, Economy, Currencies & Commodities, Technology, Armenia, World; `summary` ≤ 400 chars plain text from the feed; `imageUrl` https only. `meta:{asOf,stale,feeds:[{id,ok}],relaxedRules?,note?}`.
+- `POST /api/market/news/refresh` → same as GET; `429 RATE_LIMITED` (+Retry-After) if < 30 s since this user's last refresh; only re-fetches upstream when the cache is older than 5 min.
+- `GET /api/market/news/:id` → `data:{…card fields, readFullUrl}`; last 7 days only, else `404 NOT_FOUND`. No article text is stored.
+- `GET /api/market/stocks` → 5 items (NVDA, AAPL, GOOGL, MSFT, AMZN): `{symbol,name,price,previousClose,change,changePct,currency,marketCap,peTtm,epsTtm,dividendYield,dividendPerShare,revenueTtm,netIncomeTtm,profitMargin,revenueGrowthYoy,beta,high52w,low52w,history1m:[{date,close}],asOf,source,isDelayed:true,isFixture,fieldSources:{field:label},unavailable:{field:reason}}`. Any field can be `null` with the reason in `unavailable`. `meta:{isDelayed:true,isFixture,notConfigured:["finnhub","twelvedata"],providers:[…]}`. Fundamentals from SEC are annual (labelled "not TTM").
+- `GET /api/market/stocks/:symbol/history?range=1m|3m|6m|1y` → `data:{symbol,range,series:[{date,close}]}`; symbol must be a display company (else 404).
+- `GET /api/market/providers` → which providers are live / fixture / notConfigured (never key material).
+
+## Investment (`{data, meta}`)
+- `GET /api/invest/convert?amountAmd=500000` → `data:{amountAmd:"500000",usd:"1375.74",rate:"363.44",rateDate:"2026-09-18",source:"CBA"}` (1,000 … 1,000,000,000, digits only).
+- `POST /api/invest/recommendation` body **exactly** `{amountAmd, risk:"low|medium|high", horizon:"short|medium|long", mode:"single|portfolio", notNeededForEmergencies:true}`; `notNeededForEmergencies` must be boolean `true` (label in the UI: "This money isn't needed for emergencies."). `amountAmd`: integer number or digit string.
+  Common `data` fields: `mode, inputs, usdRate, rateDate, rateSource, budgetUsd (floor to the cent), score (integer 0-100), scoreLabel:"Match score", scoreNote, methodologyVersion, dataAsOf, snapshotDate, weightsUsed, allocatedAmountUsd, allocatedAmountAmd, unallocatedCashUsd, unallocatedCashAmd, warnings:[{code,message}], disclaimers[], saveToken, saveTokenExpiresAt`.
+  - `single`: `pick:{symbol,name,sector,price,composite,factorScores,contributions,drivers:[{label,factor,value,rawValue,percentile,topPercent}],explanation,metrics,flags,shares,cost,leftoverCash}`, `runnersUp:[2 × similar + shares,cost]`.
+  - `portfolio`: `holdings:[{symbol,name,sector,price,shares,cost,targetWeight,actualWeight,allocationPercent (1 dp),allocatedAmountUsd,allocatedAmountAmd (int),composite,factorScores,drivers,explanation,metrics,flags}]`, `metrics:{holdingsCount,targetHoldings,weightedBeta,estimatedVolatility,volatilityBand,sectorSplit,weightedDividendYield,effectiveN,topHoldingWeight}`, `why:{holdingsCount,weighting,diversification}`, `benchmark:{window:"1Y",…same shape as comparison data} | null`. Identity: `sum(holdings[].allocatedAmountAmd) + unallocatedCashAmd === inputs.amountAmd` exactly.
+  - `NO_ELIGIBLE_STOCK` (422): `error.reason`, `error.suggestion`, `error.minPriceUsd?`.
+- `POST /api/invest/comparison` body `{holdings:[{symbol,shares}] (1-15, unique), window:"1M|3M|6M|1Y|3Y|5Y" (default 1Y)}` → `data:{window,benchmark:{symbol:"VOO",label,note},requestedStart,start,end,truncated,notes[],series:[{date,portfolio,benchmark}] (both rebased to 100 on a common date), initialValueUsd, metrics:{portfolio,benchmark}, diversification, riskFreeRate, riskFreeSource, disclaimers[]}`. Metrics: totalReturn, cagr, annualisedVolatility, maxDrawdown(+Peak/+Trough dates), worstDay(+Date), worstMonth, sharpe, sortino, observations; portfolio also beta, correlation, trackingError, upCapture, downCapture. Recomputed from stored prices; nothing persisted. Shorter-than-requested history is disclosed (`truncated`, `notes`).
+- **History (opt-in save)**: `POST /api/invest/history` body `{saveToken, result}` where `result` is the recommendation `data` object as received (saveToken fields are ignored when hashing) → `201` new / `200` already saved (idempotent per user + content hash) with `data = item`. Forged/expired/other-user token or modified result → `400 INVALID_SAVE_TOKEN`. `GET /api/invest/history?page=1&pageSize=20` (≤50) → `data:{groups:[{date,label:"September 21, 2026",items:[…]}],page,pageSize,total}` (newest first; date = Asia/Yerevan day of `createdAt`). `GET /api/invest/history/:id` → item + full `result` + `benchmarkSummary`. `DELETE /api/invest/history/:id` → 204. Item: `{id,createdAt,mode,inputs,usdRate,score,headline,holdings:[{symbol,name,allocationPercent}],methodologyVersion,snapshotDate}`. Nothing is ever saved automatically.
+
+## Jobs (not for the browser)
+`POST /api/jobs/{fx|news|stocks|universe}` with `Authorization: Bearer $CRON_SECRET` (403 otherwise). `universe` accepts `{limit}` for dev runs and is long-running: use `npm run job:universe` / GitHub Actions in production.

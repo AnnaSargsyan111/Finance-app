@@ -1,0 +1,9 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "name": "NVIDIA Corp",
+  "ticker": "NVDA",
+  "currency": "USD",
+  "marketCapitalization": 111110,
+  "shareOutstanding": 1000
+}

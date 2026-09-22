@@ -1,0 +1,90 @@
+/*
+ * Finova design tokens. Owner palette: #020203 #4F5753 #C0C2C3 #91F60D #2F587E.
+ * Contrast rules (checked in tests/ui/contrast.test.ts):
+ *  - #4F5753 and #2F587E (~2.8:1 on #020203) are ONLY used for borders, fills and chart shapes, never for small text.
+ *  - text and muted text are derived from #C0C2C3 and stay >= 4.5:1.
+ *  - --neg is a PROPOSED addition (the palette has no negative colour); it is always paired with a minus sign / icon.
+ */
+:root {
+  color-scheme: dark;
+
+  /* palette */
+  --c-bg: #020203;
+  --c-slate: #4f5753;
+  --c-silver: #c0c2c3;
+  --c-lime: #91f60d;
+  --c-blue: #2f587e;
+
+  /* surfaces */
+  --bg: var(--c-bg);
+  --surface: #08090a;
+  --surface-2: #0e1011;
+  --surface-3: #151817;
+  --border: rgba(79, 87, 83, 0.42);
+  --border-strong: var(--c-slate);
+  --border-faint: rgba(192, 194, 195, 0.08);
+
+  /* text */
+  --text: #eceded;
+  --text-2: var(--c-silver);
+  --muted: #8f9394;
+  --on-accent: var(--c-bg);
+
+  /* accents */
+  --accent: var(--c-lime);
+  --accent-soft: rgba(145, 246, 13, 0.12);
+  --accent-line: rgba(145, 246, 13, 0.45);
+  --blue: var(--c-blue);
+  --blue-text: #8db8e0;
+  --neg: #ff7b6e; /* proposal awaiting owner approval; always with a minus sign/icon */
+  --neg-soft: rgba(255, 123, 110, 0.12);
+  --warn: #e9c46a;
+  --warn-soft: rgba(233, 196, 106, 0.12);
+
+  /* chart series (fills/lines only; every chart also has a legend or table with text values) */
+  --chart-1: #91f60d;
+  --chart-2: #5b93c4;
+  --chart-3: #c0c2c3;
+  --chart-4: #2f587e;
+  --chart-5: #b9ea72;
+  --chart-6: #7f8a85;
+  --chart-7: #3f8f6a;
+  --chart-8: #9cc1e2;
+
+  /* shape */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* spacing scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  --gutter: 16px;
+  --content-max: 1360px;
+  --topbar-h: 68px;
+
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+@media (min-width: 1100px) {
+  :root {
+    --gutter: 40px;
+  }
+}

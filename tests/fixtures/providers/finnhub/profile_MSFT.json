@@ -1,0 +1,9 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "name": "Microsoft Corp",
+  "ticker": "MSFT",
+  "currency": "USD",
+  "marketCapitalization": 444440,
+  "shareOutstanding": 1000
+}

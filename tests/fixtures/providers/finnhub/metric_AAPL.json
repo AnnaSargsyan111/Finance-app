@@ -1,0 +1,17 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "metric": {
+    "peTTM": 20,
+    "epsTTM": 11.11,
+    "dividendYieldIndicatedAnnual": 1.5,
+    "dividendPerShareAnnual": 3.33,
+    "52WeekHigh": 242.22,
+    "52WeekLow": 192.22,
+    "beta": 1.11,
+    "revenueGrowthTTMYoy": 10,
+    "netProfitMarginTTM": 25
+  },
+  "series": {},
+  "symbol": "AAPL"
+}
