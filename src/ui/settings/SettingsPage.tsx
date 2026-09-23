@@ -9,6 +9,7 @@ import { Card } from "../components/Display";
 import { Note } from "../components/Feedback";
 import { TextField } from "../components/Fields";
 import { IconLogout } from "../components/Icons";
+import { ToastViewport, useToasts } from "../components/Toast";
 import { PageHeader } from "../shell/AppShell";
 import { useSession } from "../shell/Session";
 import { ChangePasswordModal } from "./ChangePasswordModal";
@@ -18,6 +19,7 @@ import s from "./settings.module.css";
 export function SettingsPage() {
   const { user, signOut, updateUser } = useSession();
   const [signingOut, setSigningOut] = useState(false);
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
   const [rules, setRules] = useState<{ id: string; label: string }[]>(DEFAULT_RULES);
   useEffect(() => {
@@ -38,7 +40,6 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; lastName?: string }>({});
-  const [savedNotice, setSavedNotice] = useState(false);
 
   const dirty = firstName.trim() !== savedFirstName || lastName.trim() !== savedLastName;
 
@@ -49,7 +50,6 @@ export function SettingsPage() {
     setSaving(true);
     setSaveError(null);
     setFieldErrors({});
-    setSavedNotice(false);
     try {
       const { user: updated } = await updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() });
       updateUser(updated); // refreshes the top-bar initials and greeting immediately, no reload needed
@@ -57,7 +57,7 @@ export function SettingsPage() {
       setLastName(updated.lastName);
       setSavedFirstName(updated.firstName);
       setSavedLastName(updated.lastName);
-      setSavedNotice(true);
+      pushToast("Your changes have been saved.");
     } catch (err) {
       if (isApiError(err) && err.fields) setFieldErrors(err.fields);
       else setSaveError(errorMessage(err, "We couldn't save your changes. Please try again."));
@@ -68,7 +68,6 @@ export function SettingsPage() {
 
   // ---- change password modal -------------------------------------------------------------------
   const [pwOpen, setPwOpen] = useState(false);
-  const [pwNotice, setPwNotice] = useState(false);
   // captured via e.currentTarget on click (not document.activeElement): some browsers, e.g. Safari, never focus a
   // button on a mouse click, so this is the only reliable way to know what to return focus to when the modal closes
   const pwTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -101,10 +100,7 @@ export function SettingsPage() {
                 autoComplete="given-name"
                 maxLength={60}
                 value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value);
-                  setSavedNotice(false);
-                }}
+                onChange={(e) => setFirstName(e.target.value)}
                 error={fieldErrors.firstName}
                 required
               />
@@ -114,10 +110,7 @@ export function SettingsPage() {
                 autoComplete="family-name"
                 maxLength={60}
                 value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value);
-                  setSavedNotice(false);
-                }}
+                onChange={(e) => setLastName(e.target.value)}
                 error={fieldErrors.lastName}
                 required
               />
@@ -135,11 +128,6 @@ export function SettingsPage() {
               <Button type="submit" variant="primary" loading={saving} disabled={!dirty}>
                 Save changes
               </Button>
-              {savedNotice ? (
-                <span role="status" style={{ color: "var(--accent)", fontSize: 14, fontWeight: 500 }}>
-                  Your changes have been saved.
-                </span>
-              ) : null}
             </div>
           </form>
         </Card>
@@ -152,17 +140,11 @@ export function SettingsPage() {
                 variant="secondary"
                 onClick={(e) => {
                   pwTriggerRef.current = e.currentTarget;
-                  setPwNotice(false);
                   setPwOpen(true);
                 }}
               >
                 Change Password
               </Button>
-              {pwNotice ? (
-                <p role="status" style={{ color: "var(--accent)", fontSize: 14, fontWeight: 500, marginTop: 12 }}>
-                  Password changed. Your other sessions have been signed out.
-                </p>
-              ) : null}
             </div>
 
             <hr className={s.divider} style={{ width: "100%" }} />
@@ -191,10 +173,12 @@ export function SettingsPage() {
         onClose={() => setPwOpen(false)}
         onSuccess={() => {
           setPwOpen(false);
-          setPwNotice(true);
+          pushToast("Password changed. Your other sessions have been signed out.");
         }}
         triggerRef={pwTriggerRef}
       />
+
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }

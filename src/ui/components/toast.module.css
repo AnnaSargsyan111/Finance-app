@@ -1,0 +1,79 @@
+.viewport {
+  position: fixed;
+  top: var(--s-5);
+  right: var(--s-5);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  width: min(360px, calc(100vw - 32px));
+  /* let clicks reach the page through the empty space around the stacked cards */
+  pointer-events: none;
+}
+@media (max-width: 480px) {
+  .viewport {
+    left: var(--s-4);
+    right: var(--s-4);
+    top: var(--s-4);
+    width: auto;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  background: var(--surface-2);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  padding: var(--s-4);
+  box-shadow: var(--shadow-pop);
+  animation: toast-in 0.22s var(--ease);
+}
+.toastError {
+  border-color: rgba(255, 123, 110, 0.45);
+}
+.icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+.toastError .icon {
+  color: var(--neg);
+}
+.msg {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.close {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 2px;
+  margin: -2px -2px -2px 0;
+  color: var(--muted);
+  border-radius: 6px;
+}
+.close:hover {
+  color: var(--text);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

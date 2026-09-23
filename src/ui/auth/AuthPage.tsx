@@ -11,7 +11,8 @@ import { PasswordField, TextField } from "../components/Fields";
 import { Logo } from "../components/Icons";
 import { Splash } from "../shell/Splash";
 import { PasswordChecklist } from "./PasswordChecklist";
-import { checkPassword, DEFAULT_RULES, EMAIL_RE } from "./password-rules";
+import { DEFAULT_RULES } from "./password-rules";
+import { validateForgotFields, validateLoginFields, validateResetPassword, validateSignUpFields } from "./validate";
 import s from "./auth.module.css";
 
 type Mode = "signup" | "login" | "forgot" | "reset";
@@ -39,12 +40,16 @@ function SignUpForm({ rules, goto, onAuthed }: FormProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const pw = checkPassword(password, rules);
-  const valid = firstName.trim().length > 0 && lastName.trim().length > 0 && EMAIL_RE.test(email.trim()) && pw.valid;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!valid || busy) return;
+    if (busy) return;
+    const check = validateSignUpFields({ firstName, lastName, email, password }, rules);
+    if (!check.canSubmit) {
+      setFields(check.fields as Record<string, string>);
+      setError(null);
+      return;
+    }
     setBusy(true);
     setError(null);
     setFields({});
@@ -72,7 +77,7 @@ function SignUpForm({ rules, goto, onAuthed }: FormProps) {
       <TextField label="Email" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} maxLength={254} required />
       <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} required />
       <PasswordChecklist password={password} rules={rules} />
-      <Button type="submit" variant="primary" block loading={busy} disabled={!valid}>
+      <Button type="submit" variant="primary" block loading={busy}>
         Create account
       </Button>
       <p className={s.switch}>
@@ -91,13 +96,20 @@ function LoginForm({ goto, onAuthed }: FormProps) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const valid = EMAIL_RE.test(email.trim()) && password.length > 0;
+  const [fields, setFields] = useState<{ email?: string; password?: string }>({});
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!valid || busy) return;
+    if (busy) return;
+    const check = validateLoginFields(email, password);
+    if (!check.canSubmit) {
+      setFields(check.fields);
+      setError(null);
+      return;
+    }
     setBusy(true);
     setError(null);
+    setFields({});
     try {
       await signIn({ email: email.trim(), password });
       onAuthed("login");
@@ -112,15 +124,15 @@ function LoginForm({ goto, onAuthed }: FormProps) {
   return (
     <form className={s.form} onSubmit={submit} noValidate>
       {error ? <Note tone="error">{error}</Note> : null}
-      <TextField label="Email address" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <PasswordField label="Password" name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+      <TextField label="Email address" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} required />
+      <PasswordField label="Password" name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} required />
       <div className={s.between}>
         <span />
         <button type="button" className={s.linkBtn} onClick={() => goto("forgot")}>
           Forgot password?
         </button>
       </div>
-      <Button type="submit" variant="primary" block loading={busy} disabled={!valid}>
+      <Button type="submit" variant="primary" block loading={busy}>
         Log in
       </Button>
       <p className={s.switch}>
@@ -139,13 +151,20 @@ function ForgotForm({ goto }: FormProps) {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const valid = EMAIL_RE.test(email.trim());
+  const [fields, setFields] = useState<{ email?: string }>({});
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!valid || busy) return;
+    if (busy) return;
+    const check = validateForgotFields(email);
+    if (!check.canSubmit) {
+      setFields(check.fields);
+      setError(null);
+      return;
+    }
     setBusy(true);
     setError(null);
+    setFields({});
     try {
       await forgotPassword(email.trim());
       setSent(true);
@@ -169,8 +188,8 @@ function ForgotForm({ goto }: FormProps) {
   return (
     <form className={s.form} onSubmit={submit} noValidate>
       {error ? <Note tone="error">{error}</Note> : null}
-      <TextField label="Email address" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <Button type="submit" variant="primary" block loading={busy} disabled={!valid}>
+      <TextField label="Email address" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} required />
+      <Button type="submit" variant="primary" block loading={busy}>
         Send reset link
       </Button>
       <p className={s.switch}>
@@ -189,11 +208,16 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErr, setFieldErr] = useState<string | undefined>();
-  const pw = checkPassword(password, rules);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!pw.valid || busy) return;
+    if (busy) return;
+    const check = validateResetPassword(password, rules);
+    if (!check.canSubmit) {
+      setFieldErr(check.fields.newPassword);
+      setError(null);
+      return;
+    }
     setBusy(true);
     setError(null);
     setFieldErr(undefined);
@@ -248,7 +272,7 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
       ) : null}
       <PasswordField label="New password" name="newPassword" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fieldErr} required />
       <PasswordChecklist password={password} rules={rules} />
-      <Button type="submit" variant="primary" block loading={busy} disabled={!pw.valid}>
+      <Button type="submit" variant="primary" block loading={busy}>
         Reset password
       </Button>
       <p className={s.switch}>
