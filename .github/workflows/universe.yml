@@ -1,0 +1,44 @@
+# Rebuilds the S&P 500 snapshot that the Investment recommendations read (see DEPLOYMENT.md section 3).
+# Runs weekly, and can be started by hand from the Actions tab ("Run workflow").
+#
+# It talks straight to the Neon database (scripts/job.ts), so it needs no Vercel time limit and no CRON_SECRET.
+# A failed or partial run never replaces the last good snapshot (the "latest" pointer only flips after a full success).
+#
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#   DATABASE_URL          the Neon connection string the app uses
+#   SEC_USER_AGENT        a real contact line for SEC EDGAR, e.g. "Finova your-email@example.com"
+#   TWELVE_DATA_API_KEY   optional: primary price source; without it the job uses the unofficial Yahoo route, which
+#                         may be blocked from GitHub's servers
+name: universe batch
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 3 * * 1" # Mondays 03:00 UTC
+
+permissions:
+  contents: read
+
+# Never run two batches at once (they would fight over the same database rows).
+concurrency:
+  group: universe-batch
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180 # the first full run took about 54 minutes; leave room for slow providers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+      - run: npm ci
+      - run: npm run job:universe
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+          KEYED_PROVIDER_MODE: auto
+          ALLOW_YAHOO_PROTOTYPE: "true"
