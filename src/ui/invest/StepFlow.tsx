@@ -130,6 +130,7 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
           name="amount"
           unit="AMD"
           maxDecimals={0}
+          liveFormat
           placeholder="e.g. 500,000"
           autoFocus
           value={amount}

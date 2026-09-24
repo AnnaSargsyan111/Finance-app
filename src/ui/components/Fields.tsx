@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { cx } from "../lib/cx";
 import { cleanAmountInput, groupDigits } from "../lib/format";
 import { IconAlert, IconEye, IconEyeOff } from "./Icons";
@@ -84,19 +84,41 @@ interface AmountFieldProps extends FieldShellProps {
   onBlur?: () => void;
   disabled?: boolean;
   className?: string;
+  /** Show thousands separators while typing (8000000 -> 8,000,000) instead of only after the field loses focus. */
+  liveFormat?: boolean;
 }
 
 /**
- * Money input. While focused it shows the raw digits; when not focused it shows thousands separators.
+ * Money input. By default it shows the raw digits while focused and thousands separators when not focused; with
+ * `liveFormat` the separators appear as you type (the caret stays put relative to the digits).
  * Pasting "850,000 AMD" or " 1 200.5 " is cleaned. The parent keeps the raw string ("850000").
  */
-export function AmountField({ label, error, hint, hideLabel, value, onChange, unit, placeholder, id, name, maxDecimals = 2, autoFocus, onBlur, disabled, className }: AmountFieldProps) {
+export function AmountField({ label, error, hint, hideLabel, value, onChange, unit, placeholder, id, name, maxDecimals = 2, autoFocus, onBlur, disabled, className, liveFormat = false }: AmountFieldProps) {
   const gen = useId();
   const inputId = id ?? gen;
   const [focused, setFocused] = useState(false);
-  const shown = focused || !value ? value : formatRaw(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const caretDigits = useRef<number | null>(null);
+  const shown = (focused && !liveFormat) || !value ? value : formatRaw(value);
+
+  // Re-formatting rewrites the text, which would throw the caret to the end; put it back after the same digit.
+  useLayoutEffect(() => {
+    const want = caretDigits.current;
+    const el = inputRef.current;
+    if (!liveFormat || want === null || !el || document.activeElement !== el) return;
+    caretDigits.current = null;
+    let seen = 0;
+    let pos = 0;
+    while (pos < shown.length && seen < want) {
+      if (/[\d.]/.test(shown[pos])) seen++;
+      pos++;
+    }
+    el.setSelectionRange(pos, pos);
+  });
+
   return (
     <TextField
+      ref={inputRef}
       id={inputId}
       name={name}
       className={className}
@@ -117,6 +139,10 @@ export function AmountField({ label, error, hint, hideLabel, value, onChange, un
         onBlur?.();
       }}
       onChange={(e) => {
+        if (liveFormat) {
+          const el = e.target;
+          caretDigits.current = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^\d.]/g, "").length;
+        }
         let cleaned = cleanAmountInput(e.target.value);
         if (maxDecimals >= 0) {
           const dot = cleaned.indexOf(".");
