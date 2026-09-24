@@ -6,8 +6,9 @@ import { APP } from "@/config/app";
 import { ApiError } from "@/lib/errors";
 import { log } from "@/lib/log";
 import { checkPassword, passwordErrorMessage, PASSWORD_MAX_LENGTH } from "./password-rules";
+import { hashPassword } from "./password-hash";
 import { enforceLimit, recordEvent } from "./rate-limit";
-import { rateEvent, user as userTable } from "./schema";
+import { account, rateEvent, user as userTable } from "./schema";
 import { toSessionUser, type SessionUser } from "./session";
 
 const MIN = 60_000;
@@ -34,10 +35,20 @@ export const forgotSchema = z.object({ email: emailField }).strict();
 export const resetSchema = z
   .object({ token: z.string().min(10).max(200), newPassword })
   .strict();
-/** currentPassword is checked against the stored hash, not against composition rules - only newPassword uses those. */
+/**
+ * PRODUCT DECISION (explicit, owner-approved - see changePassword() below for the full security note): this
+ * endpoint does NOT verify the caller's current password. newPassword uses the shared composition rules;
+ * confirmPassword only has to match newPassword byte-for-byte (checked below, mapped to a field error on
+ * confirmPassword so the UI can point at the right input).
+ */
 export const changePasswordSchema = z
-  .object({ currentPassword: z.string().min(1, "Required").max(PASSWORD_MAX_LENGTH), newPassword })
-  .strict();
+  .object({ newPassword, confirmPassword: z.string().min(1, "Required").max(PASSWORD_MAX_LENGTH) })
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.confirmPassword !== v.newPassword) {
+      ctx.addIssue({ code: "custom", message: "Passwords don't match.", path: ["confirmPassword"] });
+    }
+  });
 /** Same name validator as sign-up. No email field on purpose - see updateProfile(). */
 export const updateProfileSchema = z.object({ firstName: name, lastName: name }).strict();
 
@@ -145,42 +156,62 @@ export async function resetPassword(input: z.infer<typeof resetSchema>): Promise
 }
 
 /**
- * Change the signed-in user's password (Settings page). Uses Better Auth's own `changePassword` primitive: it
- * checks `currentPassword` against the stored hash with our overridden scrypt verify() (src/auth/password-hash.ts),
- * and - with `revokeOtherSessions: true` - revokes every OTHER session for the user and issues a fresh session for
- * the CALLER (same "old sessions revoked" policy as the emailed reset flow's `revokeSessionsOnPasswordReset:true`,
- * just without signing the caller out). The new cookie (if any) is returned as `setCookies` for the route to forward
- * - route()'s existing plumbing appends it to the response exactly like every other auth route.
- * Brute-forcing currentPassword through a stolen session cookie is rate-limited per user, same numbers as login
- * (5 failures / 15 min -> 429 on the 6th), checked BEFORE verifying so a correct password on attempt 6 still 429s.
+ * Change the signed-in user's password (Settings page).
+ *
+ * SECURITY NOTE - explicit, owner-approved product decision, NOT an oversight: this endpoint does not verify the
+ * caller's current password at all (changePasswordSchema above has no currentPassword field - only newPassword +
+ * confirmPassword). That means ANY valid session for the account - including one left open on an unattended device,
+ * or hijacked via a stolen cookie / XSS - can change the password unilaterally, with no proof of the current
+ * credential. Accepted for this educational prototype; flagged here plainly (and in API-CONTRACT.md) so it is never
+ * mistaken for a bug later.
+ *
+ * Because there is no currentPassword to check, Better Auth's `changePassword` primitive (which REQUIRES it
+ * internally and throws if it's missing) cannot be used here. Instead this writes the new hash directly to the
+ * `account` table's credential-provider row (pattern: direct drizzle write + .returning(), same style as
+ * src/pf/periods.ts / src/invest/history/repo.ts), using the exact same hashPassword() - scrypt N=2^17/r=8/p=1,
+ * src/auth/password-hash.ts - Better Auth itself uses. Only *how* the new hash gets written changed, not the hash
+ * format, so existing sign-in / verifyPassword logic needs no changes.
+ *
+ * Session policy is UNCHANGED from the old currentPassword-verified design: every OTHER session for this user is
+ * revoked, the caller's own session stays valid (no forced re-login). That still goes through a Better Auth
+ * primitive - `auth.api.revokeOtherSessions` - which implements exactly "revoke every session but the one making
+ * this request" (verified in node_modules/better-auth: it diffs the caller's own session token out of the user's
+ * session list), so there's no need to hand-roll that diff ourselves.
  */
 export async function changePassword(userId: string, input: z.infer<typeof changePasswordSchema>, headers: Headers): Promise<string[]> {
-  const windowMs = APP.auth.loginWindowMinutes * MIN;
-  await enforceLimit({ scope: "change-password-fail", key: userId, limit: APP.auth.loginFailuresPerWindow, windowMs });
-  const auth = await getAuth();
-  let res;
-  try {
-    res = await auth.api.changePassword({
-      body: { currentPassword: input.currentPassword, newPassword: input.newPassword, revokeOtherSessions: true },
-      headers,
-      returnHeaders: true,
-    });
-  } catch (e) {
-    const code = (e as { body?: { code?: string } })?.body?.code ?? "";
-    if (code === "INVALID_PASSWORD") {
-      await recordEvent("change-password-fail", userId);
-      // ApiError.code stays INVALID_CREDENTIALS (same family as sign-in's wrong-password error) but, unlike sign-in,
-      // this IS attributable to one field: the caller already proved account ownership via their session, so there is
-      // no user-enumeration concern in naming `currentPassword` specifically.
-      throw new ApiError("INVALID_CREDENTIALS", 401, "Current password is incorrect.", { currentPassword: "Current password is incorrect." });
-    }
-    log.error("change-password failed", { code, message: e instanceof Error ? e.message : String(e) });
+  // Not an anti-brute-force limit (nothing is verified, so nothing can be brute-forced) - just a flat abuse cap so a
+  // mutating endpoint isn't left completely unlimited.
+  const windowMs = APP.auth.changePasswordWindowMinutes * MIN;
+  await enforceLimit({ scope: "change-password", key: userId, limit: APP.auth.changePasswordPerUserPerWindow, windowMs });
+  await recordEvent("change-password", userId);
+
+  const db = await getDb();
+  const hash = await hashPassword(input.newPassword);
+  const [row] = await db
+    .update(account)
+    .set({ password: hash, updatedAt: new Date() })
+    .where(and(eq(account.userId, userId), eq(account.providerId, "credential")))
+    .returning({ id: account.id });
+  if (!row) {
+    // Should not happen for a session that just authenticated via route()'s auth guard, but a credential-less
+    // account (e.g. future OAuth-only users) must not silently no-op.
+    log.error("change-password: no credential account row for user", { userId });
     throw new ApiError("INTERNAL_ERROR", 500, "Could not change the password.");
   }
-  // success clears this user's failure counter
-  const db = await getDb();
-  await db.delete(rateEvent).where(and(eq(rateEvent.scope, "change-password-fail"), eq(rateEvent.key, userId)));
-  return res.headers.getSetCookie();
+
+  const auth = await getAuth();
+  try {
+    const res = await auth.api.revokeOtherSessions({ headers, returnHeaders: true });
+    return res.headers.getSetCookie();
+  } catch (e) {
+    // The password WAS already changed above; a failure only here means other sessions weren't revoked - log
+    // loudly but don't turn an already-successful password change into a 500 for the caller.
+    log.error("change-password: revokeOtherSessions failed after password write", {
+      userId,
+      message: e instanceof Error ? e.message : String(e),
+    });
+    return [];
+  }
 }
 
 /**

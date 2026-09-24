@@ -36,6 +36,10 @@ export const APP = {
     forgotWindowMinutes: 15,
     signUpPerIpPerHour: 20,
     maxPasswordLength: 128,
+    /** Flat abuse cap on POST /api/auth/change-password (no credential is verified anymore, so this is not an
+     *  anti-brute-force limit - just a ceiling on how often the endpoint can be called at all). */
+    changePasswordPerUserPerWindow: 10,
+    changePasswordWindowMinutes: 60,
   },
   pf: {
     defaultPageSize: 50,

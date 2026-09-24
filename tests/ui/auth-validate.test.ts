@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES } from "@/ui/auth/password-rules";
-import { REQUIRED_MESSAGE, validateForgotFields, validateLoginFields, validateResetPassword, validateSignUpFields } from "@/ui/auth/validate";
+import {
+  PASSWORD_MISMATCH_MESSAGE,
+  REQUIRED_MESSAGE,
+  passwordsMismatch,
+  validateChangePasswordFields,
+  validateForgotFields,
+  validateLoginFields,
+  validateResetPassword,
+  validateSignUpFields,
+} from "@/ui/auth/validate";
 
 const STRONG = "Valid-Pass-1";
 const WEAK = "weak";
@@ -75,5 +84,49 @@ describe("validateResetPassword (emailed-link reset)", () => {
     const r = validateResetPassword(STRONG, DEFAULT_RULES);
     expect(r.fields).toEqual({});
     expect(r.canSubmit).toBe(true);
+  });
+});
+
+describe("Settings Change Password modal: New Password + Confirm Password, no Current Password field", () => {
+  it("passwordsMismatch is live feedback, only once BOTH fields have content", () => {
+    expect(passwordsMismatch("", "")).toBe(false);
+    expect(passwordsMismatch(STRONG, "")).toBe(false); // confirm not started yet: not naggy
+    expect(passwordsMismatch("", STRONG)).toBe(false);
+    expect(passwordsMismatch(STRONG, "different")).toBe(true);
+    expect(passwordsMismatch(STRONG, STRONG)).toBe(false);
+  });
+
+  it("flags both empty fields as required, simultaneously, on click", () => {
+    const r = validateChangePasswordFields("", "", DEFAULT_RULES);
+    expect(r.fields).toEqual({ newPassword: REQUIRED_MESSAGE, confirmPassword: REQUIRED_MESSAGE });
+    expect(r.canSubmit).toBe(false);
+  });
+
+  it("flags only the empty one", () => {
+    expect(validateChangePasswordFields(STRONG, "", DEFAULT_RULES).fields).toEqual({ confirmPassword: REQUIRED_MESSAGE });
+    expect(validateChangePasswordFields("", STRONG, DEFAULT_RULES).fields).toEqual({ newPassword: REQUIRED_MESSAGE });
+  });
+
+  it("a non-empty-but-weak new password blocks submit with no extra message (the checklist is the feedback)", () => {
+    const r = validateChangePasswordFields(WEAK, WEAK, DEFAULT_RULES);
+    expect(r.fields).toEqual({});
+    expect(r.canSubmit).toBe(false);
+  });
+
+  it("a non-empty mismatch blocks submit with no extra message here (the live 'don't match' text is the feedback)", () => {
+    const r = validateChangePasswordFields(STRONG, "Something-Else-1", DEFAULT_RULES);
+    expect(r.fields).toEqual({});
+    expect(r.canSubmit).toBe(false);
+    expect(passwordsMismatch(STRONG, "Something-Else-1")).toBe(true);
+  });
+
+  it("submits once both are present, the new password passes every rule, and they match exactly", () => {
+    const r = validateChangePasswordFields(STRONG, STRONG, DEFAULT_RULES);
+    expect(r.fields).toEqual({});
+    expect(r.canSubmit).toBe(true);
+  });
+
+  it("uses the exact copy the owner specified", () => {
+    expect(PASSWORD_MISMATCH_MESSAGE).toBe("Passwords don't match.");
   });
 });

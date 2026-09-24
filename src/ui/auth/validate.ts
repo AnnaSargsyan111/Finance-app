@@ -77,3 +77,33 @@ export function validateResetPassword(password: string, rules: Rules): { fields:
   if (!password) return { fields: { newPassword: REQUIRED_MESSAGE }, canSubmit: false };
   return { fields: {}, canSubmit: checkPassword(password, rules).valid };
 }
+
+export const PASSWORD_MISMATCH_MESSAGE = "Passwords don't match.";
+
+export interface ChangePasswordFields {
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
+/**
+ * Settings' Change Password modal (New Password + Confirm Password, no Current Password field). Click-time only
+ * adds "required" messages for empty fields, simultaneously. The mismatch message is meant to be shown live (as the
+ * caller re-derives it on every render from the two field values, independent of this function) rather than only on
+ * submit — this function just decides whether a click may proceed to the API: both non-empty, the new password
+ * passes every rule, and the two values match exactly.
+ */
+export function validateChangePasswordFields(newPassword: string, confirmPassword: string, rules: Rules): { fields: ChangePasswordFields; canSubmit: boolean } {
+  const fields: ChangePasswordFields = {};
+  if (!newPassword) fields.newPassword = REQUIRED_MESSAGE;
+  if (!confirmPassword) fields.confirmPassword = REQUIRED_MESSAGE;
+  if (Object.keys(fields).length) return { fields, canSubmit: false };
+
+  const passwordOk = checkPassword(newPassword, rules).valid;
+  const matchOk = newPassword === confirmPassword;
+  return { fields: {}, canSubmit: passwordOk && matchOk };
+}
+
+/** Live "don't match" feedback, independent of any submit attempt: shown only once both fields have content. */
+export function passwordsMismatch(newPassword: string, confirmPassword: string): boolean {
+  return newPassword.length > 0 && confirmPassword.length > 0 && newPassword !== confirmPassword;
+}

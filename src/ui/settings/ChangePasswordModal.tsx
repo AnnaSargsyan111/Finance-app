@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type RefObject } from "rea
 import { changePassword } from "../api/auth";
 import { isApiError } from "../api/client";
 import { PasswordChecklist } from "../auth/PasswordChecklist";
-import { checkPassword } from "../auth/password-rules";
+import { PASSWORD_MISMATCH_MESSAGE, passwordsMismatch, validateChangePasswordFields } from "../auth/validate";
 import { Button } from "../components/Button";
 import { Note } from "../components/Feedback";
 import { PasswordField } from "../components/Fields";
@@ -27,25 +27,28 @@ function errorText(e: unknown): string {
 }
 
 /**
- * Change Password modal (Settings only). Same field components and live checklist as sign-up/reset (AuthPage.tsx /
- * PasswordChecklist.tsx) — no Confirm Password field, consistent with the rest of the app. A successful change keeps
- * the current session valid; it never signs the user out or redirects.
+ * Change Password modal (Settings only): New Password (with the live checklist) + Confirm Password, no Current
+ * Password field (owner decision). Save is always clickable; a click only ever adds "This field is required." for
+ * whichever of the two fields is empty — the checklist and the live "don't match" message under Confirm Password
+ * are the feedback for everything else, and both keep the click blocked until they're satisfied. A successful change
+ * keeps the current session valid; it never signs the user out or redirects.
  */
 export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRef }: Props) {
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<{ currentPassword?: string; newPassword?: string }>({});
+  const [fields, setFields] = useState<{ newPassword?: string; confirmPassword?: string }>({});
   const firstRef = useRef<HTMLInputElement>(null);
-  const pw = checkPassword(newPassword, rules);
-  const valid = currentPassword.length > 0 && pw.valid;
+
+  const mismatch = passwordsMismatch(newPassword, confirmPassword);
+  const confirmError = fields.confirmPassword ?? (mismatch ? PASSWORD_MISMATCH_MESSAGE : undefined);
 
   // every time the modal opens, it starts from a clean form: nothing typed earlier is ever shown again
   useEffect(() => {
     if (open) {
-      setCurrentPassword("");
       setNewPassword("");
+      setConfirmPassword("");
       setError(null);
       setFields({});
       setBusy(false);
@@ -59,21 +62,28 @@ export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRe
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!valid || busy) return;
+    if (busy) return;
+    const check = validateChangePasswordFields(newPassword, confirmPassword, rules);
+    if (!check.canSubmit) {
+      // only ever "required" here: an empty field. A non-empty-but-weak password or a mismatch is already visible
+      // live (checklist / "Passwords don't match.") and needs no extra message — just stay blocked.
+      setFields(check.fields);
+      setError(null);
+      return;
+    }
     setBusy(true);
     setError(null);
     setFields({});
     try {
-      await changePassword({ currentPassword, newPassword });
+      await changePassword({ newPassword, confirmPassword });
       onSuccess();
     } catch (err) {
-      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
       if (isApiError(err) && err.code === "RATE_LIMITED") {
         setError(err.message || "Too many attempts. Please wait a few minutes and try again.");
-      } else if (isApiError(err) && (err.fields?.currentPassword || err.code === "INVALID_CREDENTIALS")) {
-        setFields({ currentPassword: err.fields?.currentPassword ?? "Current password is incorrect." });
       } else if (isApiError(err) && err.fields) {
-        setFields(err.fields);
+        setFields(err.fields); // server is authoritative, e.g. a confirmPassword mismatch it caught
       } else {
         setError(errorText(err));
       }
@@ -85,33 +95,41 @@ export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRe
     <Modal open={open} title="Change password" onClose={close} initialFocusRef={firstRef} restoreFocusRef={triggerRef}>
       <form className={s.modalForm} onSubmit={submit} noValidate>
         {error ? <Note tone="error">{error}</Note> : null}
-        <PasswordField
-          ref={firstRef}
-          label="Current Password"
-          name="currentPassword"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          error={fields.currentPassword}
-          required
-        />
         <div>
           <PasswordField
+            ref={firstRef}
             label="New Password"
             name="newPassword"
             autoComplete="new-password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              // clear a stale "required" from an earlier click so the live checklist (and, once both fields have
+              // content, the mismatch message below) shows through immediately instead of being masked by it
+              if (fields.newPassword) setFields((f) => ({ ...f, newPassword: undefined }));
+            }}
             error={fields.newPassword}
             required
           />
           <PasswordChecklist password={newPassword} rules={rules} />
         </div>
+        <PasswordField
+          label="Confirm Password"
+          name="confirmPassword"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (fields.confirmPassword) setFields((f) => ({ ...f, confirmPassword: undefined }));
+          }}
+          error={confirmError}
+          required
+        />
         <div className={s.modalActions}>
           <Button type="button" variant="ghost" onClick={close} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={busy} disabled={!valid}>
+          <Button type="submit" variant="primary" loading={busy}>
             Save
           </Button>
         </div>

@@ -21,14 +21,14 @@ export const getSession = (signal?: AbortSignal): Promise<{ user: User }> => get
 export const getPasswordRules = (signal?: AbortSignal): Promise<PasswordPolicy> => getJson("/api/auth/password-rules", { signal, noAuthRedirect: true });
 
 /**
- * POST /api/auth/change-password { currentPassword, newPassword } -> 200 { ok:true }. The current session stays
- * valid: the browser stores the refreshed Set-Cookie from this response automatically (same-origin fetch); other
- * sessions are revoked server-side. Wrong current password -> 401 INVALID_CREDENTIALS with fields.currentPassword —
- * `noAuthRedirect` is required here (like sign-in) so that business-logic 401 doesn't trip the "session expired"
- * redirect and rip the user out of the modal instead of showing the field error.
+ * POST /api/auth/change-password { newPassword, confirmPassword } -> 200 { ok:true }. No Current Password field
+ * (owner decision): the modal only asks for the new password twice. The current session stays valid: the browser
+ * stores the refreshed Set-Cookie from this response automatically (same-origin fetch); other sessions are revoked
+ * server-side. A mismatched confirm (if the client-side check somehow lets one through) comes back as a 400
+ * VALIDATION_ERROR field error on `confirmPassword`; the client-side match check is not authoritative.
  */
-export const changePassword = (body: { currentPassword: string; newPassword: string }): Promise<{ ok: boolean }> =>
-  sendJson("POST", "/api/auth/change-password", { body, noAuthRedirect: true });
+export const changePassword = (body: { newPassword: string; confirmPassword: string }): Promise<{ ok: boolean }> =>
+  sendJson("POST", "/api/auth/change-password", { body });
 
 /** PATCH /api/auth/profile { firstName, lastName } -> { user } (same shape as GET /api/auth/session's user). */
 export const updateProfile = (body: { firstName: string; lastName: string }): Promise<{ user: User }> =>

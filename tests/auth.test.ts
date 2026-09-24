@@ -273,57 +273,66 @@ describe("AC-B1 forgot / reset password", () => {
 });
 
 describe("POST /api/auth/change-password", () => {
+  // Product decision (owner-approved): no currentPassword field/check at all - see src/auth/service.ts changePassword().
+  const body = (newPassword: string, confirmPassword = newPassword) => ({ newPassword, confirmPassword });
+
   it("401 without a session; strict schema rejects unknown fields", async () => {
-    const anon = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "x", newPassword: "y" } });
+    const anon = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body("N3w!Passw0rd") });
     expect(anon.status).toBe(401);
     expect(anon.body.error.code).toBe("UNAUTHENTICATED");
     const u = await registerUser("cpw-strict");
     const extra = await call(R.changePassword.POST, "POST", "/api/auth/change-password", {
-      json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd", note: "hi" },
+      json: { ...body("N3w!Passw0rd"), note: "hi" },
       jar: u.jar,
     });
     expect(extra.status).toBe(400);
     expect(extra.body.error.code).toBe("VALIDATION_ERROR");
     expect(extra.body.error.fields.note).toBeTruthy();
+    // no currentPassword field exists on the new contract - sending one is an unknown field, same as any other
+    const withOld = await call(R.changePassword.POST, "POST", "/api/auth/change-password", {
+      json: { currentPassword: VALID_PASSWORD, ...body("N3w!Passw0rd") },
+      jar: u.jar,
+    });
+    expect(withOld.status).toBe(400);
+    expect(withOld.body.error.fields.currentPassword).toBeTruthy();
   });
 
   it("each newPassword composition rule is enforced (400 VALIDATION_ERROR, fields.newPassword, via the shared password-rules message)", async () => {
     const u = await registerUser("cpw-rules");
     for (const bad of ["Sh0rt!", "lowercase1!", "UPPERCASE1!", "NoNumbers!!", "NoSymbols123"]) {
-      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: bad }, jar: u.jar });
+      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body(bad), jar: u.jar });
       expect(r.status, bad).toBe(400);
       expect(r.body.error.code).toBe("VALIDATION_ERROR");
       expect(r.body.error.fields.newPassword).toBeTruthy();
       expect(JSON.stringify(r.body)).not.toContain(bad); // password never echoed
     }
-    expect((await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD }, jar: u.jar })).status).toBe(400);
+    expect((await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { newPassword: "N3w!Passw0rd" }, jar: u.jar })).status).toBe(400);
   });
 
-  it("wrong current password -> 401 INVALID_CREDENTIALS with fields.currentPassword; the new password is never applied", async () => {
-    const u = await registerUser("cpw-wrong");
-    const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "TotallyWrong!1", newPassword: "N3w!Passw0rd" }, jar: u.jar });
-    expect(r.status).toBe(401);
-    expect(r.body.error.code).toBe("INVALID_CREDENTIALS");
-    expect(r.body.error.message).toBe("Current password is incorrect.");
-    expect(r.body.error.fields).toEqual({ currentPassword: "Current password is incorrect." });
+  it("mismatched confirmPassword -> 400 VALIDATION_ERROR, fields.confirmPassword, password never applied", async () => {
+    const u = await registerUser("cpw-mismatch");
+    const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body("N3w!Passw0rd", "SomethingElse1!"), jar: u.jar });
+    expect(r.status).toBe(400);
+    expect(r.body.error.code).toBe("VALIDATION_ERROR");
+    expect(r.body.error.fields).toEqual({ confirmPassword: "Passwords don't match." });
     // the old password still works
     const login = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: VALID_PASSWORD }, ip: freshIp() });
     expect(login.status).toBe(200);
   });
 
-  it("rate limited after 5 wrong currentPassword attempts within 15 min, keyed per user (a different user is unaffected)", async () => {
+  it("abuse rate limit: 429 after 10 calls within an hour, keyed per user (a different user is unaffected)", async () => {
     const u = await registerUser("cpw-rate");
     const other = await registerUser("cpw-rate-other");
-    for (let i = 1; i <= 5; i++) {
-      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "Wrong!Passw0rd", newPassword: "N3w!Passw0rd" }, jar: u.jar });
-      expect(r.status, `attempt ${i}`).toBe(401);
+    for (let i = 1; i <= 10; i++) {
+      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body(`N3w!Passw0rd${i}`), jar: u.jar });
+      expect(r.status, `call ${i}`).toBe(200);
     }
-    const sixth = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd" }, jar: u.jar });
-    expect(sixth.status).toBe(429);
-    expect(sixth.body.error.code).toBe("RATE_LIMITED");
-    expect(Number(sixth.headers.get("retry-after"))).toBeGreaterThan(0);
+    const eleventh = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body("N3w!Passw0rdX"), jar: u.jar });
+    expect(eleventh.status).toBe(429);
+    expect(eleventh.body.error.code).toBe("RATE_LIMITED");
+    expect(Number(eleventh.headers.get("retry-after"))).toBeGreaterThan(0);
     // a different user's own counter is untouched
-    const otherOk = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd" }, jar: other.jar });
+    const otherOk = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body("N3w!Passw0rd"), jar: other.jar });
     expect(otherOk.status).toBe(200);
   });
 
@@ -336,7 +345,7 @@ describe("POST /api/auth/change-password", () => {
     expect((await call(R.session.GET, "GET", "/api/auth/session", { jar: otherJar })).status).toBe(200);
 
     const NEW = "N3w!Str0ngPassw0rd";
-    const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: NEW }, jar: u.jar });
+    const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: body(NEW), jar: u.jar });
     expect(r.status).toBe(200);
     expect(r.body).toEqual({ ok: true });
 
@@ -349,30 +358,18 @@ describe("POST /api/auth/change-password", () => {
     const otherAfter = await call(R.session.GET, "GET", "/api/auth/session", { jar: otherJar });
     expect(otherAfter.status).toBe(401);
 
-    // old password rejected, new password accepted, from a fresh login
+    // old password rejected, new password accepted, from a fresh login - and no currentPassword was ever supplied
     const oldLogin = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: VALID_PASSWORD }, ip: freshIp() });
     expect(oldLogin.status).toBe(401);
     const newLogin = await call(R.signIn.POST, "POST", "/api/auth/sign-in", { json: { email: u.email, password: NEW }, ip: freshIp() });
     expect(newLogin.status).toBe(200);
 
-    // password is stored only as a scrypt hash (same policy as every other password write)
+    // password is stored only as a scrypt hash (same policy/format as every other password write)
     const db = await getDb();
-    const rows = (await db.execute(sql`select password from auth.account where account_id = ${u.id}`)).rows as { password: string }[];
+    const rows = (await db.execute(sql`select password from auth.account where user_id = ${u.id} and provider_id = 'credential'`)).rows as {
+      password: string;
+    }[];
     expect(rows[0].password.startsWith("scrypt$131072$8$1$")).toBe(true);
-  });
-
-  it("a successful change clears this user's failure counter (attempts do not carry over)", async () => {
-    const u = await registerUser("cpw-clear");
-    for (let i = 0; i < 4; i++) {
-      await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "Wrong!Passw0rd", newPassword: "N3w!Passw0rd" }, jar: u.jar });
-    }
-    const ok = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: VALID_PASSWORD, newPassword: "N3w!Passw0rd1" }, jar: u.jar });
-    expect(ok.status).toBe(200);
-    // 4 more wrong attempts against the NEW password would have hit the limit if the old counter had carried over (4+4=8 > 5)
-    for (let i = 0; i < 4; i++) {
-      const r = await call(R.changePassword.POST, "POST", "/api/auth/change-password", { json: { currentPassword: "Wrong!Passw0rd", newPassword: "N3w!Passw0rd2" }, jar: u.jar });
-      expect(r.status, `post-success attempt ${i}`).toBe(401);
-    }
   });
 });
 
