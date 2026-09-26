@@ -1,0 +1,35 @@
+# Runs the typecheck and the full test suite on every push to main and on every pull request.
+#
+# It only reports: Vercel deploys on push regardless, so a red mark here is a warning to look at, not a deploy block.
+# No secrets are needed - tests/setup.ts sets a fake, offline environment and the tests use a temporary local
+# (PGlite) database.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch makes the older, still-running check pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # the suite takes about 4 minutes locally; leave room for a slow runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
