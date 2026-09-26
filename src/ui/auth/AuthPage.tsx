@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { forgotPassword, getPasswordRules, resetPassword, signIn, signUp } from "../api/auth";
+import { forgotPassword, getPasswordRules, getSession, resetPassword, signIn, signUp } from "../api/auth";
 import { isApiError, safeNext } from "../api/client";
 import type { PasswordPolicy } from "../api/types";
 import { Button } from "../components/Button";
@@ -302,6 +302,21 @@ export function AuthPage() {
   const [rules, setRules] = useState<{ id: string; label: string }[]>(DEFAULT_RULES);
   const [transition, setTransition] = useState<"signup" | "login" | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // QA-003: someone who is already logged in has no use for the sign-up / log-in form - send them into the app.
+  // The reset-password link is the exception: it must keep working whatever the current session is.
+  useEffect(() => {
+    if (mode === "reset") return;
+    const ctrl = new AbortController();
+    getSession(ctrl.signal)
+      .then(() => {
+        if (!ctrl.signal.aborted) router.replace(next ?? "/personal-finance");
+      })
+      .catch(() => undefined); // 401 (logged out) or a network problem: just stay on the form
+    return () => ctrl.abort();
+    // only on arrival: switching between the modes of this page must not re-check
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();

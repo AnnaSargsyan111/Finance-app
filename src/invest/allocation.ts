@@ -108,6 +108,15 @@ export function inverseVolScoreWeights(
   return { weights, capRelaxed: n * cap < 1, effectiveCap: effCap };
 }
 
+/**
+ * Holdings whose ACTUAL weight (after whole-share rounding) ended above the per-position cap. The TARGET weights always
+ * respect the cap; rounding to whole shares (and spending the leftover cash) can push a holding past it (QA-001), so the
+ * caller discloses it instead of leaving the mismatch silent.
+ */
+export function holdingsOverCap(holdings: { symbol: string; actualWeight: number }[], cap: number, epsilon = 1e-9): { symbol: string; actualWeight: number }[] {
+  return holdings.filter((h) => h.actualWeight > cap + epsilon);
+}
+
 /** round fractions to `dp` decimals so that they sum to exactly 1 (largest remainder on 10^dp units) */
 export function roundWeights(weights: number[], dp = 4): number[] {
   const unit = 10 ** dp;

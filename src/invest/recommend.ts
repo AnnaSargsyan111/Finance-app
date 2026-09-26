@@ -7,7 +7,7 @@ import { correlation, dailyReturns, covariance, mean, round, stdev } from "@/lib
 import { FACTORS, type Horizon, type Risk } from "@/lib/quant/types";
 import { addDays, diffDays, todayIn } from "@/lib/time";
 import { readLatestSnapshot, readPriceSeries, readUsdAmdRate, type Bar, type LoadedSnapshot, type SnapshotRecord } from "@/market/read";
-import { allocateWholeShares, inverseVolScoreWeights, roundWeights } from "./allocation";
+import { allocateWholeShares, holdingsOverCap, inverseVolScoreWeights, roundWeights } from "./allocation";
 import { computeComparison, computeDiversification, DISCLAIMERS, universeSectorWeights } from "./benchmark";
 import { investConfig, type InvestConfig } from "./config";
 import { driversFor, explanationText, FACTOR_LABELS } from "./explain";
@@ -377,6 +377,17 @@ export async function recommendPortfolio(input: RecommendationRequest, opts: { n
   }
   if (f.capRelaxed) {
     warnings.push({ code: "POSITION_CAP_NOT_ENFORCEABLE", message: `With ${holdings.length} holdings a ${Math.round(posCap * 100)}% per-position cap cannot hold, so weights are close to equal.` });
+  }
+  if (!f.capRelaxed) {
+    // whole-share rounding can lift a holding's ACTUAL weight past the cap its TARGET respected (QA-001)
+    const over = holdingsOverCap(holdings.map((h) => ({ symbol: h.symbol, actualWeight: h.actualWeight })), posCap);
+    if (over.length) {
+      const list = over.map((o) => `${o.symbol} (${pct1(o.actualWeight)})`).join(", ");
+      warnings.push({
+        code: "POSITION_CAP_EXCEEDED_BY_ROUNDING",
+        message: `Because only whole shares can be bought, ${list} ended up above the ${Math.round(posCap * 100)}% per-position guide for ${cap(input.risk)} risk. The target weights stay within it; the difference comes from rounding to whole shares.`,
+      });
+    }
   }
   if (f.relaxed.length) warnings.push({ code: "CONSTRAINT_RELAXED", message: `To reach ${targetN} holdings, the ${f.relaxed.join(" and ")} had to be relaxed.` });
   if (metrics.estimatedVolatility !== null && metrics.estimatedVolatility > bandCap) {

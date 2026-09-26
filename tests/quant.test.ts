@@ -5,7 +5,7 @@ import { deriveMetrics, computePriceMetrics } from "@/lib/quant/derive";
 import { evaluateHardEligibility, evaluateRiskEligibility } from "@/lib/quant/eligibility";
 import { buildRecord, finaliseRecords, computeStableLeaders } from "@/lib/quant/records";
 import { universeConfig } from "@/lib/quant/config";
-import { allocateWholeShares, inverseVolScoreWeights, roundWeights } from "@/invest/allocation";
+import { allocateWholeShares, holdingsOverCap, inverseVolScoreWeights, roundWeights } from "@/invest/allocation";
 import { buildSynthetic, inputFor, makeBars, makeSpecs } from "./helpers/synthetic";
 import { FACTORS } from "@/lib/quant/types";
 
@@ -255,5 +255,27 @@ describe("whole-share allocation (handover 7.6) and weights", () => {
     expect(Math.max(...three.weights)).toBeLessThanOrEqual(1 / 3 + 1e-9);
     const rounded = roundWeights(r.weights, 4);
     expect(rounded.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
+  });
+});
+
+describe("holdingsOverCap (QA-001: actual weights above the per-position cap are disclosed)", () => {
+  it("flags a holding whose ACTUAL weight passes the cap even though its TARGET respected it", () => {
+    // $1,000 with a 35% cap: A is cheap ($50) with a 15% target, B and C cost $300 each. B and C can only be bought once, so the
+    // leftover cash can only go into A - whole-share rounding pushes A far past its target and over the cap.
+    const alloc = allocateWholeShares(100_000, [
+      { symbol: "A", priceCents: 5_000, weight: 0.15 },
+      { symbol: "B", priceCents: 30_000, weight: 0.425 },
+      { symbol: "C", priceCents: 30_000, weight: 0.425 },
+    ]);
+    const a = alloc.holdings.find((h) => h.symbol === "A")!;
+    expect(a.targetWeight).toBeLessThanOrEqual(0.35);
+    expect(a.actualWeight).toBeGreaterThan(0.35);
+    const over = holdingsOverCap(alloc.holdings, 0.35);
+    expect(over.map((h) => h.symbol)).toEqual(["A"]);
+  });
+
+  it("returns nothing when every actual weight is within the cap (including exactly at it)", () => {
+    expect(holdingsOverCap([{ symbol: "X", actualWeight: 0.2 }, { symbol: "Y", actualWeight: 0.1999 }], 0.2)).toEqual([]);
+    expect(holdingsOverCap([], 0.2)).toEqual([]);
   });
 });

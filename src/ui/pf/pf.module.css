@@ -54,18 +54,34 @@
   gap: var(--s-3);
   flex-wrap: wrap;
 }
+@media (max-width: 480px) {
+  .monthRow {
+    gap: var(--s-2);
+  }
+  /* "September" is the longest month name: a touch smaller text so it never touches the dropdown arrow */
+  .monthSelects .select {
+    font-size: 13px;
+    padding: 0 8px;
+  }
+}
 .monthSelects {
   display: flex;
   gap: var(--s-2);
-  flex: 1 1 150px;
+  flex: 1 1 190px;
   max-width: 340px;
   min-width: 0;
 }
+/* the year keeps a fixed width that always fits four digits + the arrow (QA-004: at 375px it shrank to ~56px and clipped);
+   slightly tighter padding lets "prev | month | year | next" stay on one row at 375px */
+.monthSelects .select {
+  padding: 0 10px;
+}
 .monthSelects .select:first-child {
-  flex: 1.6;
+  flex: 1 1 0;
+  min-width: 104px;
 }
 .monthSelects .select:last-child {
-  flex: 1;
+  flex: 0 0 78px;
 }
 .customDates {
   display: flex;

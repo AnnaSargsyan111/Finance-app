@@ -106,6 +106,28 @@ describe("AC-B6 determinism, eligibility, invariants", () => {
     }
   });
 
+  it("QA-001: whenever whole-share rounding pushes an ACTUAL weight above the per-position cap, the result says so (never silent), and never warns when nothing is over", async () => {
+    const caps: Record<string, number> = { low: 0.2, medium: 0.25, high: 0.3 };
+    let seenOver = 0;
+    for (const risk of ["low", "medium", "high"] as Risk[]) {
+      for (let usd = 1500; usd <= 40000; usd += 2750) {
+        const d = (await rec(user, body({ risk, amountAmd: amd(usd), horizon: "medium" }))).body.data;
+        if (!d) continue;
+        const hs = d.holdings as { symbol: string; actualWeight: number }[];
+        if (hs.length * caps[risk] < 1) continue; // cap cannot hold at all: POSITION_CAP_NOT_ENFORCEABLE covers this case
+        const over = hs.filter((h) => h.actualWeight > caps[risk] + 1e-9);
+        const warn = (d.warnings as { code: string; message: string }[]).find((w) => w.code === "POSITION_CAP_EXCEEDED_BY_ROUNDING");
+        expect(Boolean(warn), `${risk} $${usd}`).toBe(over.length > 0);
+        if (warn) {
+          seenOver++;
+          for (const o of over) expect(warn.message).toContain(o.symbol);
+        }
+      }
+    }
+    // informational: how many of the swept cases actually exercised the warning path
+    console.log(`QA-001 sweep: ${seenOver} case(s) hit the warning`);
+  });
+
   it("AC-B6/B7 portfolio invariants: weights sum to 100%, caps, sector limit, N by budget, whole shares, leftover < cheapest price, no duplicates, AMD identity", async () => {
     const caps: Record<string, number> = { low: 0.2, medium: 0.25, high: 0.3 };
     const expectedN: [number, number][] = [[2000, 5], [5000, 8], [20000, 11]]; // budget USD -> holdings (handover 7.6 table)
