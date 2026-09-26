@@ -126,7 +126,7 @@ describe("AC-B6 determinism, eligibility, invariants", () => {
     }
     // informational: how many of the swept cases actually exercised the warning path
     console.log(`QA-001 sweep: ${seenOver} case(s) hit the warning`);
-  });
+  }, 300_000); // ~42 full portfolio computations: 13 s on a fast machine, several minutes on a busy one
 
   it("AC-B6/B7 portfolio invariants: weights sum to 100%, caps, sector limit, N by budget, whole shares, leftover < cheapest price, no duplicates, AMD identity", async () => {
     const caps: Record<string, number> = { low: 0.2, medium: 0.25, high: 0.3 };
@@ -561,7 +561,10 @@ describe("AC-B10 upstream cache: 100 concurrent users cause at most one upstream
   it("100 concurrent recommendation requests -> one CBA call", async () => {
     await resetCache();
     const before = mock.countHost("api.cba.am");
-    const rs = await Promise.all(Array.from({ length: 100 }, () => rec(user, body({ amountAmd: amd(6000) }))));
+    // Single-stock requests: this test only proves the exchange-rate cache is shared (one CBA call for 100 concurrent
+    // users), which is identical for both modes. A full portfolio computation per request (about 250 ms of CPU each) made
+    // 100 of them take ~25 s alone and blow the 60 s budget when the other test files compete for the CPU (flaky).
+    const rs = await Promise.all(Array.from({ length: 100 }, () => rec(user, body({ amountAmd: amd(6000), mode: "single" }))));
     expect(rs.every((r) => r.status === 200)).toBe(true);
     expect(mock.countHost("api.cba.am") - before).toBe(1);
   });
