@@ -131,6 +131,9 @@
   align-items: center;
   gap: var(--s-3);
 }
+.profileWrap {
+  position: relative;
+}
 .avatar {
   width: 40px;
   height: 40px;
@@ -142,11 +145,59 @@
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
-  text-decoration: none;
   letter-spacing: 0.02em;
 }
-.avatar:hover {
+.avatar:hover,
+.avatar[aria-expanded="true"] {
   border-color: var(--accent-line);
+}
+/* Kept mounted at all times so closing (not just opening) gets to animate: opacity/transform fade+scale, with
+   visibility delayed on the way out so the panel neither intercepts clicks nor is announced while invisible. */
+.profileMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 168px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top right;
+  transition: opacity 0.16s var(--ease), transform 0.16s var(--ease), visibility 0s linear 0.16s;
+}
+.profileMenuOpen {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.16s var(--ease), transform 0.16s var(--ease), visibility 0s linear 0s;
+}
+.profileMenuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.14s var(--ease);
+}
+.profileMenuItem:hover,
+.profileMenuItem:focus-visible {
+  background: var(--surface-3);
+}
+.profileMenuItem:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .menuBtn {
   width: 40px;

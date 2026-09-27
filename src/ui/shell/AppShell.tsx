@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "../lib/cx";
 import { greeting } from "../lib/format";
-import { IconClose, IconMenu, Logo } from "../components/Icons";
+import { Spinner } from "../components/Feedback";
+import { IconClose, IconLogout, IconMenu, Logo } from "../components/Icons";
 import { SessionGate, useSession } from "./Session";
 import s from "./shell.module.css";
 
@@ -21,12 +22,47 @@ const inSection = (pathname: string, prefixes: readonly string[]) => prefixes.so
 
 function Topbar() {
   const pathname = usePathname();
-  const { user } = useSession();
+  const { user, signOut } = useSession();
   const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(false), [pathname]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const avatarRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setOpen(false);
+    setMenuOpen(false);
+  }, [pathname]);
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase() || "F";
 
   const currentAttr = (item: (typeof NAV_ITEMS)[number]) => (pathname === item.href ? "page" : inSection(pathname, item.section) ? "true" : undefined);
+
+  // Profile menu: close on an outside click or Escape (focus returns to the avatar button, same as the Modal pattern).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t) || avatarRef.current?.contains(t)) return;
+      setMenuOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      avatarRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  async function handleLogOut() {
+    setMenuOpen(false);
+    setSigningOut(true);
+    await signOut(); // clears the session server-side and redirects to /auth; a fresh SessionGate mount there re-checks
+    // the session on any later Back navigation into the app, so a stale authenticated screen cannot be reached (verified).
+  }
 
   return (
     <header className={s.topbar}>
@@ -46,9 +82,26 @@ function Topbar() {
           <button type="button" className={s.menuBtn} aria-expanded={open} aria-controls="mobile-nav" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen((v) => !v)}>
             {open ? <IconClose /> : <IconMenu />}
           </button>
-          <Link href="/settings" className={s.avatar} aria-label={`Profile: ${user.firstName} ${user.lastName}`} title={`${user.firstName} ${user.lastName}`}>
-            {initials}
-          </Link>
+          <div className={s.profileWrap}>
+            <button
+              type="button"
+              ref={avatarRef}
+              className={s.avatar}
+              aria-label={`Profile menu: ${user.firstName} ${user.lastName}`}
+              title={`${user.firstName} ${user.lastName}`}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {initials}
+            </button>
+            <div ref={menuRef} role="menu" aria-label="Profile" className={cx(s.profileMenu, menuOpen && s.profileMenuOpen)}>
+              <button type="button" role="menuitem" className={s.profileMenuItem} disabled={signingOut} onClick={handleLogOut}>
+                {signingOut ? <Spinner /> : <IconLogout size={16} />}
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       {open ? (
