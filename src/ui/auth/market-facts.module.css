@@ -4,7 +4,8 @@
   background:
     radial-gradient(800px 360px at 85% 0%, rgba(47, 88, 126, 0.16), transparent 65%),
     var(--bg);
-  padding: var(--s-7) var(--gutter) var(--s-8);
+  /* the bottom is kept smaller than the top so the gap between two stacked sections (bottom + next top) is not too airy */
+  padding: var(--s-7) var(--gutter) var(--s-6);
 }
 .inner {
   max-width: var(--content-max);
@@ -135,6 +136,46 @@
   background:
     radial-gradient(800px 360px at 12% 0%, rgba(145, 246, 13, 0.06), transparent 65%),
     var(--bg);
+}
+/* flip cards ("psychology of spending"): a card is a front (the text) and a back (the Finova logo) in one grid cell; the
+   inner box rotates half a turn to show the back. data-flipped="true" = text showing. */
+.flipCard {
+  display: grid;
+  perspective: 1400px;
+}
+.flipInner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.85s var(--ease) var(--flip-delay, 0s);
+}
+.flipCard[data-flipped="false"] .flipInner {
+  transform: rotateY(180deg);
+}
+.flipCard[data-instant="true"] .flipInner {
+  transition: none; /* rewinding off screen, or showing a card the visitor scrolled up into: no animation */
+}
+.flipFace {
+  grid-area: 1 / 1;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.flipBack {
+  transform: rotateY(180deg);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--s-3);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(145, 246, 13, 0.16), transparent 62%),
+    repeating-linear-gradient(135deg, rgba(192, 194, 195, 0.045) 0 2px, transparent 2px 16px),
+    var(--surface);
+}
+.flipBackName {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 .example {
   border-left: 2px solid var(--accent-line);

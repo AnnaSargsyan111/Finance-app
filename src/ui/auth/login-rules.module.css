@@ -1,4 +1,127 @@
 /* Left side of the login page: two groups of numbered rules. Uses only the existing design tokens. */
+
+/* ---------- background: soft grid + trend lines that draw themselves, then drift ---------- */
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* the content sits above the background (the aside itself is not a stacking context, so layers are explicit) */
+.layer,
+.body {
+  position: relative;
+  z-index: 1;
+}
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(192, 194, 195, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(192, 194, 195, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+  /* fades out towards the top-left where the text starts, so the grid never competes with it */
+  -webkit-mask-image: linear-gradient(200deg, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  mask-image: linear-gradient(200deg, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  animation: gridIn 1.6s var(--ease) both;
+}
+.lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.line {
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 3.4s cubic-bezier(0.45, 0.1, 0.25, 1) both;
+  animation-delay: var(--d, 0s);
+}
+.lineLime {
+  stroke: var(--accent);
+  opacity: 0.5;
+  filter: drop-shadow(0 0 6px rgba(145, 246, 13, 0.55));
+}
+.lineLimeDim {
+  stroke: var(--accent);
+  opacity: 0.22;
+}
+.lineBlue {
+  stroke: #5b93c4;
+  opacity: 0.4;
+}
+.lineSilver {
+  stroke: var(--c-silver);
+  opacity: 0.16;
+  stroke-width: 1.6;
+}
+.area {
+  opacity: 0;
+  animation: areaIn 2.4s ease-out 1.6s forwards;
+}
+.drift {
+  /* once drawn, the whole set breathes very slowly up and down so the background never feels frozen */
+  animation: drift 11s ease-in-out 3.8s infinite alternate;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes areaIn {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gridIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-14px);
+  }
+}
+
+/* ---------- text: each heading and rule appears in turn (--i is its place in the sequence) ---------- */
+.reveal {
+  animation: reveal 0.7s var(--ease) both;
+  animation-delay: calc(0.3s + var(--i, 0) * 0.22s);
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* reduced motion: no waiting for the sequence and no drifting, everything is simply there */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .line,
+  .area,
+  .grid,
+  .drift {
+    animation-delay: 0s !important;
+  }
+  .drift {
+    animation: none !important;
+  }
+}
+
 .body {
   display: flex;
   flex-direction: column;

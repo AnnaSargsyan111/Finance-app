@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cx } from "../lib/cx";
 import { useReducedMotion } from "../hooks/useReducedMotion";
+import { PLAY_AT_RATIO, nextCountAction } from "./count-up";
 import { FACTS, STATS, type Source, type Stat } from "./market-facts-data";
 import s from "./market-facts.module.css";
 
@@ -11,8 +12,10 @@ const COUNT_UP_MS = 1400;
 const format = (n: number, decimals: number) => n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 /**
- * Shows the final figure; the first time it scrolls into view it counts up from 0 to it. With reduced motion (or no
- * IntersectionObserver) it never animates. Screen readers get the final figure once, not every frame of the count.
+ * Shows the final figure and counts up from 0 to it EVERY time it scrolls into view: it starts once the figure is mostly
+ * visible, resets to 0 once it has left the screen completely, and so plays again on the way back (up or down). Partly
+ * scrolling it in and out without leaving does not restart it. With reduced motion (or no IntersectionObserver) it never
+ * animates. Screen readers get the final figure once, not every frame of the count.
  */
 function CountUp({ stat }: { stat: Stat }) {
   const reduced = useReducedMotion();
@@ -23,20 +26,28 @@ function CountUp({ stat }: { stat: Stat }) {
     const el = ref.current;
     if (!el || reduced || typeof IntersectionObserver === "undefined") return;
     let raf = 0;
+    let armed = true; // true while the figure is off screen: the next time it is mostly visible, it plays
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        io.disconnect();
-        const start = performance.now();
-        const tick = (now: number) => {
-          const t = Math.min(1, (now - start) / COUNT_UP_MS);
-          setShown(stat.value * (1 - Math.pow(1 - t, 3))); // ease-out
-          if (t < 1) raf = requestAnimationFrame(tick);
-        };
-        setShown(0);
-        raf = requestAnimationFrame(tick);
+        const next = nextCountAction(armed, entry);
+        armed = next.armed;
+        if (next.action === "play") {
+          cancelAnimationFrame(raf);
+          const start = performance.now();
+          const tick = (now: number) => {
+            const t = Math.min(1, (now - start) / COUNT_UP_MS);
+            setShown(stat.value * (1 - Math.pow(1 - t, 3))); // ease-out
+            if (t < 1) raf = requestAnimationFrame(tick);
+          };
+          setShown(0);
+          raf = requestAnimationFrame(tick);
+        } else if (next.action === "reset") {
+          // fully off screen: stop any count in progress and rewind, ready for the next time it comes into view
+          cancelAnimationFrame(raf);
+          setShown(0);
+        }
       },
-      { threshold: 0.6 },
+      { threshold: [0, PLAY_AT_RATIO] },
     );
     io.observe(el);
     return () => {

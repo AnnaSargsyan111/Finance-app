@@ -205,6 +205,21 @@
   width: 100%;
   max-width: 520px;
   opacity: 0.9;
+  /* the chart expands from the left (line and fill together), stays fully drawn for 2 seconds, then expands again.
+     Cycle = 2.4s expanding + 2s holding = 4.4s (expanding is 54.5% of it). */
+  animation: sparkExpand 4.4s infinite;
+}
+@keyframes sparkExpand {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.25, 1);
+  }
+  54.5% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
 }
 .foot {
   color: var(--muted);
