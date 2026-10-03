@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { useScrollDownReplay } from "./useScrollDownReplay";
+import { useReducedMotion } from "./useReducedMotion";
+import { useScrollOnce } from "./useScrollOnce";
 import { useScrollReplay } from "./useScrollReplay";
 
 const COUNT_UP_MS = 1100;
 
 /**
- * Drives a count-up for everything inside one element. `k` is how far along the count is (0 -> 1, eased), or `null` when it is at
- * rest: show the real values then, so the exact published digits are on screen whenever nothing is animating. Attach `ref` to the
- * element; multiply each number by `k` while it is not null.
- *  - when = "always": plays every time the element comes into view, scrolling down or up;
- *  - when = "down": plays only when the visitor scrolls DOWN to it; scrolling up shows the finished values at once.
- * It rewinds (k = 0) while the element is off screen, ready to play again. With reduced motion `k` stays null.
+ * Drives a count-up. `k` is how far along the count is (0 -> 1, eased), or `null` when it is at rest: show the real value then, so the
+ * exact published digits are on screen whenever nothing is animating. Attach `ref` to the element and multiply the number by `k` while it
+ * is not null.
+ *  - when = "always": plays every time the element comes into view, scrolling down or up, and rewinds while it is off screen;
+ *  - when = "once": waits at 0 and plays a single time, the first time the element is mostly on screen; it never repeats.
+ * With reduced motion (or no IntersectionObserver) `k` stays null.
  */
-export function useCountProgress<T extends HTMLElement>(when: "always" | "down"): { ref: RefObject<T | null>; k: number | null } {
+export function useCountProgress<T extends HTMLElement>(when: "always" | "once"): { ref: RefObject<T | null>; k: number | null } {
+  const reduced = useReducedMotion();
   const [k, setK] = useState<number | null>(null);
   const raf = useRef(0);
 
@@ -35,16 +37,17 @@ export function useCountProgress<T extends HTMLElement>(when: "always" | "down")
     cancelAnimationFrame(raf.current);
     setK(0);
   };
-  const showFinal = () => {
-    cancelAnimationFrame(raf.current);
-    setK(null);
-  };
   const noop = () => {};
 
   const always = when === "always";
   const refAlways = useScrollReplay<T>(always ? play : noop, always ? rewind : noop, [when]);
-  const refDown = useScrollDownReplay<T>(always ? noop : play, always ? noop : showFinal, always ? noop : rewind, [when]);
+  const refOnce = useScrollOnce<T>(always ? noop : play, [when]);
+
+  // "once": hold the number at 0 until its turn comes (it is not on screen yet, or is about to be)
+  useEffect(() => {
+    if (!always && !reduced && typeof IntersectionObserver !== "undefined") setK((cur) => cur ?? 0);
+  }, [always, reduced]);
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
-  return { ref: always ? refAlways : refDown, k };
+  return { ref: always ? refAlways : refOnce, k };
 }

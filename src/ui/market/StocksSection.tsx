@@ -78,8 +78,8 @@ function Trend({ item }: { item: StockItem }) {
 }
 
 /**
- * Only two things on a card move: the price counts up when the visitor scrolls DOWN to the card (scrolling up shows it at once), and the
- * one-month line is drawn again whenever the card is scrolled to, down or up (Spark). Everything else is static.
+ * Only two things on a card move: the price counts up ONCE, the first time the card is on screen, and never again; and the one-month line
+ * is drawn again whenever the card is scrolled to, down or up (Spark). Everything else is static.
  */
 function StockCard({ item }: { item: StockItem }) {
   const dash = "-";
@@ -92,7 +92,7 @@ function StockCard({ item }: { item: StockItem }) {
         </div>
         <ChangeChip change={item.change} pct={item.changePct} decimals={2} />
       </div>
-      <div>{item.price === null ? <Figure value={null} size="md" /> : <CountFigure value={item.price} decimals={2} prefix="$" srText={formatUsd(item.price, 2)} when="down" />}</div>
+      <div>{item.price === null ? <Figure value={null} size="md" /> : <CountFigure value={item.price} decimals={2} prefix="$" srText={formatUsd(item.price, 2)} when="once" />}</div>
       <Trend item={item} />
       <dl className={s.facts}>
         <div>
