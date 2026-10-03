@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
 import { getStocks } from "../api/market";
 import { errorMessage } from "../api/client";
@@ -8,7 +9,9 @@ import { CHART_COLORS, ChartFigure, DataTable, NEG_COLOR } from "../components/C
 import { ChangeChip, Figure } from "../components/Display";
 import { EmptyState, ErrorState, Skeleton } from "../components/Feedback";
 import { useResource } from "../hooks/useResource";
+import { useScrollReplay } from "../hooks/useScrollReplay";
 import { formatDate, formatNumber, formatPercent, formatUsd } from "../lib/format";
+import { CountFigure } from "./CountFigure";
 import { MetaLine } from "./MetaLine";
 import s from "./market.module.css";
 
@@ -18,6 +21,31 @@ function bigUsd(v: string | null): string {
   if (Math.abs(n) >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
   if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
   return formatUsd(n, 0);
+}
+
+/**
+ * The one-month line. Each time it comes into view it is drawn again from left to right, and it is cleared once it has left the screen
+ * completely, so it replays whenever the visitor scrolls to it, down or up (see useScrollReplay). With reduced motion it is just drawn.
+ */
+function Spark({ data, up }: { data: { date: string; close: number }[]; up: boolean }) {
+  const [draw, setDraw] = useState({ key: 0, animate: false, hidden: false });
+  const ref = useScrollReplay<HTMLDivElement>(
+    () => setDraw((d) => ({ key: d.key + 1, animate: true, hidden: false })),
+    () => setDraw((d) => ({ key: d.key + 1, animate: false, hidden: true })),
+    [data.length, data[data.length - 1]?.close], // stable values, so a parent re-render does not restart the drawing
+  );
+  return (
+    <div ref={ref} className={s.spark}>
+      {draw.hidden ? null : (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart key={draw.key} data={data} margin={{ top: 4, right: 2, bottom: 4, left: 2 }}>
+            <YAxis hide domain={["dataMin", "dataMax"]} />
+            <Line type="monotone" dataKey="close" stroke={up ? CHART_COLORS[0] : NEG_COLOR} strokeWidth={2} dot={false} isAnimationActive={draw.animate} animationDuration={1300} animationEasing="ease-out" />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
 }
 
 function Trend({ item }: { item: StockItem }) {
@@ -41,14 +69,7 @@ function Trend({ item }: { item: StockItem }) {
       }
       tableLabel="Show 1-month prices"
     >
-      <div className={s.spark}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 2, bottom: 4, left: 2 }}>
-            <YAxis hide domain={["dataMin", "dataMax"]} />
-            <Line type="monotone" dataKey="close" stroke={up ? CHART_COLORS[0] : NEG_COLOR} strokeWidth={2} dot={false} isAnimationActive={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <Spark data={data} up={up} />
       <p className={s.company} style={{ marginTop: 4 }}>
         1 month: {up ? "up" : "down"} {formatPercent(Math.abs(pct), 1)}
       </p>
@@ -56,6 +77,10 @@ function Trend({ item }: { item: StockItem }) {
   );
 }
 
+/**
+ * Only two things on a card move: the price counts up when the visitor scrolls DOWN to the card (scrolling up shows it at once), and the
+ * one-month line is drawn again whenever the card is scrolled to, down or up (Spark). Everything else is static.
+ */
 function StockCard({ item }: { item: StockItem }) {
   const dash = "-";
   return (
@@ -67,7 +92,7 @@ function StockCard({ item }: { item: StockItem }) {
         </div>
         <ChangeChip change={item.change} pct={item.changePct} decimals={2} />
       </div>
-      <div>{item.price === null ? <Figure value={null} size="md" /> : <Figure value={item.price} decimals={2} prefix="$" size="md" />}</div>
+      <div>{item.price === null ? <Figure value={null} size="md" /> : <CountFigure value={item.price} decimals={2} prefix="$" srText={formatUsd(item.price, 2)} when="down" />}</div>
       <Trend item={item} />
       <dl className={s.facts}>
         <div>

@@ -151,7 +151,7 @@ export function FxSection() {
                             {r.pair}
                             {active ? <span className={s.pairSel}>Chart</span> : null}
                           </span>
-                          <CountFigure value={r.rate} pair={r.pair} decimals={fxDecimals(r.pair)} />
+                          <CountFigure value={r.rate} decimals={fxDecimals(r.pair)} srText={formatFx(r.rate, r.pair)} />
                           <span>
                             <ChangeChip change={r.diff} decimals={fxDecimals(r.pair)} />
                           </span>
