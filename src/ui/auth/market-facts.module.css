@@ -1,0 +1,196 @@
+/* "The stock market in numbers" - sits below the sign-up layout; uses only the existing design tokens. */
+.section {
+  border-top: 1px solid var(--border-faint);
+  background:
+    radial-gradient(800px 360px at 85% 0%, rgba(47, 88, 126, 0.16), transparent 65%),
+    var(--bg);
+  padding: var(--s-7) var(--gutter) var(--s-8);
+}
+.inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-width: 62ch;
+}
+.eyebrow {
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.title {
+  font-size: clamp(28px, 3.6vw, 44px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.lead {
+  color: var(--muted);
+}
+
+/* ---------- record statistics ---------- */
+.stats,
+.facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-4);
+  grid-template-columns: 1fr;
+}
+.stat,
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s-5);
+  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.stat:hover,
+.fact:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-2px);
+}
+.figure {
+  font-size: clamp(32px, 3.4vw, 46px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--text);
+  white-space: nowrap;
+}
+.figureNeg {
+  color: var(--neg);
+}
+.statLabel {
+  font-weight: 500;
+  margin-top: var(--s-1);
+}
+.statCaption {
+  color: var(--muted);
+  font-size: 13.5px;
+  flex: 1;
+}
+
+/* ---------- facts ---------- */
+.factTag {
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.factTitle {
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.factBody {
+  color: var(--text-2);
+  font-size: 14.5px;
+  flex: 1;
+}
+
+/* closing "Get started" band at the very bottom of the sign-up page */
+.cta {
+  border-top: 1px solid var(--border-faint);
+  background:
+    radial-gradient(700px 300px at 50% 100%, rgba(145, 246, 13, 0.08), transparent 70%),
+    var(--bg);
+  padding: var(--s-7) var(--gutter) var(--s-8);
+}
+.ctaInner {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--s-3);
+}
+.ctaTitle {
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.ctaButton {
+  margin-top: var(--s-3);
+  min-width: 220px;
+}
+
+/* second section ("psychology of spending"): same look, a lime glow on the left instead of blue on the right */
+.sectionAlt {
+  background:
+    radial-gradient(800px 360px at 12% 0%, rgba(145, 246, 13, 0.06), transparent 65%),
+    var(--bg);
+}
+.example {
+  border-left: 2px solid var(--accent-line);
+  padding-left: var(--s-3);
+  color: var(--text-2);
+  font-size: 14px;
+}
+.exampleLabel {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--s-4);
+}
+.sources .source {
+  margin-top: 0;
+}
+
+.source {
+  color: var(--muted);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  align-self: flex-start;
+  margin-top: var(--s-1);
+}
+.source:hover {
+  color: var(--text);
+  text-decoration-color: var(--accent);
+}
+.note {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+@media (min-width: 560px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 720px) {
+  .facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1100px) {
+  .stats,
+  .facts {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

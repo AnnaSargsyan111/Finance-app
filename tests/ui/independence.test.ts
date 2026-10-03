@@ -91,6 +91,11 @@ describe("own backend only, no keys in the browser", () => {
     expect(code(path.join(UI, "api", "client.ts"))).toMatch(/startsWith\("\/api\/"\)/);
   });
 
+  // Files that may contain external URL literals because those URLs are only click-through citation links (<a href>) shown
+  // to the user, never requested by the app. Everything else must stay free of third-party URLs. The "only the API client
+  // calls fetch" test above still guarantees nothing here can be used for a request.
+  const CITATION_LINK_FILES = new Set(["auth/market-facts-data.ts", "auth/spending-psychology-data.ts", "auth/login-rules-data.ts"]);
+
   it("has no third-party endpoints, no NEXT_PUBLIC variables and no key material", () => {
     const offenders: string[] = [];
     for (const f of sources) {
@@ -98,10 +103,19 @@ describe("own backend only, no keys in the browser", () => {
       if (/NEXT_PUBLIC_/.test(c)) offenders.push(`${rel(f)}: NEXT_PUBLIC`);
       if (/process\.env/.test(c)) offenders.push(`${rel(f)}: process.env`);
       if (/(api[_-]?key|apikey|secret|bearer)\s*[:=]/i.test(c)) offenders.push(`${rel(f)}: key-like assignment`);
+      if (CITATION_LINK_FILES.has(rel(f))) continue;
       for (const m of c.matchAll(/["'`](https?:\/\/[^"'`\s]+)["'`]/g)) {
         if (!/w3\.org/.test(m[1])) offenders.push(`${rel(f)}: ${m[1]}`);
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("the citation-link exception is real: those files exist and make no requests", () => {
+    for (const name of CITATION_LINK_FILES) {
+      const f = path.join(UI, name);
+      expect(fs.existsSync(f), name).toBe(true);
+      expect(/\bfetch\(|XMLHttpRequest|sendBeacon|new WebSocket|import\(/.test(code(f)), name).toBe(false);
+    }
   });
 });

@@ -10,6 +10,10 @@ import { Note } from "../components/Feedback";
 import { PasswordField, TextField } from "../components/Fields";
 import { Logo } from "../components/Icons";
 import { Splash } from "../shell/Splash";
+import { GetStarted } from "./GetStarted";
+import { LoginRules } from "./LoginRules";
+import { MarketFacts } from "./MarketFacts";
+import { SpendingPsychology } from "./SpendingPsychology";
 import { PasswordChecklist } from "./PasswordChecklist";
 import { DEFAULT_RULES } from "./password-rules";
 import { validateForgotFields, validateLoginFields, validateResetPassword, validateSignUpFields } from "./validate";
@@ -362,61 +366,74 @@ export function AuthPage() {
   const props: FormProps = { rules, goto, onAuthed };
 
   return (
-    <div className={s.page}>
-      <aside className={s.aside} aria-hidden="true">
-        <div className={s.brandBig}>
-          <Logo size={34} />
-          <span>Finova</span>
-        </div>
-        <div>
-          <p className={s.hero}>
-            Your money, <span className={s.heroMuted}>in one clear view.</span>
-          </p>
-          <ul className={s.points}>
-            <li>
-              <span className={s.pointDot} />
-              <span>Plan income and expenses period by period, with charts that follow your numbers.</span>
-            </li>
-            <li>
-              <span className={s.pointDot} />
-              <span>Follow exchange rates, big-tech stocks and trusted financial news.</span>
-            </li>
-            <li>
-              <span className={s.pointDot} />
-              <span>Explore informational investment ideas that match your risk and horizon.</span>
-            </li>
-          </ul>
-        </div>
-        <svg className={s.spark} viewBox="0 0 520 120" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#91F60D" stopOpacity="0.22" />
-              <stop offset="1" stopColor="#91F60D" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d="M0 96 C40 90 60 70 100 74 S170 100 210 70 280 30 330 46 400 80 440 40 500 20 520 14 V120 H0 Z" fill="url(#sparkfill)" />
-          <path d="M0 96 C40 90 60 70 100 74 S170 100 210 70 280 30 330 46 400 80 440 40 500 20 520 14" stroke="#91F60D" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-        <p className={s.foot}>Informational tool. Not investment advice.</p>
-      </aside>
+    <>
+      <div className={s.page}>
+        {mode === "login" ? (
+          <LoginRules />
+        ) : (
+          <aside className={s.aside} aria-hidden="true">
+            <div className={s.brandBig}>
+              <Logo size={34} />
+              <span>Finova</span>
+            </div>
+            <div>
+              <p className={s.hero}>
+                Your money, <span className={s.heroMuted}>in one clear view.</span>
+              </p>
+              <ul className={s.points}>
+                <li>
+                  <span className={s.pointDot} />
+                  <span>Plan income and expenses period by period, with charts that follow your numbers.</span>
+                </li>
+                <li>
+                  <span className={s.pointDot} />
+                  <span>Follow exchange rates, big-tech stocks and trusted financial news.</span>
+                </li>
+                <li>
+                  <span className={s.pointDot} />
+                  <span>Explore informational investment ideas that match your risk and horizon.</span>
+                </li>
+              </ul>
+            </div>
+            <svg className={s.spark} viewBox="0 0 520 120" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stopColor="#91F60D" stopOpacity="0.22" />
+                  <stop offset="1" stopColor="#91F60D" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M0 96 C40 90 60 70 100 74 S170 100 210 70 280 30 330 46 400 80 440 40 500 20 520 14 V120 H0 Z" fill="url(#sparkfill)" />
+              <path d="M0 96 C40 90 60 70 100 74 S170 100 210 70 280 30 330 46 400 80 440 40 500 20 520 14" stroke="#91F60D" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            <p className={s.foot}>Informational tool. Not investment advice.</p>
+          </aside>
+        )}
 
-      <main className={s.panel} id="content">
-        <div className={s.mobileBrand}>
-          <Logo size={30} />
-          <span>Finova</span>
-        </div>
-        <div className={s.card}>
-          <h1 className={s.title} tabIndex={-1} ref={headingRef} style={{ outline: "none" }}>
-            {copy.title}
-          </h1>
-          <p className={s.lead}>{copy.lead}</p>
-          {/* key = mode: switching between the states of this one page starts each form fresh */}
-          {mode === "signup" ? <SignUpForm key="signup" {...props} /> : null}
-          {mode === "login" ? <LoginForm key="login" {...props} /> : null}
-          {mode === "forgot" ? <ForgotForm key="forgot" {...props} /> : null}
-          {mode === "reset" ? <ResetForm key="reset" {...props} token={token} /> : null}
-        </div>
-      </main>
-    </div>
+        <main className={s.panel} id="content">
+          <div className={s.mobileBrand}>
+            <Logo size={30} />
+            <span>Finova</span>
+          </div>
+          <div className={s.card}>
+            <h1 className={s.title} tabIndex={-1} ref={headingRef} style={{ outline: "none" }}>
+              {copy.title}
+            </h1>
+            <p className={s.lead}>{copy.lead}</p>
+            {/* key = mode: switching between the states of this one page starts each form fresh */}
+            {mode === "signup" ? <SignUpForm key="signup" {...props} /> : null}
+            {mode === "login" ? <LoginForm key="login" {...props} /> : null}
+            {mode === "forgot" ? <ForgotForm key="forgot" {...props} /> : null}
+            {mode === "reset" ? <ResetForm key="reset" {...props} token={token} /> : null}
+          </div>
+        </main>
+      </div>
+      {mode === "signup" ? (
+        <>
+          <MarketFacts />
+          <SpendingPsychology />
+          <GetStarted />
+        </>
+      ) : null}
+    </>
   );
 }
