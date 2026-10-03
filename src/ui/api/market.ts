@@ -1,5 +1,5 @@
 import { getEnveloped, sendEnveloped } from "./client";
-import type { Enveloped, FxHistory, FxRate, NewsDetail, NewsItem, StockHistory, StockItem, StockRange } from "./types";
+import type { Enveloped, FxBanks, FxHistory, FxRate, NewsDetail, NewsItem, StockHistory, StockItem, StockRange } from "./types";
 
 /** Market endpoints answer `{data, meta}`. All LIVE (see mock-registry). */
 
@@ -13,10 +13,12 @@ export const FX_PERIODS = [
   { id: "1Y", days: 365, label: "1Y" },
 ] as const;
 export type FxPeriodId = (typeof FX_PERIODS)[number]["id"];
-export const FX_PAIRS = ["USD/AMD", "EUR/AMD", "GBP/AMD", "RUB/AMD"] as const;
+export const FX_PAIRS = ["USD/AMD", "EUR/AMD", "GEL/AMD", "RUB/AMD"] as const;
 
 export const getFxHistory = (pair: string, days: number, signal?: AbortSignal): Promise<Enveloped<FxHistory>> =>
   getEnveloped("/api/market/fx/history", { query: { pair, days }, signal });
+
+export const getFxBanks = (signal?: AbortSignal): Promise<Enveloped<FxBanks>> => getEnveloped("/api/market/fx/banks", { signal });
 
 export const getStocks = (signal?: AbortSignal): Promise<Enveloped<{ items: StockItem[] }>> => getEnveloped("/api/market/stocks", { signal });
 

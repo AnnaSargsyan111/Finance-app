@@ -66,7 +66,7 @@ export function NewsDetailPage() {
         <time dateTime={a.publishedAt}>{formatDateTime(a.publishedAt)}</time>
       </div>
       <h1 className={s.detailTitle}>{a.title}</h1>
-      <NewsImage src={a.imageUrl} className={s.detailHero} />
+      <NewsImage src={a.imageUrl} article={a} className={s.detailHero} labelArt />
       <div>
         {a.summary ? <p className={s.detailText}>{a.summary}</p> : <p className={s.detailText}>The publisher&apos;s feed didn&apos;t include a summary for this article. Use the button below to read it at the source.</p>}
         <p className={s.attribution} style={{ marginTop: 12 }}>

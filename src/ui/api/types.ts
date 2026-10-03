@@ -89,6 +89,23 @@ export interface FxPoint {
   isCarriedForward: boolean;
   sourceDate: string;
 }
+/** commercial-bank rates: `buy` = what the bank pays you for foreign currency, `sell` = what you pay the bank for it */
+export interface FxBankRate {
+  pair: string;
+  buy: string;
+  sell: string;
+}
+export interface FxBank {
+  id: string;
+  name: string;
+  capturedAt: string | null;
+  cash: FxBankRate[];
+  nonCash: FxBankRate[];
+}
+export interface FxBanks {
+  banks: FxBank[];
+  attribution: { name: string; url: string };
+}
 export interface FxHistory {
   pair: string;
   series: FxPoint[];

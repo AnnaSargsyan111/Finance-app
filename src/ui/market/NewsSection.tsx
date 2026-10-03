@@ -18,7 +18,7 @@ import s from "./market.module.css";
 function NewsCard({ item, now }: { item: NewsItem; now: Date }) {
   return (
     <article className={s.newsCard}>
-      <NewsImage src={item.imageUrl} />
+      <NewsImage src={item.imageUrl} article={item} />
       <div className={s.newsBody}>
         <div className={s.newsTop}>
           <span className={s.source}>{item.source}</span>

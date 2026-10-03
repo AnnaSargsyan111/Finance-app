@@ -143,7 +143,7 @@ function latestFromBlob(blob: LatestBlob) {
 
 export async function getFxLatest(opts: { forceRefresh?: boolean } = {}) {
   try {
-    const r = await cached<LatestBlob>("fx:latest:v1", { ttlMs: APP.cacheTtl.fxLatestMs, fetch: fetchLatestChain, forceRefresh: opts.forceRefresh });
+    const r = await cached<LatestBlob>("fx:latest:v2", { ttlMs: APP.cacheTtl.fxLatestMs, fetch: fetchLatestChain, forceRefresh: opts.forceRefresh });
     const meta: FxMeta = {
       asOf: r.fetchedAt.toISOString(),
       source: sourceLabel(r.value.provider),
@@ -207,7 +207,7 @@ export async function getFxHistory(opts: { pair: string; days: number; today?: s
   const start = addDays(today, -(opts.days - 1));
   // One cached window covers every pair and every `days` <= maxDays (1 upstream call per TTL).
   const windowFrom = addDays(today, -(APP.fx.maxDays - 1) - APP.fx.historyPadDays);
-  const key = `fx:range:v1:${today}`;
+  const key = `fx:range:v2:${today}`;
   let observations: FxObservation[];
   let meta: FxMeta;
   try {

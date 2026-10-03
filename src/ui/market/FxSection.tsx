@@ -6,12 +6,14 @@ import { FX_PAIRS, FX_PERIODS, getFxHistory, getFxLatest, type FxPeriodId } from
 import { errorMessage } from "../api/client";
 import type { FxPoint } from "../api/types";
 import { AXIS_COLOR, CHART_COLORS, ChartFigure, DataTable, GRID_COLOR } from "../components/ChartParts";
-import { Card, ChangeChip, Figure, Segmented } from "../components/Display";
+import { Card, ChangeChip, Segmented } from "../components/Display";
 import { EmptyState, ErrorState, Note, Skeleton, Spinner } from "../components/Feedback";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { useResource } from "../hooks/useResource";
 import { cx } from "../lib/cx";
 import { formatDate, formatDayMonth, formatFx, fxDecimals } from "../lib/format";
+import { BankRates } from "./BankRates";
+import { CountFigure } from "./CountFigure";
 import { carriedRuns } from "./fx-utils";
 import { MetaLine } from "./MetaLine";
 import s from "./market.module.css";
@@ -111,60 +113,66 @@ export function FxSection() {
 
   return (
     <div className={s.panel}>
-      {latest.status === "error" && !latest.data ? (
-        <ErrorState title="We couldn't load exchange rates" message={errorMessage(latest.error)} onRetry={latest.reload} />
-      ) : (
-        <>
-          <div className={s.pairs} role="radiogroup" aria-label="Currency pair">
-            {latest.data
-              ? latest.data.data.rates.map((r) => {
-                  const active = r.pair === pair;
-                  return (
-                    <button
-                      key={r.pair}
-                      id={`fxp-${FX_PAIRS.indexOf(r.pair as (typeof FX_PAIRS)[number])}`}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      tabIndex={active ? 0 : -1}
-                      className={cx(s.pair, active && s.pairActive)}
-                      onClick={() => setPair(r.pair)}
-                      onKeyDown={(e) => {
-                        const i = FX_PAIRS.indexOf(r.pair as (typeof FX_PAIRS)[number]);
-                        let n = -1;
-                        if (e.key === "ArrowRight" || e.key === "ArrowDown") n = (i + 1) % FX_PAIRS.length;
-                        if (e.key === "ArrowLeft" || e.key === "ArrowUp") n = (i + FX_PAIRS.length - 1) % FX_PAIRS.length;
-                        if (n >= 0) {
-                          e.preventDefault();
-                          setPair(FX_PAIRS[n]);
-                          requestAnimationFrame(() => document.getElementById(`fxp-${n}`)?.focus());
-                        }
-                      }}
-                    >
-                      <span className={s.pairName}>
-                        {r.pair}
-                        {active ? <span className={s.pairSel}>Chart</span> : null}
-                      </span>
-                      <Figure value={r.rate} decimals={fxDecimals(r.pair)} size="md" />
-                      <span>
-                        <ChangeChip change={r.diff} decimals={fxDecimals(r.pair)} />
-                      </span>
-                      <span className={s.pairDate}>CBA official rate, {formatDate(r.sourceDate)}</span>
-                    </button>
-                  );
-                })
-              : FX_PAIRS.map((p) => (
-                  <div key={p} className={s.pair} aria-hidden="true">
-                    <Skeleton width={70} height={14} />
-                    <Skeleton width="80%" height={36} />
-                    <Skeleton width={90} height={22} radius={99} />
-                    <Skeleton width="60%" height={12} />
-                  </div>
-                ))}
-          </div>
-          {latest.data ? <MetaLine meta={latest.data.meta} label="Rates fetched" /> : null}
-        </>
-      )}
+      <BankRates official={latest.data?.data.rates} />
+
+      <Card title="Central Bank of Armenia rates" eyebrow="Official reference rates">
+        <div className={s.rates}>
+          {latest.status === "error" && !latest.data ? (
+            <ErrorState title="We couldn't load exchange rates" message={errorMessage(latest.error)} onRetry={latest.reload} />
+          ) : (
+            <>
+              <div className={s.pairs} role="radiogroup" aria-label="Currency pair">
+                {latest.data
+                  ? latest.data.data.rates.map((r) => {
+                      const active = r.pair === pair;
+                      return (
+                        <button
+                          key={r.pair}
+                          id={`fxp-${FX_PAIRS.indexOf(r.pair as (typeof FX_PAIRS)[number])}`}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          tabIndex={active ? 0 : -1}
+                          className={cx(s.pair, active && s.pairActive)}
+                          onClick={() => setPair(r.pair)}
+                          onKeyDown={(e) => {
+                            const i = FX_PAIRS.indexOf(r.pair as (typeof FX_PAIRS)[number]);
+                            let n = -1;
+                            if (e.key === "ArrowRight" || e.key === "ArrowDown") n = (i + 1) % FX_PAIRS.length;
+                            if (e.key === "ArrowLeft" || e.key === "ArrowUp") n = (i + FX_PAIRS.length - 1) % FX_PAIRS.length;
+                            if (n >= 0) {
+                              e.preventDefault();
+                              setPair(FX_PAIRS[n]);
+                              requestAnimationFrame(() => document.getElementById(`fxp-${n}`)?.focus());
+                            }
+                          }}
+                        >
+                          <span className={s.pairName}>
+                            {r.pair}
+                            {active ? <span className={s.pairSel}>Chart</span> : null}
+                          </span>
+                          <CountFigure value={r.rate} pair={r.pair} decimals={fxDecimals(r.pair)} />
+                          <span>
+                            <ChangeChip change={r.diff} decimals={fxDecimals(r.pair)} />
+                          </span>
+                          <span className={s.pairDate}>CBA official rate, {formatDate(r.sourceDate)}</span>
+                        </button>
+                      );
+                    })
+                  : FX_PAIRS.map((p) => (
+                      <div key={p} className={s.pair} aria-hidden="true">
+                        <Skeleton width={70} height={14} />
+                        <Skeleton width="80%" height={36} />
+                        <Skeleton width={90} height={22} radius={99} />
+                        <Skeleton width="60%" height={12} />
+                      </div>
+                    ))}
+              </div>
+              {latest.data ? <MetaLine meta={latest.data.meta} label="Rates fetched" /> : null}
+            </>
+          )}
+        </div>
+      </Card>
 
       <Card
         title={`${pair} history`}

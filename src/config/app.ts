@@ -13,6 +13,8 @@ export const APP = {
   cacheTtl: {
     fxLatestMs: 45 * MIN,
     fxHistoryMs: 6 * HOUR,
+    /** commercial-bank cash buy/sell boards (they move through the day) */
+    fxBanksMs: 30 * MIN,
     stockQuoteMs: 60_000,
     stockFundamentalsMs: 24 * HOUR,
     stockHistoryMs: 6 * HOUR,
@@ -54,7 +56,7 @@ export const APP = {
     nameMax: 60,
   },
   fx: {
-    currencies: ["USD", "EUR", "GBP", "RUB"] as const,
+    currencies: ["USD", "EUR", "GEL", "RUB"] as const,
     historyPadDays: 35,
     minDays: 7,
     maxDays: 366,

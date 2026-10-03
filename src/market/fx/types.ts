@@ -1,5 +1,5 @@
 /** Internal FX provider contract: routes/services never see a provider's wire format. */
-export type FxIso = "USD" | "EUR" | "GBP" | "RUB";
+export type FxIso = "USD" | "EUR" | "GEL" | "RUB";
 
 /** Per-unit rate in AMD (already divided by the published Amount). Decimal STRING, never a float. */
 export interface FxObservation {

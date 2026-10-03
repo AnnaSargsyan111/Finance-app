@@ -199,7 +199,7 @@ they should be from Vercel's network same as from any other host.
    pages are live). Expect `201` with `{user}` and a session cookie; the CSRF check must accept the request (if it
    doesn't, `APP_BASE_URL` is still wrong — see §1).
 2. **FX latest** — `GET /api/market/fx/latest` (with the session cookie). Expect `200`, `meta.source: "CBA"`,
-   `meta.stale: false`, four rates (USD/EUR/GBP/RUB).
+   `meta.stale: false`, four rates (USD/EUR/GEL/RUB).
 3. **News list** — `GET /api/market/news`. Expect `200` with up to 6 items, each with `title`, `source`,
    `publishedAt`, `category`, `summary`/`imageUrl` (may be `null`). First call after deploy may take a few seconds
    (cold cache, real RSS fetches); subsequent calls should be fast (cached).

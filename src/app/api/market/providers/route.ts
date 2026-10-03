@@ -19,6 +19,7 @@ export const GET = route({ auth: true }, async () => {
         ...keyedProviderStatus(),
         { provider: "cba", role: "FX (official, keyless)", mode: "live" },
         { provider: "frankfurter", role: "FX fallback (keyless)", mode: "live" },
+        { provider: "rate.am", role: "bank cash / non-cash buy-sell rates for Ameriabank, ACBA, IDBank (read from the public page, no API)", mode: "live" },
         { provider: "fawazahmed0", role: "FX last-resort latest (keyless)", mode: "live" },
         { provider: "sec-edgar", role: "fundamentals (keyless, needs SEC_USER_AGENT)", mode: env.SEC_USER_AGENT ? "live" : "notConfigured" },
         { provider: "yahoo", role: "prototype-only price fallback (unofficial)", mode: env.ALLOW_YAHOO_PROTOTYPE ? "live" : "disabled" },

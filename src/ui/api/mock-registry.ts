@@ -31,6 +31,7 @@ export const MOCK = {
   // market
   fxLatest: false,
   fxHistory: false,
+  fxBanks: false,
   stocks: false,
   stockHistory: false,
   news: false,

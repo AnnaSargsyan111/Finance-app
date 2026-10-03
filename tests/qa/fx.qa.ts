@@ -6,7 +6,7 @@ let c: Client;
 beforeAll(async () => {
   c = (await newUser("fx")).c;
 });
-const PAIRS = ["USD/AMD", "EUR/AMD", "GBP/AMD", "RUB/AMD"];
+const PAIRS = ["USD/AMD", "EUR/AMD", "GEL/AMD", "RUB/AMD"];
 
 describe("E FX", () => {
   it("latest: all four pairs, sane rates, sourceDate present, meta.source CBA when live", async () => {
@@ -22,13 +22,13 @@ describe("E FX", () => {
     const rub = rates.find((x) => x.pair === "RUB/AMD")!;
     expect(Number(usd.rate)).toBeGreaterThan(100); // plausible AMD/USD magnitude
     expect(Number(rub.rate)).toBeLessThan(20); // RUB is per-unit, not per-100
-    expect(usd.rate.split(".")[1]?.length).toBeLessThanOrEqual(2); // 2 dp for USD/EUR/GBP
+    expect(usd.rate.split(".")[1]?.length).toBeLessThanOrEqual(2); // 2 dp for USD/EUR/GEL
     expect(rub.rate.split(".")[1]?.length).toBeLessThanOrEqual(4); // RUB up to 4 dp
     console.log("FX latest:", JSON.stringify(rates), "meta:", JSON.stringify(r.body.meta));
     if (usd.rate === "363.44") {
       expect(usd.sourceDate).toBe("2026-09-18");
       expect(rates.find((x) => x.pair === "EUR/AMD")!.rate).toBe("417.05");
-      expect(rates.find((x) => x.pair === "GBP/AMD")!.rate).toBe("485.52");
+      expect(rates.find((x) => x.pair === "GEL/AMD")!.rate).toBe("139.53");
       expect(rates.find((x) => x.pair === "RUB/AMD")!.rate).toBe("4.3123");
       console.log("golden fixture (spec 12.3) matched exactly");
     } else {

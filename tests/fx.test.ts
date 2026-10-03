@@ -11,6 +11,8 @@ import { getFxHistory, getFxLatest, setFxProviders } from "@/market/fx/service";
 import { divideDecimal, perUnit } from "@/lib/money";
 import * as latestRoute from "@/app/api/market/fx/latest/route";
 import * as historyRoute from "@/app/api/market/fx/history/route";
+import * as banksRoute from "@/app/api/market/fx/banks/route";
+import { getBankRates, parseBankRates } from "@/market/fx/bank-rates";
 import * as convertRoute from "@/app/api/invest/convert/route";
 
 let user: TestUser;
@@ -29,13 +31,13 @@ afterEach(() => mock?.restore());
 const cbaXml = (name: string) => fixture("cba", name);
 
 describe("CBA SOAP parsing against RECORDED real responses (2026-09-21)", () => {
-  it("latest: USD 363.44, EUR 417.05, GBP 485.52, RUB 4.3123, CurrentDate 2026-09-18", () => {
-    const r = parseLatest(cbaXml("latest_2026-09-21.xml"), ["USD", "EUR", "GBP", "RUB"]);
+  it("latest: USD 363.44, EUR 417.05, GEL 139.53, RUB 4.3123, CurrentDate 2026-09-18", () => {
+    const r = parseLatest(cbaXml("latest_2026-09-21.xml"), ["USD", "EUR", "GEL", "RUB"]);
     expect(r.currentDate).toBe("2026-09-18");
     const by = Object.fromEntries(r.observations.map((o) => [o.iso, o]));
     expect(by.USD).toMatchObject({ rate: "363.44", diff: "-0.06", date: "2026-09-18" });
     expect(by.EUR.rate).toBe("417.05");
-    expect(by.GBP.rate).toBe("485.52");
+    expect(by.GEL.rate).toBe("139.53");
     expect(by.RUB.rate).toBe("4.3123");
   });
 
@@ -46,7 +48,7 @@ describe("CBA SOAP parsing against RECORDED real responses (2026-09-21)", () => 
       "2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11",
       "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18",
     ];
-    for (const iso of ["USD", "EUR", "GBP", "RUB"]) {
+    for (const iso of ["USD", "EUR", "GEL", "RUB"]) {
       const dates = rows.filter((r) => r.iso === iso).map((r) => r.date).sort();
       expect(dates, iso).toEqual(expectedDates);
     }
@@ -125,7 +127,7 @@ describe("AC-B4 FX service on recorded data", () => {
     expect(a.data.rates).toEqual([
       { pair: "USD/AMD", rate: "363.44", diff: "-0.06", sourceDate: "2026-09-18" },
       { pair: "EUR/AMD", rate: "417.05", diff: "-0.18", sourceDate: "2026-09-18" },
-      { pair: "GBP/AMD", rate: "485.52", diff: "-1.02", sourceDate: "2026-09-18" },
+      { pair: "GEL/AMD", rate: "139.53", diff: "-0.01", sourceDate: "2026-09-18" },
       { pair: "RUB/AMD", rate: "4.3123", diff: expect.any(String), sourceDate: "2026-09-18" },
     ]);
     expect(a.meta).toMatchObject({ source: "CBA", stale: false, isFixture: false });
@@ -315,5 +317,119 @@ describe("FX + convert HTTP routes", () => {
 
   it("text helper sanity (mock)", () => {
     expect(text("x").status).toBe(200);
+  });
+});
+
+/* Bank buy/sell rates: a SYNTHETIC page with invented numbers, in the shape of the Rate.am banks page (Next.js flight payload:
+   `<hex id>:<json>` lines whose values point at each other as "$<hex id>"). */
+function flightPage(banks: Record<string, unknown>, opts: { omitRates?: boolean } = {}): string {
+  const lines: string[] = [];
+  let next = 1;
+  const emit = (v: unknown): string => {
+    const id = (next++).toString(16);
+    lines.push(`${id}:${JSON.stringify(v)}`);
+    return `$${id}`;
+  };
+  // organisation details use the same bank keys but have no `rates` - the parser must skip that chunk
+  emit(Object.fromEntries(Object.keys(banks).map((k) => [k, emit({ name: k, slug: k })])));
+  const root: Record<string, string> = {};
+  for (const [code, b] of Object.entries(banks)) {
+    const { lastUpdated, rates } = b as { lastUpdated: number; rates: Record<string, Record<string, unknown>> };
+    const rateRefs = Object.fromEntries(Object.entries(rates).map(([iso, boards]) => [iso, emit(Object.fromEntries(Object.entries(boards).map(([k, v]) => [k, emit(v)])))]));
+    root[code] = emit({ lastUpdated, ...(opts.omitRates ? {} : { rates: emit(rateRefs) }) });
+  }
+  emit(root);
+  const pushes = lines.map((l) => `<script>self.__next_f.push([1,${JSON.stringify(l + "\n")}])</script>`);
+  return `<html><body>${pushes.join("")}</body></html>`;
+}
+const T = 1791045913000; // 2026-10-03T16:45:13Z
+const board = (buy: string, sell: string) => ({ buy, sell });
+const bankPage = (opts: { omitRates?: boolean } = {}) =>
+  flightPage(
+    {
+      ameriabank: {
+        lastUpdated: T,
+        rates: {
+          USD: { CASH: board("360.00", "365.00"), CLEARING: board("360.00", "365.00") },
+          EUR: { CASH: board("401.00", "415.00"), CLEARING: board("401.00", "415.50") },
+          RUR: { CASH: board("4.07", "4.40"), CLEARING: board("4.20", "4.45") },
+          GEL: { CASH: board("134.00", "144.50"), CLEARING: board("", "") }, // not quoted non-cash
+          JPY: { CASH: board("2.18", "2.43"), CLEARING: board("2.18", "2.43") }, // not one of our currencies
+        },
+      },
+      "acba-bank": {
+        lastUpdated: T,
+        rates: {
+          USD: { CASH: board("360", "364"), CARD: board("1", "2"), CLEARING: board("360", "365") },
+          GEL: { CASH: board("137", "147"), CARD: board("137", "147"), CLEARING: board("137", "147") },
+        },
+      },
+      "aydi-bank": { lastUpdated: T, rates: { USD: { CASH: board("0", "364"), CLEARING: board("360", "x") } } }, // invalid numbers
+      "some-other-bank": { lastUpdated: T, rates: { USD: { CASH: board("350", "370") } } }, // not one of our banks
+    },
+    opts,
+  );
+const rateAmHost = (res: () => Response) => (url: string) => (new URL(url).host === "www.rate.am" ? res() : undefined);
+const htmlRes = (body: string, status = 200) => new Response(body, { status, headers: { "content-type": "text/html" } });
+
+describe("bank buy/sell rates (cash and non-cash)", () => {
+  it("reads our three banks from the page payload: CASH board = Cash, CLEARING board = Non-cash (CARD ignored); rouble RUR -> RUB", () => {
+    const banks = parseBankRates(bankPage());
+    expect(banks.map((b) => b.id)).toEqual(["ameriabank", "acba"]); // idbank has no valid number, the other bank is not ours
+    expect(banks[0]).toEqual({
+      id: "ameriabank",
+      name: "Ameriabank",
+      capturedAt: "2026-10-03T16:45:13.000Z",
+      cash: [
+        { pair: "USD/AMD", buy: "360.00", sell: "365.00" },
+        { pair: "EUR/AMD", buy: "401.00", sell: "415.00" },
+        { pair: "GEL/AMD", buy: "134.00", sell: "144.50" },
+        { pair: "RUB/AMD", buy: "4.07", sell: "4.40" },
+      ],
+      nonCash: [
+        { pair: "USD/AMD", buy: "360.00", sell: "365.00" },
+        { pair: "EUR/AMD", buy: "401.00", sell: "415.50" },
+        { pair: "RUB/AMD", buy: "4.20", sell: "4.45" }, // no GEL: empty strings mean "not quoted"
+      ],
+    });
+    expect(banks[1].cash.map((r) => `${r.pair} ${r.buy}/${r.sell}`)).toEqual(["USD/AMD 360.00/364.00", "GEL/AMD 137.00/147.00"]);
+    expect(banks[1].nonCash.map((r) => `${r.pair} ${r.buy}/${r.sell}`)).toEqual(["USD/AMD 360.00/365.00", "GEL/AMD 137.00/147.00"]);
+  });
+
+  it("an unrecognised page, or a payload without rates, is an upstream error (never a half-empty answer)", () => {
+    expect(() => parseBankRates("<html>maintenance</html>")).toThrow(/unexpected format/);
+    expect(() => parseBankRates(bankPage({ omitRates: true }))).toThrow(/unexpected format/);
+  });
+
+  it("GET /api/market/fx/banks: session required, envelope with both boards and attribution, cached (2nd call = no upstream)", async () => {
+    mock = mockFetch(rateAmHost(() => htmlRes(bankPage())));
+    expect((await call(banksRoute.GET, "GET", "/api/market/fx/banks")).status).toBe(401);
+    const r = await call(banksRoute.GET, "GET", "/api/market/fx/banks", { jar: user.jar });
+    expect(r.status).toBe(200);
+    expect(r.body.data.attribution).toEqual({ name: "Rate.am", url: "https://www.rate.am" });
+    expect(r.body.data.banks).toHaveLength(2);
+    expect(r.body.data.banks[0].cash).toHaveLength(4);
+    expect(r.body.data.banks[0].nonCash).toHaveLength(3);
+    expect(r.body.meta).toMatchObject({ stale: false, isFixture: false });
+    const before = mock.calls.length;
+    await call(banksRoute.GET, "GET", "/api/market/fx/banks", { jar: user.jar });
+    expect(mock.calls.length).toBe(before);
+  });
+
+  it("source down and nothing cached -> 503 UPSTREAM_UNAVAILABLE; after a good fetch, a later failure serves the last good value flagged stale", async () => {
+    mock = mockFetch(rateAmHost(() => text("nope", 500)));
+    const down = await call(banksRoute.GET, "GET", "/api/market/fx/banks", { jar: user.jar });
+    expect(down.status).toBe(503);
+    expect(down.body.error.code).toBe("UPSTREAM_UNAVAILABLE");
+    mock.restore();
+    await resetCache(); // forget the remembered failure
+
+    mock = mockFetch(rateAmHost(() => htmlRes(bankPage())));
+    await getBankRates();
+    mock.restore();
+    mock = mockFetch(rateAmHost(() => htmlRes("<html>changed layout</html>")));
+    const stale = await getBankRates({ forceRefresh: true });
+    expect(stale.meta.stale).toBe(true);
+    expect(stale.data.banks).toHaveLength(2);
   });
 });
