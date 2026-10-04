@@ -179,6 +179,8 @@ export interface Driver {
   label: string;
   /** already formatted by the backend, e.g. "103.0%" */
   value: string;
+  /** the number behind `value` (a fraction for percentages); older saved results may not have it */
+  rawValue?: number | null;
   percentile?: number | null;
   /** "top N%" of the eligible set */
   topPercent?: number | null;

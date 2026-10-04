@@ -20,19 +20,20 @@ export interface Resource<T> {
  * Small data hook: aborts superseded requests, ignores late answers, keeps the last good value while reloading
  * (so sections can show a stale value plus a spinner instead of blanking).
  */
-export function useResource<T>(load: (signal: AbortSignal) => Promise<T>, deps: DependencyList, opts: { enabled?: boolean } = {}): Resource<T> {
+export function useResource<T>(load: (signal: AbortSignal) => Promise<T>, deps: DependencyList, opts: { enabled?: boolean; initialData?: T } = {}): Resource<T> {
   const enabled = opts.enabled ?? true;
-  const [state, setState] = useState<{ status: ResourceStatus; data: T | undefined; error: unknown }>({
-    status: "loading",
-    data: undefined,
-    error: null,
-  });
+  /** data the caller already has (for example a result being restored): shown at once and not requested again until `reload` */
+  const hasInitial = opts.initialData !== undefined;
+  const [state, setState] = useState<{ status: ResourceStatus; data: T | undefined; error: unknown }>(
+    hasInitial ? { status: "success", data: opts.initialData, error: null } : { status: "loading", data: undefined, error: null },
+  );
   const [nonce, setNonce] = useState(0);
   const loadRef = useRef(load);
   loadRef.current = load;
 
   useEffect(() => {
     if (!enabled) return;
+    if (hasInitial && nonce === 0) return; // already have it: no request until `reload` is pressed
     const ctrl = new AbortController();
     setState((s) => ({ ...s, status: "loading", error: null }));
     loadRef

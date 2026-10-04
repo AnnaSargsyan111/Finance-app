@@ -5,6 +5,8 @@ import type { Driver, Holding, PortfolioResult, RecommendationResult, SingleResu
 import { Card } from "../components/Display";
 import { Note } from "../components/Feedback";
 import { formatAmd, formatDate, formatNumber, formatPercent, formatUsd } from "../lib/format";
+import { MetricTip } from "./MetricTip";
+import { driverInfoKey, driverNumber, type InfoCtx } from "./metric-info";
 import s from "./invest.module.css";
 
 /* ------------------------------------------------------------------ score */
@@ -13,7 +15,10 @@ export function ScoreCard({ result, action }: { result: RecommendationResult; ac
     <Card>
       <div className={s.scoreCard}>
         <div>
-          <span className={s.scoreLabel}>{result.scoreLabel || "Match score"}</span>
+          <span className={s.scoreLabel}>
+            {result.scoreLabel || "Match score"}
+            <MetricTip k="matchScore" ctx={{ score: result.score }} />
+          </span>
           <div className={s.scoreRow}>
             <span style={{ fontSize: "clamp(48px, 8vw, 72px)", fontWeight: 300, letterSpacing: "-0.04em", lineHeight: 1 }} className="num" aria-label={`Match score ${result.score} out of 100`}>
               {result.score}
@@ -37,13 +42,16 @@ export function ScoreCard({ result, action }: { result: RecommendationResult; ac
 }
 
 /* ------------------------------------------------------------------ shared pieces */
-function Drivers({ drivers }: { drivers?: Driver[] }) {
+function Drivers({ drivers, name, cost }: { drivers?: Driver[]; name: string; cost: number | null }) {
   if (!drivers?.length) return null;
   return (
     <ul className={s.drivers}>
       {drivers.map((d, i) => (
         <li key={`${d.label}-${i}`} className={s.driver}>
-          <span>{d.label}</span>
+          <span>
+            {d.label}
+            <MetricTip k={driverInfoKey(d.label)} ctx={{ name, value: driverNumber(d), top: d.topPercent, cost }} />
+          </span>
           <span className={s.driverVal}>
             {d.value}
             {d.topPercent != null ? <small>top {d.topPercent}% of eligible stocks</small> : null}
@@ -83,17 +91,24 @@ export function FinePrint({ result }: { result: RecommendationResult }) {
 }
 
 function amounts(result: RecommendationResult) {
+  const ctx = { inputAmd: result.inputs.amountAmd, allocatedAmd: result.allocatedAmountAmd, unallocatedAmd: result.unallocatedCashAmd };
   return (
     <>
       <div>
-        <dt>Allocated</dt>
+        <dt>
+          Allocated
+          <MetricTip k="allocated" ctx={ctx} />
+        </dt>
         <dd>
           {formatAmd(result.allocatedAmountAmd)}
           <small>{formatUsd(result.allocatedAmountUsd, 2)}</small>
         </dd>
       </div>
       <div>
-        <dt>Unallocated cash</dt>
+        <dt>
+          Unallocated cash
+          <MetricTip k="unallocated" ctx={ctx} />
+        </dt>
         <dd>
           {formatAmd(result.unallocatedCashAmd)}
           <small>{formatUsd(result.unallocatedCashUsd, 2)}</small>
@@ -107,6 +122,7 @@ function amounts(result: RecommendationResult) {
 export function SingleView({ result }: { result: SingleResult }) {
   const p = result.pick;
   const m = p.metrics;
+  const tip = { name: p.name, price: Number(p.price), shares: p.shares, cost: Number(p.cost), allocatedAmd: result.allocatedAmountAmd, leftUsd: Number(result.unallocatedCashUsd), leftAmd: result.unallocatedCashAmd };
   return (
     <div className={s.section}>
       <div className={s.pickGrid}>
@@ -118,22 +134,34 @@ export function SingleView({ result }: { result: SingleResult }) {
           </p>
           <dl className={s.stats}>
             <div>
-              <dt>Price per share</dt>
+              <dt>
+                Price per share
+                <MetricTip k="price" ctx={tip} />
+              </dt>
               <dd>{formatUsd(p.price, 2)}</dd>
             </div>
             <div>
-              <dt>Shares for your amount</dt>
+              <dt>
+                Shares for your amount
+                <MetricTip k="shares" ctx={tip} />
+              </dt>
               <dd>{formatNumber(p.shares)}</dd>
             </div>
             <div>
-              <dt>Cost</dt>
+              <dt>
+                Cost
+                <MetricTip k="cost" ctx={tip} />
+              </dt>
               <dd>
                 {formatUsd(p.cost, 2)}
                 <small>{formatAmd(result.allocatedAmountAmd)}</small>
               </dd>
             </div>
             <div>
-              <dt>Cash left over</dt>
+              <dt>
+                Cash left over
+                <MetricTip k="cashLeft" ctx={tip} />
+              </dt>
               <dd>
                 {formatAmd(result.unallocatedCashAmd)}
                 <small>{formatUsd(result.unallocatedCashUsd, 2)}</small>
@@ -141,20 +169,26 @@ export function SingleView({ result }: { result: SingleResult }) {
             </div>
             {m?.vol1y != null ? (
               <div>
-                <dt>1-year volatility</dt>
+                <dt>
+                  1-year volatility
+                  <MetricTip k="vol1y" ctx={{ ...tip, value: m.vol1y }} />
+                </dt>
                 <dd>{formatPercent(m.vol1y * 100, 1)}</dd>
               </div>
             ) : null}
             {m?.maxDD1y != null ? (
               <div>
-                <dt>1-year max drawdown</dt>
+                <dt>
+                  1-year max drawdown
+                  <MetricTip k="maxDD" ctx={{ ...tip, value: m.maxDD1y }} />
+                </dt>
                 <dd>{formatPercent(m.maxDD1y * 100, 1)}</dd>
               </div>
             ) : null}
           </dl>
         </Card>
         <Card title="Why this match" eyebrow="What stands out">
-          <Drivers drivers={p.drivers} />
+          <Drivers drivers={p.drivers} name={p.name} cost={Number.isFinite(Number(p.cost)) ? Number(p.cost) : null} />
           <p className="sr-only">{p.explanation}</p>
         </Card>
       </div>
@@ -185,17 +219,28 @@ function reasonText(h: Holding): string {
 }
 
 function HoldingsTable({ result }: { result: PortfolioResult }) {
+  const first = result.holdings[0];
+  const tip = first ? { name: first.name, percent: first.allocationPercent, amountAmd: first.allocatedAmountAmd, shares: first.shares, price: Number(first.price), text: reasonText(first) } : {};
   return (
     <table className={s.hold}>
       <caption className="sr-only">Recommended portfolio holdings</caption>
       <thead>
         <tr>
           <th scope="col">Asset</th>
-          <th scope="col" className={s.r}>Allocation</th>
+          <th scope="col" className={s.r}>
+            Allocation
+            <MetricTip k="allocation" ctx={tip} />
+          </th>
           <th scope="col" className={s.r}>Amount (AMD)</th>
           <th scope="col" className={s.r}>Amount (USD)</th>
-          <th scope="col" className={s.r}>Shares</th>
-          <th scope="col">Reasons</th>
+          <th scope="col" className={s.r}>
+            Shares
+            <MetricTip k="sharesCol" ctx={tip} />
+          </th>
+          <th scope="col">
+            Reasons
+            <MetricTip k="reasons" ctx={tip} />
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -241,12 +286,14 @@ function HoldingsTable({ result }: { result: PortfolioResult }) {
 
 export function PortfolioView({ result, benchmark }: { result: PortfolioResult; benchmark: ReactNode }) {
   const m = result.metrics ?? {};
-  const metricItems: [string, string][] = [
-    ["Holdings", m.holdingsCount != null ? String(m.holdingsCount) : String(result.holdings.length)],
-    ["Weighted beta", m.weightedBeta != null ? formatNumber(m.weightedBeta, 2) : "-"],
-    ["Estimated volatility", m.estimatedVolatility != null ? formatPercent(m.estimatedVolatility * 100, 1) : "-"],
-    ["Dividend yield", m.weightedDividendYield != null ? formatPercent(m.weightedDividendYield * 100, 2) : "-"],
-    ["Effective holdings", m.effectiveN != null ? formatNumber(m.effectiveN, 1) : "-"],
+  const count = m.holdingsCount != null ? m.holdingsCount : result.holdings.length;
+  const allocatedAmd = result.allocatedAmountAmd;
+  const metricItems: { label: string; value: string; key: string; ctx: InfoCtx }[] = [
+    { label: "Holdings", value: String(count), key: "holdingsCount", ctx: { value: count } },
+    { label: "Weighted beta", value: m.weightedBeta != null ? formatNumber(m.weightedBeta, 2) : "-", key: "weightedBeta", ctx: { value: m.weightedBeta } },
+    { label: "Estimated volatility", value: m.estimatedVolatility != null ? formatPercent(m.estimatedVolatility * 100, 1) : "-", key: "estimatedVolatility", ctx: { value: m.estimatedVolatility, band: m.volatilityBand, allocatedAmd } },
+    { label: "Dividend yield", value: m.weightedDividendYield != null ? formatPercent(m.weightedDividendYield * 100, 2) : "-", key: "portfolioDividendYield", ctx: { value: m.weightedDividendYield, allocatedAmd } },
+    { label: "Effective holdings", value: m.effectiveN != null ? formatNumber(m.effectiveN, 1) : "-", key: "effectiveN", ctx: { value: m.effectiveN, count } },
   ];
   return (
     <div className={s.section}>
@@ -259,10 +306,13 @@ export function PortfolioView({ result, benchmark }: { result: PortfolioResult; 
       <Warnings result={result} />
       <Card title="Portfolio characteristics" eyebrow="At a glance">
         <dl className={s.metricsGrid}>
-          {metricItems.map(([k, v]) => (
-            <div key={k} className={s.metric}>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
+          {metricItems.map((it) => (
+            <div key={it.label} className={s.metric}>
+              <dt>
+                {it.label}
+                {it.value !== "-" ? <MetricTip k={it.key} ctx={it.ctx} /> : null}
+              </dt>
+              <dd>{it.value}</dd>
             </div>
           ))}
         </dl>

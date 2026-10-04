@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { addToHistory, getRecommendation } from "../api/invest";
 import { errorMessage, isApiError } from "../api/client";
 import type { PortfolioResult, RecMode, RecommendationResult, SingleResult } from "../api/types";
@@ -14,12 +14,14 @@ import { formatAmd } from "../lib/format";
 import { BenchmarkSection } from "./BenchmarkSection";
 import { horizonLabel, riskLabel } from "./labels";
 import { PortfolioView, ScoreCard, SingleView } from "./ResultViews";
+import { markSaved, rememberScroll, updateRecSession, type RecSession } from "./session-memory";
+import type { ComparisonResult, ComparisonWindow } from "../api/types";
 import type { Preferences } from "./StepFlow";
 import s from "./invest.module.css";
 
 /* ------------------------------------------------------------------ add to history */
-function AddToHistory({ result }: { result: RecommendationResult }) {
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "exists" | "error">("idle");
+function AddToHistory({ result, alreadySaved, onSaved }: { result: RecommendationResult; alreadySaved: boolean; onSaved: () => void }) {
+  const [state, setState] = useState<"idle" | "saving" | "saved" | "exists" | "error">(alreadySaved ? "exists" : "idle");
   const [error, setError] = useState<string | null>(null);
 
   async function add() {
@@ -29,6 +31,7 @@ function AddToHistory({ result }: { result: RecommendationResult }) {
     try {
       const r = await addToHistory(result.saveToken, result);
       setState(r.created ? "saved" : "exists");
+      onSaved();
     } catch (e) {
       setState("error");
       setError(
@@ -46,7 +49,7 @@ function AddToHistory({ result }: { result: RecommendationResult }) {
           <span className={s.addOk} role="status">
             <IconCheck size={16} /> {state === "exists" ? "Already in your history" : "Added to your history"}
           </span>
-          <Link href="/invest/history" style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>
+          <Link href="/invest/history" onClick={rememberScroll} style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>
             View history
           </Link>
         </>
@@ -118,11 +121,42 @@ function SectionError({ error, onRetry, what }: { error: unknown; onRetry: () =>
 }
 
 /* ------------------------------------------------------------------ result page */
-export function ResultPage({ prefs, onAdjust, onStartOver }: { prefs: Preferences; onAdjust: () => void; onStartOver: () => void }) {
-  const [tab, setTab] = useState<RecMode>("single");
-  // both sections start at the same moment and load INDEPENDENTLY (no full-page blocker)
-  const single = useResource((signal) => getRecommendation({ ...prefs, mode: "single" }, signal), []);
-  const portfolio = useResource((signal) => getRecommendation({ ...prefs, mode: "portfolio" }, signal), []);
+export function ResultPage({ prefs, onAdjust, onStartOver, restored }: { prefs: Preferences; onAdjust: () => void; onStartOver: () => void; restored?: RecSession | null }) {
+  const [tab, setTabState] = useState<RecMode>(restored?.tab ?? "single");
+  // the benchmark comparisons fetched so far live in the session, so a restored page reuses them
+  const [benchCache] = useState(() => restored?.benchCache ?? new Map<ComparisonWindow, ComparisonResult>());
+  useEffect(() => updateRecSession({ benchCache }), [benchCache]);
+  const setTab = (t: RecMode) => {
+    setTabState(t);
+    updateRecSession({ tab: t });
+  };
+  // both sections start at the same moment and load INDEPENDENTLY (no full-page blocker); a restored session brings its results with it, so nothing is asked for again
+  const single = useResource((signal) => getRecommendation({ ...prefs, mode: "single" }, signal), [], { initialData: restored?.single ?? undefined });
+  const portfolio = useResource((signal) => getRecommendation({ ...prefs, mode: "portfolio" }, signal), [], { initialData: restored?.portfolio ?? undefined });
+
+  // keep the memory of the latest recommendation up to date (see session-memory.ts)
+  useEffect(() => {
+    if (single.data) updateRecSession({ single: single.data });
+  }, [single.data]);
+  useEffect(() => {
+    if (portfolio.data) updateRecSession({ portfolio: portfolio.data });
+  }, [portfolio.data]);
+
+  // coming back from the history page: scroll to where the visitor was. The router scrolls to the top after the page appears, so this runs a little later too.
+  useEffect(() => {
+    if (!restored || restored.scrollY <= 0) return;
+    const y = restored.scrollY;
+    const go = () => window.scrollTo({ top: y, behavior: "instant" });
+    const raf = requestAnimationFrame(() => requestAnimationFrame(go));
+    const t1 = window.setTimeout(go, 120);
+    const t2 = window.setTimeout(go, 400);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const singleData = single.data?.data as SingleResult | undefined;
   const portfolioData = portfolio.data?.data as PortfolioResult | undefined;
@@ -159,7 +193,7 @@ export function ResultPage({ prefs, onAdjust, onStartOver }: { prefs: Preference
           <SectionSkeleton label="Finding the best single-stock match" />
         ) : (
           <div className={s.section} aria-busy={single.loading}>
-            <ScoreCard result={singleData} action={<AddToHistory result={singleData} />} />
+            <ScoreCard result={singleData} action={<AddToHistory result={singleData} alreadySaved={restored?.saved.single ?? false} onSaved={() => markSaved("single")} />} />
             <SingleView result={singleData} />
           </div>
         )}
@@ -172,8 +206,8 @@ export function ResultPage({ prefs, onAdjust, onStartOver }: { prefs: Preference
           <SectionSkeleton label="Building your portfolio" />
         ) : (
           <div className={s.section} aria-busy={portfolio.loading}>
-            <ScoreCard result={portfolioData} action={<AddToHistory result={portfolioData} />} />
-            <PortfolioView result={portfolioData} benchmark={<BenchmarkSection result={portfolioData} />} />
+            <ScoreCard result={portfolioData} action={<AddToHistory result={portfolioData} alreadySaved={restored?.saved.portfolio ?? false} onSaved={() => markSaved("portfolio")} />} />
+            <PortfolioView result={portfolioData} benchmark={<BenchmarkSection result={portfolioData} memory={{ window: restored?.benchWindow ?? null, cache: benchCache, onWindow: (w) => updateRecSession({ benchWindow: w }) }} />} />
           </div>
         )}
       </div>

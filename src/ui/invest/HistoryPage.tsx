@@ -11,8 +11,10 @@ import { IconArrowLeft, IconTrash } from "../components/Icons";
 import { useResource } from "../hooks/useResource";
 import { formatAmd, formatDateTime, formatPercent } from "../lib/format";
 import { Disclaimer, PageHeader } from "../shell/AppShell";
+import { useSession } from "../shell/Session";
 import { BenchmarkSection } from "./BenchmarkSection";
 import { horizonLabel, riskLabel } from "./labels";
+import { hasRecSession, requestResume } from "./session-memory";
 import { PortfolioView, ScoreCard, SingleView } from "./ResultViews";
 import s from "./invest.module.css";
 
@@ -83,6 +85,9 @@ function HistoryItem({ item, onDelete }: { item: SavedSummary; onDelete: (id: st
 }
 
 export function HistoryPage() {
+  const { user } = useSession();
+  // the latest recommendation of this visit, if there is one to go back to (see session-memory.ts)
+  const [canReturn] = useState(() => hasRecSession(user.id));
   const res = useResource((signal) => listHistory(signal), []);
   const [removing, setRemoving] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -112,10 +117,18 @@ export function HistoryPage() {
         greet={false}
         subtitle="Recommendations you chose to add, newest first. Nothing is saved unless you press Add."
         actions={
-          <LinkButton href="/invest" variant="secondary" size="sm">
-            <IconArrowLeft size={16} />
-            Back to Investment Recommendation
-          </LinkButton>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
+            {canReturn ? (
+              <LinkButton href="/invest" variant="primary" size="sm" onClick={() => requestResume(user.id)}>
+                <IconArrowLeft size={16} />
+                Back to my recommendation
+              </LinkButton>
+            ) : null}
+            <LinkButton href="/invest" variant="secondary" size="sm">
+              <IconArrowLeft size={16} />
+              Back to Investment Recommendation
+            </LinkButton>
+          </div>
         }
       />
       {err ? (

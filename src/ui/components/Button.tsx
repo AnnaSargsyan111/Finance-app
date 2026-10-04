@@ -27,7 +27,7 @@ export function Button({ variant, size, block, loading, icon, children, classNam
   );
 }
 
-export function LinkButton({ variant, size, block, icon, children, href, className, ...rest }: BaseProps & { href: string; className?: string; target?: string; rel?: string; "aria-label"?: string }) {
+export function LinkButton({ variant, size, block, icon, children, href, className, ...rest }: BaseProps & { href: string; className?: string; target?: string; rel?: string; "aria-label"?: string; onClick?: () => void }) {
   return (
     <Link href={href} className={classes({ variant, size, block, icon }, className)} {...rest}>
       {children}

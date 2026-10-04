@@ -10,6 +10,7 @@ import { Card, Segmented } from "../components/Display";
 import { EmptyState, ErrorState, Note, Skeleton, Spinner } from "../components/Feedback";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { formatDate, formatDayMonth, formatNumber, formatPercent } from "../lib/format";
+import { MetricTip } from "./MetricTip";
 import s from "./invest.module.css";
 
 export const WINDOWS: { value: ComparisonWindow; label: string }[] = [
@@ -20,6 +21,9 @@ export const WINDOWS: { value: ComparisonWindow; label: string }[] = [
   { value: "3Y", label: "3Y" },
   { value: "5Y", label: "5Y" },
 ];
+
+/** the window in words, for the example sentences in the explanations */
+const WINDOW_TEXT: Record<ComparisonWindow, string> = { "1M": "the last month", "3M": "the last 3 months", "6M": "the last 6 months", "1Y": "the last year", "3Y": "the last 3 years", "5Y": "the last 5 years" };
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const pct = (v: unknown, sign = false) => (num(v) === null ? "-" : formatPercent((v as number) * 100, 1, { sign }));
@@ -62,7 +66,10 @@ function MetricsTable({ data }: { data: ComparisonResult }) {
           <tbody>
             {rows.map((m) => (
               <tr key={m.key}>
-                <th scope="row" style={cellL}>{m.label}</th>
+                <th scope="row" style={cellL}>
+                  {m.label}
+                  <MetricTip k={`bm.${m.key}`} ctx={{ p: num(p[m.key]), b: num(b[m.key]), window: WINDOW_TEXT[data.window] ?? data.window, bench: data.benchmark.label }} />
+                </th>
                 <td style={cellR}>{m.fmt(p[m.key])}</td>
                 <td style={cellR}>{m.fmt(b[m.key])}</td>
               </tr>
@@ -80,15 +87,16 @@ const cellR: React.CSSProperties = { textAlign: "right", padding: "10px 8px", bo
 function DiversificationTable({ data }: { data: ComparisonResult }) {
   const d = data.diversification;
   if (!d) return null;
-  const rows: [string, string, string][] = [
-    ["Number of holdings", String(d.holdingsCount ?? "-"), d.universeSize ? `${d.universeSize} (index members)` : "-"],
-    ["Effective number of holdings", dec2(d.effectiveN), "-"],
-    ["Largest holding", pct(d.top1Weight), "-"],
-    ["Top 3 holdings", pct(d.top3Weight), "-"],
-    ["Sectors covered", String(d.sectorCount ?? "-"), "-"],
-    ["Largest sector", pct(d.maxSectorWeight), pct(d.benchmarkMaxSectorWeight)],
-    ["Average pairwise correlation", dec2(d.averagePairwiseCorrelation), "-"],
-    ["Diversification ratio", dec2(d.diversificationRatio), "-"],
+  /** label, portfolio text, benchmark text, explanation key, and the numbers behind the two texts (for the example sentence) */
+  const rows: { label: string; a: string; b: string; key: string; p: number | null; bn: number | null }[] = [
+    { label: "Number of holdings", a: String(d.holdingsCount ?? "-"), b: d.universeSize ? `${d.universeSize} (index members)` : "-", key: "div.holdingsCount", p: num(d.holdingsCount), bn: num(d.universeSize) },
+    { label: "Effective number of holdings", a: dec2(d.effectiveN), b: "-", key: "div.effectiveN", p: num(d.effectiveN), bn: null },
+    { label: "Largest holding", a: pct(d.top1Weight), b: "-", key: "div.top1", p: num(d.top1Weight), bn: null },
+    { label: "Top 3 holdings", a: pct(d.top3Weight), b: "-", key: "div.top3", p: num(d.top3Weight), bn: null },
+    { label: "Sectors covered", a: String(d.sectorCount ?? "-"), b: "-", key: "div.sectors", p: num(d.sectorCount), bn: null },
+    { label: "Largest sector", a: pct(d.maxSectorWeight), b: pct(d.benchmarkMaxSectorWeight), key: "div.maxSector", p: num(d.maxSectorWeight), bn: num(d.benchmarkMaxSectorWeight) },
+    { label: "Average pairwise correlation", a: dec2(d.averagePairwiseCorrelation), b: "-", key: "div.avgCorr", p: num(d.averagePairwiseCorrelation), bn: null },
+    { label: "Diversification ratio", a: dec2(d.diversificationRatio), b: "-", key: "div.divRatio", p: num(d.diversificationRatio), bn: null },
   ];
   return (
     <div>
@@ -103,11 +111,14 @@ function DiversificationTable({ data }: { data: ComparisonResult }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(([k, a, b]) => (
-            <tr key={k}>
-              <th scope="row" style={cellL}>{k}</th>
-              <td style={cellR}>{a}</td>
-              <td style={cellR}>{b}</td>
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <th scope="row" style={cellL}>
+                {r.label}
+                <MetricTip k={r.key} ctx={{ p: r.p, b: r.bn, bText: r.b, bench: data.benchmark.label }} />
+              </th>
+              <td style={cellR}>{r.a}</td>
+              <td style={cellR}>{r.b}</td>
             </tr>
           ))}
         </tbody>
@@ -216,10 +227,14 @@ function Chart({ data }: { data: ComparisonResult }) {
  * endpoint with the recommended holdings. Loads independently of everything else on the page.
  * `fixed` (history review): show the saved block only, no timeframe selector.
  */
-export function BenchmarkSection({ result, fixed }: { result: PortfolioResult; fixed?: boolean }) {
+export function BenchmarkSection({ result, fixed, memory }: { result: PortfolioResult; fixed?: boolean; memory?: { window: ComparisonWindow | null; cache: Map<ComparisonWindow, ComparisonResult>; onWindow: (w: ComparisonWindow) => void } }) {
   const initial = result.benchmark ?? null;
-  const [win, setWin] = useState<ComparisonWindow>(initial?.window ?? "1Y");
-  const cache = useRef(new Map<ComparisonWindow, ComparisonResult>());
+  const [win, setWinState] = useState<ComparisonWindow>(memory?.window ?? initial?.window ?? "1Y");
+  const setWin = (w: ComparisonWindow) => {
+    setWinState(w);
+    memory?.onWindow(w);
+  };
+  const cache = useRef(memory?.cache ?? new Map<ComparisonWindow, ComparisonResult>());
   const [data, setData] = useState<ComparisonResult | null>(initial);
   const [loading, setLoading] = useState(!initial && !fixed);
   const [error, setError] = useState<unknown>(null);

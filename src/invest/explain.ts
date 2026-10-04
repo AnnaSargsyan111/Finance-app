@@ -7,7 +7,7 @@ import type { Weights } from "@/lib/quant/composite";
  * used, formatted with fixed rules, so a test can parse the text and compare it with the snapshot values.
  */
 type Fmt = "pct" | "ratio" | "bool";
-const LABELS: Record<string, { label: string; fmt: Fmt }> = {
+export const LABELS: Record<string, { label: string; fmt: Fmt }> = {
   roe: { label: "Return on equity", fmt: "pct" },
   opMargin: { label: "Operating margin", fmt: "pct" },
   fcfMargin: { label: "Free-cash-flow margin", fmt: "pct" },
