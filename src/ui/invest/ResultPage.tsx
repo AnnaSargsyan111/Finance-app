@@ -121,7 +121,7 @@ function SectionError({ error, onRetry, what }: { error: unknown; onRetry: () =>
 }
 
 /* ------------------------------------------------------------------ result page */
-export function ResultPage({ prefs, onAdjust, onStartOver, restored }: { prefs: Preferences; onAdjust: () => void; onStartOver: () => void; restored?: RecSession | null }) {
+export function ResultPage({ prefs, onAdjust, restored }: { prefs: Preferences; onAdjust: () => void; restored?: RecSession | null }) {
   const [tab, setTabState] = useState<RecMode>(restored?.tab ?? "single");
   // the benchmark comparisons fetched so far live in the session, so a restored page reuses them
   const [benchCache] = useState(() => restored?.benchCache ?? new Map<ComparisonWindow, ComparisonResult>());
@@ -177,9 +177,6 @@ export function ResultPage({ prefs, onAdjust, onStartOver, restored }: { prefs: 
         <div className={s.resultActions}>
           <Button variant="secondary" onClick={onAdjust}>
             Adjust Preferences
-          </Button>
-          <Button variant="ghost" onClick={onStartOver}>
-            Start Over
           </Button>
         </div>
       </div>

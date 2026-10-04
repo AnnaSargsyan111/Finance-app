@@ -12,7 +12,7 @@ import s from "./invest.module.css";
 /**
  * Investment Recommendation. The preferences live ONLY in this component's memory: nothing is written to
  * localStorage / sessionStorage / the URL, and nothing is read from any other feature. `runId` is the React key of the
- * whole flow, so Adjust Preferences and Start Over remount it and always begin with a completely clean form.
+ * whole flow, so Adjust Preferences remounts it and always begin with a completely clean form.
  */
 export function InvestPage() {
   const { user } = useSession();
@@ -44,7 +44,7 @@ export function InvestPage() {
         }
       />
       <div key={runId} className={prefs ? undefined : s.narrow}>
-        {prefs ? <ResultPage prefs={prefs} onAdjust={restart} onStartOver={restart} restored={restored} /> : <StepFlow onSubmit={submit} />}
+        {prefs ? <ResultPage prefs={prefs} onAdjust={restart} restored={restored} /> : <StepFlow onSubmit={submit} />}
       </div>
       <Disclaimer>
         Finova is an informational tool and does not give personal investment advice. Recommendations come from a rules-based method applied to public, delayed data. Past performance does not guarantee future results, and any investment can lose value. Finova does not execute trades.

@@ -76,7 +76,7 @@ function Choice({ name, value, label, help, checked, onChange }: { name: string;
 
 /**
  * The step-by-step preference form. ALL of its state lives in this component only (no storage, no URL): remounting it
- * (Adjust Preferences / Start Over) always gives a completely clean form.
+ * (Adjust Preferences) always gives a completely clean form.
  */
 export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
   const [step, setStep] = useState<Step>(1);
