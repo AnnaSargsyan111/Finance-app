@@ -218,6 +218,28 @@ honest failure mode, not a bug.
 
 ---
 
+## 6b. Monitoring: a daily data check that emails you when something quietly breaks
+
+`.github/workflows/monitor.yml` runs every day at 05:30 UTC (after the Vercel jobs) and calls `GET /api/health/data` with `Authorization: Bearer $CRON_SECRET`.
+The endpoint (code: `src/ops/health.ts` for the rules, `src/ops/health-run.ts` for the gathering) answers **200** with a JSON report when everything is fine and **503**
+with the same report when any check fails. A failed run makes GitHub **email the person who last changed the schedule**: that email is the alarm. No other service is involved.
+
+| Check | Fails when |
+|---|---|
+| database | it cannot be reached |
+| recommendation snapshot | none exists, its prices are more than 12 days old (the weekly job stopped), or it has fewer than 300 companies (an incomplete build) |
+| weekly universe job | its last recorded run failed, or has been "running" for more than 8 hours |
+| exchange rates (CBA) | not refreshed for 48 h (the daily cron stopped), the latest CBA date is more than 8 days old, or one of USD / EUR / GEL / RUB is missing |
+| news / stock quotes | not refreshed for 48 h, or nothing stored (for example the key is missing) |
+| bank rates (rate.am) | a LIVE read of the page fails or no longer parses (rate.am changed its page, is down, or blocks the server), or fewer than 3 banks / too few currencies come back |
+| password-reset email | only a **warning** when no provider is configured (does not fail the run) |
+
+**One-time setup:** add a repository secret `CRON_SECRET` (GitHub > Settings > Secrets and variables > Actions > New repository secret) with the SAME value as `CRON_SECRET` in the
+Vercel project. Test it with Actions > Data monitor > Run workflow. A `403` in the log means the two values differ. If the site address ever changes, edit `APP_URL` in the workflow.
+
+Notes: GitHub switches scheduled workflows off after 60 days without any repository activity, so a push now and then keeps both this monitor and the weekly universe job alive.
+The public liveness probe stays at `GET /api/health` (no data, no secret).
+
 ## 7. Known gaps — same in production as they are in dev (not surprises, not blockers)
 
 - **No real Finnhub / Twelve Data / Resend keys exist yet.** Stocks/universe fall back to the unofficial Yahoo

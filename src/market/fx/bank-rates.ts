@@ -142,7 +142,8 @@ export function parseBankRates(html: string): BankRates[] {
   return out;
 }
 
-async function fetchBankRates(): Promise<BankRates[]> {
+/** One live read and parse of the page, without the cache: what the data monitor uses, so a failure carries its real cause. */
+export async function fetchBankRates(): Promise<BankRates[]> {
   return parseBankRates(await fetchText(ENDPOINT, { provider: PROVIDER, timeoutMs: 20_000, headers: { accept: "text/html" } }));
 }
 

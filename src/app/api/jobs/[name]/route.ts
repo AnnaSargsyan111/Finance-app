@@ -1,7 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { route, json } from "@/lib/route";
-import { getEnv } from "@/lib/env";
+import { cronAuthorised } from "@/lib/cron-auth";
 import { ApiError, notFound } from "@/lib/errors";
 import { parseOrThrow } from "@/lib/validate";
 import { JOB_NAMES, runJob, type JobName } from "@/market/jobs";
@@ -11,14 +10,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const bodySchema = z.object({ limit: z.number().int().positive().max(1000).optional() }).strict();
-
-function authorised(header: string | null): boolean {
-  const secret = getEnv().CRON_SECRET;
-  if (!secret || !header?.startsWith("Bearer ")) return false;
-  const a = Buffer.from(header.slice(7));
-  const b = Buffer.from(secret);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 function assertKnownJob(name: string): asserts name is JobName {
   if (!(JOB_NAMES as readonly string[]).includes(name)) throw notFound("Job");
@@ -30,7 +21,7 @@ function assertKnownJob(name: string): asserts name is JobName {
  * long for a serverless request on the free plan: run it from GitHub Actions or `npm run job:universe` (see README-backend).
  */
 export const POST = route<{ name: string }>({ auth: false, csrf: false }, async ({ req, params, body }) => {
-  if (!authorised(req.headers.get("authorization"))) throw new ApiError("FORBIDDEN", 403, "Forbidden.");
+  if (!cronAuthorised(req.headers.get("authorization"))) throw new ApiError("FORBIDDEN", 403, "Forbidden.");
   assertKnownJob(params.name);
   const raw = req.headers.get("content-type")?.includes("json") ? await body() : {};
   const input = parseOrThrow(bodySchema, raw);
@@ -52,7 +43,7 @@ export const POST = route<{ name: string }>({ auth: false, csrf: false }, async 
  * `npm run job:universe`. POST still accepts it for that manual/CI trigger.
  */
 export const GET = route<{ name: string }>({ auth: false, csrf: false }, async ({ req, params }) => {
-  if (!authorised(req.headers.get("authorization"))) throw new ApiError("FORBIDDEN", 403, "Forbidden.");
+  if (!cronAuthorised(req.headers.get("authorization"))) throw new ApiError("FORBIDDEN", 403, "Forbidden.");
   assertKnownJob(params.name);
   if (params.name === "universe") {
     throw new ApiError(

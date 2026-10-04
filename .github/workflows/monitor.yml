@@ -1,0 +1,70 @@
+name: Data monitor
+
+# Once a day, asks the live site whether its data is healthy: the weekly S&P 500 snapshot, the daily exchange-rate / news / stock jobs,
+# the bank-rate reader and the email setup (see src/ops/health.ts for the rules). If anything is wrong, or the site does not answer, this
+# job FAILS, and GitHub emails the person who last changed this schedule - that email is the alarm. No other service is involved.
+#
+# One repository secret is needed: CRON_SECRET (the same value as the CRON_SECRET in the Vercel project settings).
+# GitHub switches scheduled workflows off after 60 days without any repository activity: a push now and then keeps this alive.
+on:
+  schedule:
+    - cron: "30 5 * * *" # after the Vercel jobs (04:05-04:35 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_URL: https://finance-app-xi-rouge-60.vercel.app
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Site is up
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$APP_URL/api/health" || true)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "::error::The site did not answer /api/health with 200 (last answer: $code)"
+          exit 1
+
+      - name: Data is healthy
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::The CRON_SECRET repository secret is not set (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          # the first request after a quiet period can be slow (the database wakes up), so try a few times before raising the alarm
+          for i in 1 2 3; do
+            code=$(curl -s -o report.json -w "%{http_code}" --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/health/data" || true)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            [ "$code" = "403" ] && break
+            sleep 30
+          done
+          echo "----- report -----"
+          cat report.json || true
+          echo
+          {
+            echo "### Data monitor"
+            echo '```json'
+            cat report.json || true
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" = "403" ]; then
+            echo "::error::The site refused the monitor (HTTP 403): the CRON_SECRET secret here does not match the one in Vercel."
+            exit 1
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::error::Data problems found or the site did not answer (HTTP $code). See the report above."
+            exit 1
+          fi
+          echo "All data checks passed."
