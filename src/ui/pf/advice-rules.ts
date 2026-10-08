@@ -7,6 +7,7 @@
  */
 import type { PeriodView } from "../api/types";
 import { formatAmd, formatPercent } from "../lib/format";
+import { toCents, type FormState } from "./calc";
 
 export const NEEDS_KEYS = ["housing", "bills_utilities", "transportation", "food_dining"] as const;
 export const WANTS_KEYS = ["shopping", "entertainment"] as const;
@@ -56,6 +57,23 @@ export function moneyOf(view: PeriodView): Money {
   }
   const income = view.income === null ? null : num(view.income);
   return { income: income !== null && income > 0 ? income : null, spent, cats };
+}
+
+/** the same numbers straight from the form while the user types (blank or malformed amounts count as nothing) */
+export function moneyFromForm(f: FormState): Money {
+  const cats = new Map<string, Cat>();
+  let spent = 0;
+  for (const r of f.rows) {
+    const c = toCents(r.amount);
+    if (c === null || Number.isNaN(c) || c <= 0) continue;
+    const amount = c / 100;
+    const label = r.isCustom ? r.label.trim() || "Custom category" : r.label;
+    const key = r.isCustom || !r.key ? `c:${label.toLowerCase()}` : r.key;
+    spent += amount;
+    cats.set(key, { label, amount: (cats.get(key)?.amount ?? 0) + amount });
+  }
+  const ic = toCents(f.income);
+  return { income: ic !== null && !Number.isNaN(ic) && ic > 0 ? ic / 100 : null, spent, cats };
 }
 
 const amountOf = (m: Money, key: string) => m.cats.get(key)?.amount ?? 0;

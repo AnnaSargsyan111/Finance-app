@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { analyse, barShares, goalLine, headline, moneyOf, trimResult, type Money } from "@/ui/pf/advice-rules";
+import { analyse, barShares, goalLine, headline, moneyFromForm, moneyOf, trimResult, type Money } from "@/ui/pf/advice-rules";
+import type { FormState } from "@/ui/pf/calc";
 import type { PeriodView } from "@/ui/api/types";
 
 const LABELS: Record<string, string> = { housing: "Housing", food_dining: "Food & Dining", transportation: "Transportation", bills_utilities: "Bills & Utilities", shopping: "Shopping", entertainment: "Entertainment", other: "Other" };
@@ -40,6 +41,37 @@ describe("moneyOf", () => {
     expect(m.cats.get("c:pets")?.amount).toBe(20000);
     expect(m.cats.get("other")?.amount).toBe(10000);
     expect(m.spent).toBe(30000);
+  });
+});
+
+describe("moneyFromForm (live, while typing)", () => {
+  const row = (key: string | null, label: string, amount: string, isCustom = false) => ({ id: label, key, label, amount, isCustom });
+  const form = (income: string, rows: FormState["rows"]): FormState => ({ income, rows });
+
+  it("starts at zero for an empty form", () => {
+    const m = moneyFromForm(form("", [row("housing", "Housing", ""), row("other", "Other", "")]));
+    expect(m).toMatchObject({ income: null, spent: 0 });
+    expect(m.cats.size).toBe(0);
+  });
+
+  it("follows typed values and ignores half-typed or malformed ones", () => {
+    const m = moneyFromForm(form("700000", [row("housing", "Housing", "230000"), row("food_dining", "Food & Dining", "12a"), row("other", "Other", "1500.50")]));
+    expect(m.income).toBe(700000);
+    expect(m.spent).toBe(231500.5);
+    expect([...m.cats.keys()]).toEqual(["housing", "other"]);
+  });
+
+  it("treats income 0 as not entered and sums custom categories with the same name", () => {
+    const m = moneyFromForm(form("0", [row(null, "Pets", "1000", true), row(null, " pets ", "500", true), row(null, "", "200", true)]));
+    expect(m.income).toBeNull();
+    expect(m.cats.get("c:pets")?.amount).toBe(1500);
+    expect(m.cats.get("c:custom category")?.amount).toBe(200);
+  });
+
+  it("gives the same answer as the saved view for the same numbers", () => {
+    const saved = money("700000", { housing: "230000", food_dining: "175000" });
+    const typed = moneyFromForm(form("700000", [row("housing", "Housing", "230000"), row("food_dining", "Food & Dining", "175000")]));
+    expect(typed).toEqual(saved);
   });
 });
 

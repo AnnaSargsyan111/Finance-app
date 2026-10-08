@@ -1,14 +1,14 @@
 "use client";
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { getPeriod } from "../api/pf";
 import type { PeriodView } from "../api/types";
 import { Card, Chip, Segmented, Tabs } from "../components/Display";
 import { IconAlert, IconCheck, IconInfo } from "../components/Icons";
 import { useResource } from "../hooks/useResource";
 import { formatAmd, formatPercent } from "../lib/format";
-import { analyse, barShares, goalLine, headline, moneyOf, trimResult, type Analysis } from "./advice-rules";
-import { shiftMonth, type Selection } from "./calc";
+import { analyse, barShares, goalLine, moneyFromForm, moneyOf, trimResult, type Analysis } from "./advice-rules";
+import { shiftMonth, type FormState, type Selection } from "./calc";
 import s from "./advice.module.css";
 
 const cx = (...a: (string | false | undefined)[]) => a.filter(Boolean).join(" ");
@@ -246,22 +246,62 @@ function Suggestions({ a, income }: { a: Analysis; income: number }) {
 
 type Tab = "insights" | "alerts" | "suggestions";
 
+/** the value after it has stayed the same for `ms` (the first value is used at once) */
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return v;
+}
+
+/** what to show until there is enough to explain: a nudge, plus a taste of the three levels */
+function Starter({ a }: { a: Analysis }) {
+  const none = !a.hasIncome && a.spent === 0;
+  return (
+    <>
+      <p className={s.motivation}>
+        {none
+          ? "Start with your income, then add your expenses above. Even rough numbers work, and this card explains your month as you type."
+          : a.hasIncome
+            ? "Good start. Now add your expenses above, even roughly, and you will see where your money goes."
+            : "Good start. Add your income above and you will see how much of it you keep."}
+        {a.biggest && !a.hasIncome ? ` So far your biggest expense is ${a.biggest.label} (${formatAmd(a.biggest.amount)}).` : ""}
+      </p>
+      <div className={s.grid}>
+        <div className={cx(s.tile, s.tileMuted)}>
+          <span className={s.tileLabel}>Insights</span>
+          <p className={s.tileText}>Where your money goes and how much you keep.</p>
+        </div>
+        <div className={cx(s.tile, s.tileMuted)}>
+          <span className={s.tileLabel}>Alerts</span>
+          <p className={s.tileText}>Things worth a look, each with the rule behind it.</p>
+        </div>
+        <div className={cx(s.tile, s.tileMuted)}>
+          <span className={s.tileLabel}>Suggestions</span>
+          <p className={s.tileText}>One idea to try for each alert, and a savings target.</p>
+        </div>
+      </div>
+    </>
+  );
+}
+
 /**
- * "Your money, explained": insights, alerts and suggestions for the selected period, at the bottom of the page. It reads the
- * SAVED numbers (like the server totals) and, for calendar months, the previous month for a comparison. It never touches Investment.
+ * "Your money, explained": insights, alerts and suggestions for the selected period, at the bottom of the page. It is always
+ * there: it starts with a nudge, then follows what the user types above (after a short pause, so half-typed amounts do not
+ * raise false alarms). For calendar months it also reads the SAVED previous month for a comparison. It never touches Investment.
  */
-export function Advice({ view, selection, dirty }: { view: PeriodView; selection: Selection; dirty: boolean }) {
+export function Advice({ form, selection, dirty }: { form: FormState; selection: Selection; dirty: boolean }) {
   const prevMonth = selection.kind === "month" ? shiftMonth(selection.month, -1) : null;
   const prevRes = useResource<PeriodView>((signal) => getPeriod({ kind: "month", month: prevMonth! }, signal), [prevMonth], { enabled: prevMonth !== null });
   const prev = prevMonth !== null && prevRes.data?.exists ? moneyOf(prevRes.data) : null;
   const [tab, setTab] = useState<Tab>("insights");
 
-  const now = useMemo(() => moneyOf(view), [view]);
+  const settled = useDebounced(form, 450);
+  const now = useMemo(() => moneyFromForm(settled), [settled]);
   const a = useMemo(() => analyse(now, prev), [now, prev]);
 
-  if (!view.exists || view.isEmpty) return null;
-
-  const h = headline(a);
   const showAll = a.hasIncome && a.spent > 0;
   const tabs: { value: Tab; label: ReactNode }[] = [
     { value: "insights", label: "Insights" },
@@ -271,25 +311,21 @@ export function Advice({ view, selection, dirty }: { view: PeriodView; selection
 
   return (
     <Card title="Your money, explained" eyebrow="Understand · Notice · Act" aria-label="Your money, explained">
-      <p className={s.story}>
-        {showAll ? (
-          <>
-            You earned <strong>{formatAmd(now.income)}</strong>, spent <strong>{formatAmd(a.spent)}</strong> and{" "}
-            {a.available >= 0 ? <>kept <strong className={s.pos}>{formatAmd(a.available)}</strong></> : <>ended <strong className={s.neg}>{formatAmd(-a.available)} short</strong></>}.
-          </>
-        ) : (
-          h.text
-        )}
-      </p>
       {showAll ? (
         <>
+          <p className={s.story} aria-live="polite">
+            You earned <strong>{formatAmd(now.income)}</strong>, spent <strong>{formatAmd(a.spent)}</strong> and{" "}
+            {a.available >= 0 ? <>kept <strong className={s.pos}>{formatAmd(a.available)}</strong></> : <>ended <strong className={s.neg}>{formatAmd(-a.available)} short</strong></>}.
+          </p>
           <Tabs label="Insights, alerts and suggestions" value={tab} tabs={tabs} onChange={setTab} idPrefix="adv" />
           <div className={s.panel} role="tabpanel" id={`adv-panel-${tab}`} aria-labelledby={`adv-tab-${tab}`}>
             {tab === "insights" ? <Insights a={a} income={now.income!} monthly={selection.kind === "month"} /> : tab === "alerts" ? <Alerts a={a} /> : <Suggestions a={a} income={now.income!} />}
           </div>
         </>
-      ) : null}
-      {dirty ? <p className={s.stale}>Based on your last saved numbers. Save to update.</p> : null}
+      ) : (
+        <Starter a={a} />
+      )}
+      {dirty && showAll ? <p className={s.stale}>Preview from what you typed. Save to keep it.</p> : null}
       <p className={s.fine} style={{ marginTop: "var(--s-5)" }}>
         Guides, not advice: every message comes from the numbers you entered and a fixed rule you can read under “Why am I seeing this?”. Rules of thumb such as 50/30/20 are starting points, not requirements.
       </p>

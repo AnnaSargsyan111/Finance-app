@@ -191,7 +191,6 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
 
   const avail = preview.availableCents / 100;
   const negative = preview.availableCents < 0;
-  const showAdvice = view.exists && !view.isEmpty;
 
   return (
     <div className={s.grid}>
@@ -316,12 +315,10 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
         </Card>
       </div>
 
-      {/* ---------------------------------------------------------------- insights, alerts and one action each (saved numbers), at the bottom */}
-      {showAdvice ? (
-        <div className={s.adviceSlot}>
-          <Advice view={view} selection={selection} dirty={dirty} />
-        </div>
-      ) : null}
+      {/* ---------------------------------------------------------------- insights, alerts and suggestions that follow the form, at the bottom */}
+      <div className={s.adviceSlot}>
+        <Advice form={form} selection={selection} dirty={dirty} />
+      </div>
 
       <ConfirmDialog
         open={confirmDelete}
