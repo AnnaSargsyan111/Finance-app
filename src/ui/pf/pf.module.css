@@ -117,7 +117,8 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
-.overviewSlot {
+.overviewSlot,
+.adviceSlot {
   min-width: 0;
 }
 .charts {
@@ -129,14 +130,22 @@
   .grid {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   }
-  .overviewSlot {
+  .overviewSlot,
+  .adviceSlot {
     grid-column: 1 / -1;
+  }
+  .adviceSlot {
+    grid-row: 2;
   }
   .inputsCard {
     grid-row: 2;
   }
   .charts {
     grid-row: 2;
+  }
+  .hasAdvice .inputsCard,
+  .hasAdvice .charts {
+    grid-row: 3;
   }
 }
 

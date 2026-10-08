@@ -12,6 +12,7 @@ import { IconPlus, IconTrash } from "../components/Icons";
 import { useResource } from "../hooks/useResource";
 import { formatAmd, formatDateTime } from "../lib/format";
 import { buildPreview, fingerprint, fromView, MAX_CUSTOM_CATEGORIES, newId, selectionFromPeriod, selectionKey, selectionRef, toPutBody, validateForm, type FormRow, type FormState, type Selection } from "./calc";
+import { Advice } from "./Advice";
 import { CashFlowChart, ExpenseBreakdownChart } from "./Charts";
 import s from "./pf.module.css";
 
@@ -21,6 +22,8 @@ interface Props {
   onSaved: () => void;
   onNormalize: (sel: Selection) => void;
 }
+
+const cx = (...a: (string | false | undefined)[]) => a.filter(Boolean).join(" ");
 
 function WorkspaceSkeleton() {
   return (
@@ -190,9 +193,10 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
 
   const avail = preview.availableCents / 100;
   const negative = preview.availableCents < 0;
+  const showAdvice = view.exists && !view.isEmpty;
 
   return (
-    <div className={s.grid}>
+    <div className={cx(s.grid, showAdvice && s.hasAdvice)}>
       {/* ---------------------------------------------------------------- overview */}
       <div className={s.overviewSlot}>
         <Card title="Financial Overview" eyebrow="This period" aria-label="Financial Overview">
@@ -217,6 +221,13 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
           </div>
         </Card>
       </div>
+
+      {/* ---------------------------------------------------------------- insights, alerts and one action each (saved numbers) */}
+      {showAdvice ? (
+        <div className={s.adviceSlot}>
+          <Advice view={view} selection={selection} dirty={dirty} />
+        </div>
+      ) : null}
 
       {/* ---------------------------------------------------------------- inputs */}
       <Card
