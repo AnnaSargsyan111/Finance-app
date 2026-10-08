@@ -23,8 +23,6 @@ interface Props {
   onNormalize: (sel: Selection) => void;
 }
 
-const cx = (...a: (string | false | undefined)[]) => a.filter(Boolean).join(" ");
-
 function WorkspaceSkeleton() {
   return (
     <div className={s.grid} role="status" aria-busy="true" aria-live="polite">
@@ -196,7 +194,7 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
   const showAdvice = view.exists && !view.isEmpty;
 
   return (
-    <div className={cx(s.grid, showAdvice && s.hasAdvice)}>
+    <div className={s.grid}>
       {/* ---------------------------------------------------------------- overview */}
       <div className={s.overviewSlot}>
         <Card title="Financial Overview" eyebrow="This period" aria-label="Financial Overview">
@@ -221,13 +219,6 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
           </div>
         </Card>
       </div>
-
-      {/* ---------------------------------------------------------------- insights, alerts and one action each (saved numbers) */}
-      {showAdvice ? (
-        <div className={s.adviceSlot}>
-          <Advice view={view} selection={selection} dirty={dirty} />
-        </div>
-      ) : null}
 
       {/* ---------------------------------------------------------------- inputs */}
       <Card
@@ -324,6 +315,13 @@ export function PeriodWorkspace({ selection, onDirtyChange, onSaved, onNormalize
           <CashFlowChart preview={preview} />
         </Card>
       </div>
+
+      {/* ---------------------------------------------------------------- insights, alerts and one action each (saved numbers), at the bottom */}
+      {showAdvice ? (
+        <div className={s.adviceSlot}>
+          <Advice view={view} selection={selection} dirty={dirty} />
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={confirmDelete}

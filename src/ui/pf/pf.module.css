@@ -135,17 +135,13 @@
     grid-column: 1 / -1;
   }
   .adviceSlot {
-    grid-row: 2;
+    grid-row: 3;
   }
   .inputsCard {
     grid-row: 2;
   }
   .charts {
     grid-row: 2;
-  }
-  .hasAdvice .inputsCard,
-  .hasAdvice .charts {
-    grid-row: 3;
   }
 }
 

@@ -85,6 +85,8 @@ export interface Analysis {
   rest: number;
   /** the places spending is easiest to trim, biggest first (only those above 0) */
   flexible: { key: string; label: string; amount: number }[];
+  /** the single largest category (default or custom) */
+  biggest: { label: string; amount: number } | null;
   alerts: Alert[];
   /** change in expenses versus the previous period (a share), and its biggest mover; null without a comparison */
   versus: { change: number; mover: { label: string; diff: number } | null } | null;
@@ -189,7 +191,8 @@ export function analyse(now: Money, prev: Money | null): Analysis {
   }
 
   alerts.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
-  return { hasIncome, spent: now.spent, available, rate, needs, wants, rest, flexible, alerts: alerts.slice(0, RULES.maxAlerts), versus };
+  const top = [...now.cats.values()].sort((p, q) => q.amount - p.amount)[0];
+  return { hasIncome, spent: now.spent, available, rate, needs, wants, rest, flexible, biggest: top ?? null, alerts: alerts.slice(0, RULES.maxAlerts), versus };
 }
 
 /** one sentence for the top of the card */
@@ -214,8 +217,8 @@ export function barShares(a: Analysis, income: number) {
 }
 
 /** the savings-target sentence */
-export function goalLine(a: Analysis, income: number): { reached: boolean; amount: number; gap: number } {
-  const amount = Math.round(income * RULES.goalRate);
+export function goalLine(a: Analysis, income: number, goalRate: number = RULES.goalRate): { reached: boolean; amount: number; gap: number } {
+  const amount = Math.round(income * goalRate);
   const gap = Math.max(0, Math.round(amount - a.available));
   return { reached: a.available >= amount, amount, gap };
 }
