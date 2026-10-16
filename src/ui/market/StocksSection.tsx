@@ -6,6 +6,7 @@ import { getStocks } from "../api/market";
 import { errorMessage } from "../api/client";
 import type { StockItem } from "../api/types";
 import { CHART_COLORS, ChartFigure, DataTable, NEG_COLOR } from "../components/ChartParts";
+import { InfoTip } from "../components/InfoTip";
 import { ChangeChip, Figure } from "../components/Display";
 import { EmptyState, ErrorState, Skeleton } from "../components/Feedback";
 import { useResource } from "../hooks/useResource";
@@ -13,7 +14,19 @@ import { useScrollReplay } from "../hooks/useScrollReplay";
 import { formatDate, formatNumber, formatPercent, formatUsd } from "../lib/format";
 import { CountFigure } from "./CountFigure";
 import { MetaLine } from "./MetaLine";
+import { STOCK_METRIC_INFO, type StockMetricKey } from "./stock-metric-info";
 import s from "./market.module.css";
+
+/** the label of a metric plus its "i": one short sentence saying what the number is */
+function Label({ k }: { k: StockMetricKey }) {
+  const info = STOCK_METRIC_INFO[k];
+  return (
+    <dt>
+      {info.title}
+      <InfoTip title={info.title} sections={[{ label: "", text: info.text }]} />
+    </dt>
+  );
+}
 
 function bigUsd(v: string | null): string {
   const n = v === null ? NaN : Number(v);
@@ -96,27 +109,27 @@ function StockCard({ item }: { item: StockItem }) {
       <Trend item={item} />
       <dl className={s.facts}>
         <div>
-          <dt>Previous close</dt>
+          <Label k="previousClose" />
           <dd>{item.previousClose === null ? dash : formatUsd(item.previousClose, 2)}</dd>
         </div>
         <div>
-          <dt>52-week range</dt>
+          <Label k="range52w" />
           <dd>{item.low52w && item.high52w ? `${formatUsd(item.low52w, 0)} - ${formatUsd(item.high52w, 0)}` : dash}</dd>
         </div>
         <div>
-          <dt>Market cap</dt>
+          <Label k="marketCap" />
           <dd>{bigUsd(item.marketCap)}</dd>
         </div>
         <div>
-          <dt>P/E (TTM)</dt>
+          <Label k="pe" />
           <dd>{item.peTtm === null ? dash : formatNumber(item.peTtm, 1)}</dd>
         </div>
         <div>
-          <dt>EPS (TTM)</dt>
+          <Label k="eps" />
           <dd>{item.epsTtm === null ? dash : formatUsd(item.epsTtm, 2)}</dd>
         </div>
         <div>
-          <dt>Dividend yield</dt>
+          <Label k="dividendYield" />
           <dd>{item.dividendYield === null ? dash : formatPercent(item.dividendYield, 2)}</dd>
         </div>
       </dl>

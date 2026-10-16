@@ -119,9 +119,9 @@ export function InfoTip({ title, sections, className }: { title: string; section
                   <span aria-hidden="true">×</span>
                 </button>
               </div>
-              {sections.map((x) => (
-                <div key={x.label} className={cx(s.sec, x.highlight && s.secHighlight)}>
-                  <span className={s.secLabel}>{x.label}</span>
+              {sections.map((x, i) => (
+                <div key={x.label || i} className={cx(s.sec, x.highlight && s.secHighlight)}>
+                  {x.label ? <span className={s.secLabel}>{x.label}</span> : null}
                   <p className={s.secText}>{x.text}</p>
                 </div>
               ))}
