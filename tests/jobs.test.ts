@@ -94,7 +94,7 @@ describe("GET /api/jobs/:name (Vercel Cron entry point)", () => {
     const r = await get("stocks", { authorization: `Bearer ${SECRET}` });
     expect(r.status).toBe(200);
     expect(r.body.job).toBe("stocks");
-    expect(r.body.result.symbols).toEqual(["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN"]);
+    expect(r.body.result.symbols).toEqual(["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"]);
     expect(mock.calls).toHaveLength(0);
   });
 });

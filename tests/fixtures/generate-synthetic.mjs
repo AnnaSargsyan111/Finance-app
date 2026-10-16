@@ -209,7 +209,7 @@ fs.mkdirSync(path.join(HERE, "rss"), { recursive: true });
 for (const [name, xml] of Object.entries(files)) fs.writeFileSync(path.join(HERE, "rss", name), xml);
 
 /* ---------- synthetic Yahoo-shaped charts (invented prices) ---------- */
-const CHARTS = { NVDA: [137.42, 0.3], AAPL: [181.05, 1.1], GOOGL: [152.3, 2.0], MSFT: [402.75, 0.7], AMZN: [168.9, 1.6] };
+const CHARTS = { NVDA: [137.42, 0.3], AAPL: [181.05, 1.1], GOOGL: [152.3, 2.0], MSFT: [402.75, 0.7], AMZN: [168.9, 1.6], TSLA: [243.5, 2.4] };
 const dates = [];
 for (let d = Date.parse("2026-08-21T00:00:00Z"); d <= Date.parse("2026-09-21T00:00:00Z"); d += 86_400_000) {
   const dt = new Date(d);

@@ -66,7 +66,7 @@ describe("G stocks (display)", () => {
       expect(r.status, range).toBe(200);
       expect(r.body.data.series.length).toBeGreaterThan(20);
     }
-    expect((await c.get("/api/market/stocks/TSLA/history?range=1m")).status).toBe(404);
+    expect((await c.get("/api/market/stocks/META/history?range=1m")).status).toBe(404);
     const lower = await c.get("/api/market/stocks/nvda/history?range=1m");
     console.log("OBSERVATION lower-case symbol 'nvda' ->", lower.status, "(case-insensitive matching; not necessarily wrong)");
     expect((await c.get("/api/market/stocks/NVDA/history?range=2y")).status).toBe(400);

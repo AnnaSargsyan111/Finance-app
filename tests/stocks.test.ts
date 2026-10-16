@@ -9,11 +9,12 @@ import { parseYahooChart } from "@/market/providers/yahoo";
 import * as stocksRoute from "@/app/api/market/stocks/route";
 import * as historyRoute from "@/app/api/market/stocks/[symbol]/history/route";
 import * as providersRoute from "@/app/api/market/providers/route";
+import { APP } from "@/config/app";
 
 let user: TestUser;
 let mock: FetchMock | undefined;
 
-/** SYNTHETIC Yahoo-shaped v8/chart responses (tests/fixtures/providers, invented prices) for the five display companies */
+/** SYNTHETIC Yahoo-shaped v8/chart responses (tests/fixtures/providers, invented prices) for the six display companies */
 const yahooHandler = (mode: "ok" | "500" = "ok") => (url: string) => {
   const u = new URL(url);
   if (u.host !== "query1.finance.yahoo.com") return undefined;
@@ -51,13 +52,13 @@ describe("Yahoo chart parser on synthetic data", () => {
 });
 
 describe("GET /api/market/stocks (auto mode, no keys: Yahoo prototype fallback, honest labels)", () => {
-  it("exactly the 5 display symbols with consistent change math and explicit null reasons", async () => {
+  it("exactly the 6 display symbols with consistent change math and explicit null reasons", async () => {
     mock = mockFetch(yahooHandler());
     expect((await call(stocksRoute.GET, "GET", "/api/market/stocks")).status).toBe(401);
     const r = await call(stocksRoute.GET, "GET", "/api/market/stocks", { jar: user.jar });
     expect(r.status).toBe(200);
     const items = r.body.data.items;
-    expect(items.map((i: { symbol: string }) => i.symbol)).toEqual(["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN"]);
+    expect(items.map((i: { symbol: string }) => i.symbol)).toEqual(["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"]);
     for (const i of items) {
       expect(i.price).toMatch(/^\d+\.\d{2,}$/);
       expect(i.previousClose).toMatch(/^\d+\.\d{2,}$/);
@@ -84,7 +85,7 @@ describe("GET /api/market/stocks (auto mode, no keys: Yahoo prototype fallback, 
     mock = mockFetch(yahooHandler());
     const rs = await Promise.all(Array.from({ length: 100 }, () => call(stocksRoute.GET, "GET", "/api/market/stocks", { jar: user.jar })));
     expect(rs.every((r) => r.status === 200)).toBe(true);
-    expect(mock.countHost("query1.finance.yahoo.com")).toBeLessThanOrEqual(10);
+    expect(mock.countHost("query1.finance.yahoo.com")).toBeLessThanOrEqual(2 * APP.stocks.displaySymbols.length);
     const before = mock.calls.length;
     await call(stocksRoute.GET, "GET", "/api/market/stocks", { jar: user.jar });
     expect(mock.calls.length).toBe(before); // cache hit
@@ -142,7 +143,7 @@ describe("GET /api/market/stocks/:symbol/history", () => {
     expect(dates).toEqual([...dates].sort());
     expect(ok.body.data.series.length).toBeGreaterThanOrEqual(15);
     expect(ok.body.data.series[0]).toEqual({ date: expect.stringMatching(/^\d{4}-\d\d-\d\d$/), close: expect.stringMatching(/^\d+\.\d{2,}$/) });
-    expect((await get("TSLA")).status).toBe(404);
+    expect((await get("META")).status).toBe(404);
     expect((await get("BRK.B")).status).toBe(404);
     expect((await get("NVDA", "?range=10y")).status).toBe(400);
     expect((await get("NVDA", "?range=1m&x=1")).status).toBe(400);

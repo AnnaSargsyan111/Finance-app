@@ -1,0 +1,9 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "name": "Tesla Inc",
+  "ticker": "TSLA",
+  "currency": "USD",
+  "marketCapitalization": 248880,
+  "shareOutstanding": 1000
+}

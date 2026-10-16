@@ -1,0 +1,17 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "metric": {
+    "peTTM": 60,
+    "epsTTM": 4.15,
+    "dividendYieldIndicatedAnnual": null,
+    "dividendPerShareAnnual": null,
+    "52WeekHigh": 280.88,
+    "52WeekLow": 200.88,
+    "beta": 2.01,
+    "revenueGrowthTTMYoy": 12,
+    "netProfitMarginTTM": 8
+  },
+  "series": {},
+  "symbol": "TSLA"
+}

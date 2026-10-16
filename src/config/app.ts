@@ -63,7 +63,7 @@ export const APP = {
     defaultDays: 30,
   },
   stocks: {
-    displaySymbols: ["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN"] as const,
+    displaySymbols: ["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] as const,
   },
   invest: {
     minAmountAmd: 1_000,

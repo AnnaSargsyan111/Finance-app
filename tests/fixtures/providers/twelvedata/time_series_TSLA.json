@@ -1,0 +1,132 @@
+{
+  "_fixture": true,
+  "_note": "SYNTHETIC FIXTURE - shaped like the vendor response, values are NOT market data",
+  "meta": {
+    "symbol": "TSLA",
+    "interval": "1day",
+    "currency": "USD"
+  },
+  "values": [
+    {
+      "datetime": "2026-09-10",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "253.86",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-09",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "253.62",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-08",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "253.36",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-07",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "253.10",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-04",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "252.37",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-03",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "252.11",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-02",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "251.87",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-09-01",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "251.62",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-31",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "251.38",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-28",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "250.62",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-27",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "250.37",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-26",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "250.13",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-25",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "249.87",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-24",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "249.63",
+      "volume": "1000"
+    },
+    {
+      "datetime": "2026-08-21",
+      "open": 248.88,
+      "high": 248.88,
+      "low": 248.88,
+      "close": "248.88",
+      "volume": "1000"
+    }
+  ],
+  "status": "ok"
+}

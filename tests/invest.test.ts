@@ -236,8 +236,8 @@ describe("AC-B6 determinism, eligibility, invariants", () => {
     }
   });
 
-  it("the universe is NOT limited to the 5 display companies: a non-display stock is recommended, and a display company can win too", async () => {
-    const DISPLAY = ["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN"];
+  it("the universe is NOT limited to the 6 display companies: a non-display stock is recommended, and a display company can win too", async () => {
+    const DISPLAY = ["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"];
     const picks: string[] = [];
     for (const risk of ["low", "medium", "high"] as Risk[]) {
       for (const horizon of ["short", "medium", "long"] as Horizon[]) {

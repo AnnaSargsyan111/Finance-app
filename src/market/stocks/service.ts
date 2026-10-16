@@ -11,7 +11,7 @@ import type { SnapshotRecord } from "../universe/types";
 import { subtractDecimal } from "../fx/service";
 
 /**
- * Stocks display service (handover 5.3): NVDA, AAPL, GOOGL, MSFT, AMZN.
+ * Stocks display service (handover 5.3): NVDA, AAPL, GOOGL, MSFT, AMZN, TSLA.
  *  quote:    Finnhub (live | fixture)  ->  Yahoo chart (prototype-only, real but unofficial)
  *  metrics:  Finnhub profile+metric    ->  SEC EDGAR annual values from the universe snapshot (labelled "annual, not TTM")
  *  history:  Twelve Data (live | fixture) -> Yahoo chart (prototype-only)

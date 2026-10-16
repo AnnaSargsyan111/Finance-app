@@ -135,7 +135,7 @@ export function StocksSection() {
     return (
       <div className={s.stocks} role="status" aria-busy="true">
         <span className="sr-only">Loading stocks</span>
-        {[0, 1, 2, 3, 4].map((i) => (
+        {[0, 1, 2, 3, 4, 5].map((i) => (
           <div key={i} className={s.stock}>
             <Skeleton width={90} height={16} />
             <Skeleton width="60%" height={36} />
