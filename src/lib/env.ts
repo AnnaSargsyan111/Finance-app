@@ -31,6 +31,11 @@ const schema = z.object({
   SEC_USER_AGENT: optStr,
   FINNHUB_API_KEY: optStr,
   TWELVE_DATA_API_KEY: optStr,
+  /** AI Assistant (src/assistant): a chat-completions API key. Without it the assistant keeps answering from its written texts only. FREE-TIER KEYS MAY BE USED BY THE PROVIDER TO IMPROVE ITS PRODUCTS: do not use one for real customers. */
+  GEMINI_API_KEY: optStr,
+  ASSISTANT_MODEL: z.preprocess(blankToUndefined, z.string().default("gemini-3.5-flash-lite")),
+  /** OpenAI-compatible base URL (default: Gemini). Another provider can be used by changing this and the key. */
+  ASSISTANT_API_BASE: z.preprocess(blankToUndefined, z.string().url().default("https://generativelanguage.googleapis.com/v1beta/openai")),
   RESEND_API_KEY: optStr,
   EMAIL_FROM: optStr,
   /** auto = use keyed providers when a key exists, else report notConfigured. fixture = serve recorded fixtures (isFixture:true). */

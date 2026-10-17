@@ -19,6 +19,8 @@ export const APP = {
     stockFundamentalsMs: 24 * HOUR,
     stockHistoryMs: 6 * HOUR,
     newsMs: 15 * MIN,
+    /** the official pages the AI assistant may quote (src/assistant/sources.ts) */
+    assistantSourcesMs: 24 * HOUR,
     /** manual news refresh only re-fetches upstream when the cache is older than this */
     newsRefreshMinAgeMs: 5 * MIN,
     /** how long a last-good value may still be served (flagged stale) when upstream is failing */
@@ -42,6 +44,16 @@ export const APP = {
      *  anti-brute-force limit - just a ceiling on how often the endpoint can be called at all). */
     changePasswordPerUserPerWindow: 10,
     changePasswordWindowMinutes: 60,
+  },
+  assistant: {
+    questionMaxChars: 400,
+    /** abuse and cost caps, counted per question asked (not per success) */
+    perUserPerHour: 15,
+    perUserPerDay: 40,
+    globalPerDay: 300,
+    modelTimeoutMs: 25_000,
+    maxAnswerChars: 1200,
+    maxSourceChars: 12_000,
   },
   pf: {
     defaultPageSize: 50,

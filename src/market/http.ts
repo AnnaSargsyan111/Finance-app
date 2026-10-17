@@ -22,6 +22,10 @@ const HOST_INTERVAL_MS: Record<string, number> = {
   "raw.githubusercontent.com": 500,
   "finnhub.io": 1100, // free plan: 60/min
   "api.twelvedata.com": 8000, // free plan: 8 credits/min
+  "generativelanguage.googleapis.com": 1500, // AI assistant (free plans allow only a few requests per minute)
+  "adgf.am": 1500,
+  "www.cba.am": 1500,
+  "src.am": 1500,
 };
 const DEFAULT_INTERVAL_MS = 700;
 

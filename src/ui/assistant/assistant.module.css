@@ -1,0 +1,552 @@
+/* ---------- page stage ---------- */
+.stage {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+/* ---------- chat card ---------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: min(70vh, 640px);
+  height: min(70dvh, 640px);
+  min-height: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-width: 0;
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.headId {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+}
+.headName {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.avatarLg {
+  width: 36px;
+  height: 36px;
+}
+
+/* ---------- message area ---------- */
+.scroller {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: var(--s-5) var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.scroller:focus-visible {
+  outline-offset: -3px;
+  border-radius: 0;
+}
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+  animation: msgIn 0.28s var(--ease) both;
+}
+.rowUser {
+  justify-content: flex-end;
+}
+@keyframes msgIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bubble {
+  position: relative;
+  min-width: 0;
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.text {
+  white-space: pre-line;
+}
+.bot {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 6px;
+}
+.mine {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-bottom-right-radius: 6px;
+}
+.bubblePlan {
+  width: 100%;
+  max-width: min(calc(100% - 38px), 560px);
+}
+.notice {
+  border-left: 4px solid var(--warn);
+}
+.noticeBody {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.noticeIcon {
+  flex: none;
+  margin-top: 3px;
+  color: var(--warn);
+}
+.linkRow {
+  margin-top: var(--s-3);
+}
+/* two classes: wins over .btn's nowrap so a long label wraps at 320px */
+.bubble .linkBtn {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+@media (min-width: 720px) {
+  .scroller {
+    padding: var(--s-5);
+  }
+  .head {
+    padding: var(--s-3) var(--s-5);
+  }
+  .bubble {
+    max-width: 70%;
+  }
+  .bubblePlan {
+    max-width: min(calc(100% - 38px), 560px);
+  }
+}
+
+/* ---------- typing indicator ---------- */
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 16px 18px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-2);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+@keyframes pulse {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    animation: none;
+  }
+  .dot {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/* ---------- quick replies ---------- */
+.chips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.chipsHint {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.chipBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  max-width: 100%;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+  transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.chipBtn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.chipBtn:active {
+  transform: scale(0.98);
+}
+.chipBtn svg {
+  flex: none;
+  color: var(--accent);
+}
+/* first screen: suggestion cards instead of pills */
+.chipGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.chipCard {
+  justify-content: space-between;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  text-align: left;
+  min-height: 52px;
+}
+@media (min-width: 720px) {
+  .chipGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .chips {
+    padding-left: 38px;
+  }
+}
+
+/* ---------- composer ---------- */
+.composer {
+  flex: none;
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+@media (min-width: 720px) {
+  .composer {
+    padding: var(--s-3) var(--s-5) var(--s-4);
+  }
+}
+.pill {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 52px;
+  padding: 4px 6px 4px var(--s-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.pill:hover {
+  border-color: var(--border-strong);
+}
+.pill:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font-size: 16px; /* 16px stops iOS from zooming the page on focus */
+}
+.input:focus-visible {
+  outline: none;
+}
+.input::placeholder {
+  color: var(--muted);
+  opacity: 0.9;
+}
+.counter {
+  margin-top: var(--s-2);
+  padding-left: var(--s-4);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* ---------- savings plan card ---------- */
+.plan {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent-line);
+  border-radius: var(--radius);
+}
+.planEyebrow {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.planFigure {
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.planAmount {
+  color: var(--accent);
+  font-size: clamp(30px, 8vw, 40px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+.planUnit {
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+}
+.planLine {
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: var(--s-1);
+}
+.planSection {
+  display: grid;
+  gap: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border-faint);
+}
+.planSection .planLine {
+  margin-top: 0;
+}
+.planFoot {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.meter {
+  display: grid;
+  gap: var(--s-2);
+}
+.meterLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.meterLabel svg {
+  flex: none;
+  margin-top: 2px;
+}
+.meter[data-tone="stretch"] .meterLabel {
+  color: var(--warn);
+}
+.meter[data-tone="unrealistic"] .meterLabel {
+  color: var(--neg);
+}
+/* the shared ProgressBar fill is lime; tint it to match the wording */
+.meter[data-tone="stretch"] [role="progressbar"] > div {
+  background: var(--warn);
+}
+.meter[data-tone="unrealistic"] [role="progressbar"] > div {
+  background: var(--neg);
+}
+
+.whatIf {
+  font-size: 14px;
+}
+.whatIf caption {
+  caption-side: top;
+  text-align: left;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  padding-bottom: var(--s-2);
+}
+.whatIf th,
+.whatIf td {
+  padding: 8px 0;
+  border-top: 1px solid var(--border-faint);
+  vertical-align: top;
+  font-weight: 400;
+  text-align: left;
+}
+.whatIf th {
+  color: var(--text-2);
+  padding-right: var(--s-3);
+}
+.whatIf td {
+  color: var(--text);
+  text-align: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.whatIfSub {
+  color: var(--muted);
+}
+
+.reached {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+}
+.reachedIcon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+}
+.reachedTitle {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* ---------- AI answers: confidence label + sources ---------- */
+.conf {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: var(--s-2);
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.conf svg {
+  flex: none;
+  margin-top: 2px;
+}
+.confOk {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.confWarn {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: var(--warn-soft);
+}
+.aiMeta {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border-faint);
+  display: grid;
+  gap: var(--s-2);
+}
+.sourcesTitle {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sourceList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.sourceItem {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--s-3);
+  row-gap: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.sourceLink {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sourceLink:hover {
+  color: var(--text);
+}
+.sourceDate {
+  color: var(--muted);
+}
+.footnote {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}

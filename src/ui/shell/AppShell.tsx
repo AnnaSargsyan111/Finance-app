@@ -15,6 +15,7 @@ export const NAV_ITEMS = [
   { href: "/personal-finance", label: "Personal Finance", section: ["/personal-finance"] },
   { href: "/market", label: "Market & News", section: ["/market", "/news"] },
   { href: "/invest", label: "Investment Recommendation", section: ["/invest"] },
+  { href: "/assistant", label: "AI Assistant", section: ["/assistant"] },
   { href: "/settings", label: "Settings / Profile", section: ["/settings"] },
 ] as const;
 

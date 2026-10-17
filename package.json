@@ -18,7 +18,8 @@
     "job:fx": "tsx scripts/job.ts fx",
     "job:news": "tsx scripts/job.ts news",
     "job:universe": "tsx scripts/job.ts universe",
-    "job:stocks": "tsx scripts/job.ts stocks"
+    "job:stocks": "tsx scripts/job.ts stocks",
+    "assistant:eval": "node scripts/assistant-eval.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
