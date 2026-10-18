@@ -10,9 +10,10 @@ import { Card, Chip, Tabs } from "../components/Display";
 import { EmptyState, ErrorState, Skeleton, Spinner } from "../components/Feedback";
 import { IconCheck, IconPlus } from "../components/Icons";
 import { useResource } from "../hooks/useResource";
+import { useT } from "../i18n";
 import { formatAmd } from "../lib/format";
 import { BenchmarkSection } from "./BenchmarkSection";
-import { horizonLabel, riskLabel } from "./labels";
+import { horizonLabel, localizeServer, riskLabel } from "./labels";
 import { PortfolioView, ScoreCard, SingleView } from "./ResultViews";
 import { markSaved, rememberScroll, updateRecSession, type RecSession } from "./session-memory";
 import type { ComparisonResult, ComparisonWindow } from "../api/types";
@@ -23,6 +24,7 @@ import s from "./invest.module.css";
 function AddToHistory({ result, alreadySaved, onSaved }: { result: RecommendationResult; alreadySaved: boolean; onSaved: () => void }) {
   const [state, setState] = useState<"idle" | "saving" | "saved" | "exists" | "error">(alreadySaved ? "exists" : "idle");
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   async function add() {
     if (!result.saveToken) return;
@@ -36,8 +38,8 @@ function AddToHistory({ result, alreadySaved, onSaved }: { result: Recommendatio
       setState("error");
       setError(
         isApiError(e) && e.code === "INVALID_SAVE_TOKEN"
-          ? "This recommendation can no longer be saved. Start over to get a fresh one."
-          : errorMessage(e, "We couldn't save this recommendation. Please try again."),
+          ? t("invest.result.tokenInvalid")
+          : localizeServer(t, errorMessage(e, t("invest.result.saveFailed"))),
       );
     }
   }
@@ -47,16 +49,16 @@ function AddToHistory({ result, alreadySaved, onSaved }: { result: Recommendatio
       {state === "saved" || state === "exists" ? (
         <>
           <span className={s.addOk} role="status">
-            <IconCheck size={16} /> {state === "exists" ? "Already in your history" : "Added to your history"}
+            <IconCheck size={16} /> {state === "exists" ? t("invest.result.already") : t("invest.result.added")}
           </span>
           <Link href="/invest/history" onClick={rememberScroll} style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>
-            View history
+            {t("invest.result.viewHistory")}
           </Link>
         </>
       ) : (
         <Button variant="secondary" onClick={add} loading={state === "saving"} disabled={!result.saveToken}>
           {state === "saving" ? null : <IconPlus size={16} />}
-          {state === "error" ? "Try adding again" : "Add to history"}
+          {state === "error" ? t("invest.result.tryAgain") : t("invest.result.add")}
         </Button>
       )}
       {state === "error" && error ? (
@@ -91,16 +93,18 @@ function SectionSkeleton({ label }: { label: string }) {
   );
 }
 
-function SectionError({ error, onRetry, what }: { error: unknown; onRetry: () => void; what: string }) {
+function SectionError({ error, onRetry, kind }: { error: unknown; onRetry: () => void; kind: RecMode }) {
+  const t = useT();
   if (isApiError(error) && error.code === "NO_ELIGIBLE_STOCK") {
-    const reason = typeof error.extra?.reason === "string" ? error.extra.reason : null;
-    const suggestion = typeof error.extra?.suggestion === "string" ? error.extra.suggestion : null;
+    // the server's reason / suggestion are English sentences: shown in the chosen language when the dictionary knows them
+    const reason = typeof error.extra?.reason === "string" ? localizeServer(t, error.extra.reason) : null;
+    const suggestion = typeof error.extra?.suggestion === "string" ? localizeServer(t, error.extra.suggestion) : null;
     return (
       <EmptyState
-        title={`No ${what} found for these preferences`}
+        title={t(kind === "single" ? "invest.result.noSingleTitle" : "invest.result.noPortfolioTitle")}
         message={
           <>
-            {reason ?? error.message}
+            {reason ?? localizeServer(t, error.message)}
             {suggestion ? (
               <>
                 <br />
@@ -111,17 +115,18 @@ function SectionError({ error, onRetry, what }: { error: unknown; onRetry: () =>
         }
         action={
           <Button variant="secondary" size="sm" onClick={onRetry}>
-            Retry
+            {t("invest.result.retry")}
           </Button>
         }
       />
     );
   }
-  return <ErrorState title={`We couldn't get the ${what}`} message={errorMessage(error)} onRetry={onRetry} />;
+  return <ErrorState title={t(kind === "single" ? "invest.result.failSingleTitle" : "invest.result.failPortfolioTitle")} message={localizeServer(t, errorMessage(error))} onRetry={onRetry} />;
 }
 
 /* ------------------------------------------------------------------ result page */
 export function ResultPage({ prefs, onAdjust, restored }: { prefs: Preferences; onAdjust: () => void; restored?: RecSession | null }) {
+  const t = useT();
   const [tab, setTabState] = useState<RecMode>(restored?.tab ?? "single");
   // the benchmark comparisons fetched so far live in the session, so a restored page reuses them
   const [benchCache] = useState(() => restored?.benchCache ?? new Map<ComparisonWindow, ComparisonResult>());
@@ -162,32 +167,32 @@ export function ResultPage({ prefs, onAdjust, restored }: { prefs: Preferences; 
   const portfolioData = portfolio.data?.data as PortfolioResult | undefined;
 
   const tabs = [
-    { value: "single" as const, label: <>Single stock{single.loading ? <span style={{ marginLeft: 8, display: "inline-flex" }}><Spinner /></span> : null}</> },
-    { value: "portfolio" as const, label: <>Portfolio{portfolio.loading ? <span style={{ marginLeft: 8, display: "inline-flex" }}><Spinner /></span> : null}</> },
+    { value: "single" as const, label: <>{t("invest.result.single")}{single.loading ? <span style={{ marginLeft: 8, display: "inline-flex" }}><Spinner /></span> : null}</> },
+    { value: "portfolio" as const, label: <>{t("invest.result.portfolio")}{portfolio.loading ? <span style={{ marginLeft: 8, display: "inline-flex" }}><Spinner /></span> : null}</> },
   ];
 
   return (
     <div className={s.wrap}>
       <div className={s.resultHead}>
-        <div className={s.chips} aria-label="Your preferences">
+        <div className={s.chips} aria-label={t("invest.result.preferences")}>
           <Chip>{formatAmd(prefs.amountAmd)}</Chip>
-          <Chip>{riskLabel(prefs.risk)} risk</Chip>
-          <Chip>{horizonLabel(prefs.horizon)}</Chip>
+          <Chip>{t("invest.result.riskChip", { risk: riskLabel(t, prefs.risk) })}</Chip>
+          <Chip>{horizonLabel(t, prefs.horizon)}</Chip>
         </div>
         <div className={s.resultActions}>
           <Button variant="secondary" onClick={onAdjust}>
-            Adjust Preferences
+            {t("invest.result.adjust")}
           </Button>
         </div>
       </div>
 
-      <Tabs label="Recommendation type" value={tab} tabs={tabs} onChange={setTab} idPrefix="rec" />
+      <Tabs label={t("invest.result.tabsLabel")} value={tab} tabs={tabs} onChange={setTab} idPrefix="rec" />
 
       <div role="tabpanel" id="rec-panel-single" aria-labelledby="rec-tab-single" hidden={tab !== "single"}>
         {single.status === "error" && !singleData ? (
-          <SectionError error={single.error} onRetry={single.reload} what="single-stock recommendation" />
+          <SectionError error={single.error} onRetry={single.reload} kind="single" />
         ) : !singleData ? (
-          <SectionSkeleton label="Finding the best single-stock match" />
+          <SectionSkeleton label={t("invest.result.loadingSingle")} />
         ) : (
           <div className={s.section} aria-busy={single.loading}>
             <ScoreCard result={singleData} action={<AddToHistory result={singleData} alreadySaved={restored?.saved.single ?? false} onSaved={() => markSaved("single")} />} />
@@ -198,9 +203,9 @@ export function ResultPage({ prefs, onAdjust, restored }: { prefs: Preferences; 
 
       <div role="tabpanel" id="rec-panel-portfolio" aria-labelledby="rec-tab-portfolio" hidden={tab !== "portfolio"}>
         {portfolio.status === "error" && !portfolioData ? (
-          <SectionError error={portfolio.error} onRetry={portfolio.reload} what="portfolio recommendation" />
+          <SectionError error={portfolio.error} onRetry={portfolio.reload} kind="portfolio" />
         ) : !portfolioData ? (
-          <SectionSkeleton label="Building your portfolio" />
+          <SectionSkeleton label={t("invest.result.loadingPortfolio")} />
         ) : (
           <div className={s.section} aria-busy={portfolio.loading}>
             <ScoreCard result={portfolioData} action={<AddToHistory result={portfolioData} alreadySaved={restored?.saved.portfolio ?? false} onSaved={() => markSaved("portfolio")} />} />

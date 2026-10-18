@@ -7,21 +7,28 @@ import { cx } from "../lib/cx";
 import { greeting } from "../lib/format";
 import { Spinner } from "../components/Feedback";
 import { IconClose, IconLogout, IconMenu, Logo } from "../components/Icons";
+import { LanguageSwitch } from "../i18n/LanguageSwitch";
+import { useLocale, useT } from "../i18n/LocaleProvider";
+import type { Key } from "../i18n/translate";
 import { SessionGate, useSession } from "./Session";
 import s from "./shell.module.css";
 
-/** Main navigation. Labels are fixed by the spec. The news detail page is NOT an item; it highlights its parent section. */
+/**
+ * Main navigation. Labels are fixed by the spec (English here; `labelKey` is the dictionary text shown in the chosen language).
+ * The news detail page is NOT an item; it highlights its parent section.
+ */
 export const NAV_ITEMS = [
-  { href: "/personal-finance", label: "Personal Finance", section: ["/personal-finance"] },
-  { href: "/market", label: "Market & News", section: ["/market", "/news"] },
-  { href: "/invest", label: "Investment Recommendation", section: ["/invest"] },
-  { href: "/assistant", label: "AI Assistant", section: ["/assistant"] },
-  { href: "/settings", label: "Settings / Profile", section: ["/settings"] },
-] as const;
+  { href: "/personal-finance", label: "Personal Finance", labelKey: "shell.nav.personalFinance", section: ["/personal-finance"] },
+  { href: "/market", label: "Market & News", labelKey: "shell.nav.market", section: ["/market", "/news"] },
+  { href: "/invest", label: "Investment Recommendation", labelKey: "shell.nav.invest", section: ["/invest"] },
+  { href: "/assistant", label: "AI Assistant", labelKey: "shell.nav.assistant", section: ["/assistant"] },
+  { href: "/settings", label: "Settings / Profile", labelKey: "shell.nav.settings", section: ["/settings"] },
+] as const satisfies readonly { href: string; label: string; labelKey: Key; section: readonly string[] }[];
 
 const inSection = (pathname: string, prefixes: readonly string[]) => prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 function Topbar() {
+  const t = useT();
   const pathname = usePathname();
   const { user, signOut } = useSession();
   const [open, setOpen] = useState(false);
@@ -68,19 +75,20 @@ function Topbar() {
   return (
     <header className={s.topbar}>
       <div className={s.topbarInner}>
-        <Link href="/personal-finance" className={s.brand} aria-label="Finova home">
+        <Link href="/personal-finance" className={s.brand} aria-label={t("shell.topbar.home")}>
           <Logo />
           <span>Finova</span>
         </Link>
-        <nav className={s.nav} aria-label="Main">
+        <nav className={s.nav} aria-label={t("shell.topbar.mainNav")}>
           {NAV_ITEMS.map((item) => (
             <Link key={item.href} href={item.href} className={cx(s.navLink, inSection(pathname, item.section) && s.navActive)} aria-current={currentAttr(item)}>
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           ))}
         </nav>
         <div className={s.topRight}>
-          <button type="button" className={s.menuBtn} aria-expanded={open} aria-controls="mobile-nav" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen((v) => !v)}>
+          <LanguageSwitch className={s.langSwitch} />
+          <button type="button" className={s.menuBtn} aria-expanded={open} aria-controls="mobile-nav" aria-label={open ? t("shell.topbar.closeMenu") : t("shell.topbar.openMenu")} onClick={() => setOpen((v) => !v)}>
             {open ? <IconClose /> : <IconMenu />}
           </button>
           <div className={s.profileWrap}>
@@ -88,7 +96,7 @@ function Topbar() {
               type="button"
               ref={avatarRef}
               className={s.avatar}
-              aria-label={`Profile menu: ${user.firstName} ${user.lastName}`}
+              aria-label={t("shell.topbar.profileMenu", { name: `${user.firstName} ${user.lastName}` })}
               title={`${user.firstName} ${user.lastName}`}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -96,23 +104,26 @@ function Topbar() {
             >
               {initials}
             </button>
-            <div ref={menuRef} role="menu" aria-label="Profile" className={cx(s.profileMenu, menuOpen && s.profileMenuOpen)}>
+            <div ref={menuRef} role="menu" aria-label={t("shell.topbar.profile")} className={cx(s.profileMenu, menuOpen && s.profileMenuOpen)}>
               <button type="button" role="menuitem" className={s.profileMenuItem} disabled={signingOut} onClick={handleLogOut}>
                 {signingOut ? <Spinner /> : <IconLogout size={16} />}
-                <span>Log Out</span>
+                <span>{t("shell.topbar.logOut")}</span>
               </button>
             </div>
           </div>
         </div>
       </div>
       {open ? (
-        <nav id="mobile-nav" className={s.sheet} aria-label="Main">
+        <nav id="mobile-nav" className={s.sheet} aria-label={t("shell.topbar.mainNav")}>
           <div className={s.sheetInner}>
             {NAV_ITEMS.map((item) => (
               <Link key={item.href} href={item.href} className={cx(s.sheetLink, inSection(pathname, item.section) && s.sheetActive)} aria-current={currentAttr(item)}>
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ))}
+            <div className={s.sheetLang}>
+              <LanguageSwitch />
+            </div>
           </div>
         </nav>
       ) : null}
@@ -122,14 +133,17 @@ function Topbar() {
 
 export function PageHeader({ title, subtitle, actions, greet = true }: { title: string; subtitle?: ReactNode; actions?: ReactNode; greet?: boolean }) {
   const { user } = useSession();
+  const t = useT();
+  const { locale } = useLocale();
   const [g, setG] = useState("");
-  useEffect(() => setG(greeting()), []);
+  // the greeting depends on the time of day and on the language
+  useEffect(() => setG(greeting()), [locale]);
   return (
     <div className={s.pageHead}>
       <div>
         {greet ? (
           <span className={s.greet} suppressHydrationWarning>
-            {g ? `${g}, ${user.firstName}` : `Hello, ${user.firstName}`}
+            {g ? t("shell.topbar.greetLine", { greeting: g, name: user.firstName }) : t("shell.topbar.hello", { name: user.firstName })}
           </span>
         ) : null}
         <h1 className={s.pageTitle}>{title}</h1>
@@ -145,10 +159,11 @@ export function Disclaimer({ children }: { children: ReactNode }) {
 }
 
 function Frame({ children }: { children: ReactNode }) {
+  const t = useT();
   return (
     <>
       <a href="#content" className="sr-only" style={{ position: "absolute" }}>
-        Skip to content
+        {t("shell.topbar.skip")}
       </a>
       <Topbar />
       <main id="content" className={s.main}>

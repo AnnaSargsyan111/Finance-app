@@ -30,6 +30,7 @@ const RX = {
   reach: /(հասն|կարողան|հաջող|կստանամ)/,
   saving: /(խնայ|կուտակ|առանձնաց|ունենալ|ունենամ)/,
   example: /օրինակ/,
+  planStart: /խնայողության նպատակ/,
   banks: /(ինչ|որ|քանի).{0,10}բանկեր|բանկերի (ցանկ|ցուցակ)|banks/,
 };
 
@@ -114,6 +115,7 @@ export function respondHy(raw: string, topic: string | null = null): HyAnswer {
     return say(HY.askAmountAndTime);
   }
   if (RX.saving.test(text) && amountOf(text) !== null) return say(HY.askAmountAndTime);
+  if (RX.planStart.test(text)) return say(HY.askAmountAndTime);
 
   if (RX.dividend.test(text) && RX.tax.test(text)) return say(HY.dividendTax);
   if ((RX.interest.test(text) || RX.deposit.test(text)) && RX.tax.test(text)) return say(HY.interestTax);

@@ -5,8 +5,19 @@
  */
 export const APP_TZ = "Asia/Yerevan";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+/**
+ * Dates and relative times follow the chosen language (month names and word order); numbers and currencies do not (3,000,000 AMD in both).
+ * These helpers are plain functions, so they read the language LocaleProvider last set (see i18n/locale.ts). Components that call them also call
+ * useLocale()/useT(), so they re-render when the language changes (tests/ui/i18n.test.ts checks this).
+ */
+import { getCurrentLocale } from "../i18n/locale";
+import { translate, type Key } from "../i18n/translate";
+
+const tr = (key: Key, params?: Record<string, string | number>) => translate(getCurrentLocale(), key, params);
+const mm = (n: number) => String(n).padStart(2, "0");
+const monthShort = (n: number) => tr(`common.monthShort.m${mm(n)}` as Key);
+const monthLong = (n: number) => tr(`common.monthLong.m${mm(n)}` as Key);
+const monthInDate = (n: number) => tr(`common.monthInDate.m${mm(n)}` as Key);
 
 export const MINUS = "-";
 
@@ -90,28 +101,28 @@ export function formatDate(iso: string | null | undefined, fallback = "-"): stri
   if (!iso) return fallback;
   const m = DATE_RE.exec(iso);
   if (!m) return fallback;
-  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+  return tr("common.dateShort", { d: Number(m[3]), m: monthShort(Number(m[2])), y: m[1] });
 }
 
 /** "2026-09-21" -> "21 Sep" (chart axes) */
 export function formatDayMonth(iso: string): string {
   const m = DATE_RE.exec(iso);
   if (!m) return iso;
-  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}`;
+  return tr("common.dateDayMonth", { d: Number(m[3]), m: monthShort(Number(m[2])) });
 }
 
 /** "2026-09" or "2026-09-01" -> "September 2026" */
 export function formatMonth(iso: string): string {
   const m = /^(\d{4})-(\d{2})/.exec(iso);
   if (!m) return iso;
-  return `${MONTHS_LONG[Number(m[2]) - 1]} ${m[1]}`;
+  return tr("common.dateMonthYear", { m: monthLong(Number(m[2])), y: m[1] });
 }
 
 /** "2026-09-21" -> "September 21, 2026" (history group headings) */
 export function formatDateLong(iso: string): string {
   const m = DATE_RE.exec(iso);
   if (!m) return iso;
-  return `${MONTHS_LONG[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}`;
+  return tr("common.dateLong", { m: monthInDate(Number(m[2])), d: Number(m[3]), y: m[1] });
 }
 
 function partsIn(d: Date, tz: string) {
@@ -134,7 +145,7 @@ export function formatDateTime(iso: string | null | undefined, fallback = "-"): 
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return fallback;
   const p = partsIn(d, APP_TZ);
-  return `${Number(p.d)} ${MONTHS[Number(p.mo) - 1]} ${p.y}, ${p.h}:${p.mi}`;
+  return tr("common.dateTime", { d: Number(p.d), m: monthShort(Number(p.mo)), y: p.y, time: `${p.h}:${p.mi}` });
 }
 
 /** Yerevan calendar day (YYYY-MM-DD) of a timestamp */
@@ -158,21 +169,21 @@ export function formatAgo(iso: string | null | undefined, now: Date = new Date()
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return "";
   const sec = Math.max(0, Math.round((now.getTime() - t) / 1000));
-  if (sec < 45) return "just now";
+  if (sec < 45) return tr("common.ago.justNow");
   const min = Math.round(sec / 60);
-  if (min < 60) return `${min} min ago`;
+  if (min < 60) return tr("common.ago.minutes", { n: min });
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} h ago`;
+  if (h < 24) return tr("common.ago.hours", { n: h });
   const d = Math.round(h / 24);
-  return `${d} d ago`;
+  return tr("common.ago.days", { n: d });
 }
 
 export function greeting(now: Date = new Date()): string {
   const h = Number(partsIn(now, APP_TZ).h);
-  if (h < 5) return "Good night";
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 5) return tr("common.greeting.night");
+  if (h < 12) return tr("common.greeting.morning");
+  if (h < 18) return tr("common.greeting.afternoon");
+  return tr("common.greeting.evening");
 }
 
 /** Strip spaces, thousands commas and currency words from typed/pasted money; keep a single dot. */

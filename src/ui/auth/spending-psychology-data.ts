@@ -4,7 +4,10 @@
  *
  * Wording is kept to what the linked sources support. The Latte Factor is a debated idea, so its card shows the criticism.
  * The Celtics experiment is quoted as "more than twice as much" (the wording MIT uses), not as dollar averages.
+ * The texts live in the dictionary (auth.spending) and are read through getters, so they follow the chosen language; ids and
+ * sources (names and links) stay here.
  */
+import { tg } from "../i18n/translate";
 import type { Source } from "./market-facts-data";
 
 export interface SpendingIdea {
@@ -20,12 +23,22 @@ export interface SpendingIdea {
 export const SPENDING_IDEAS: SpendingIdea[] = [
   {
     id: "pain-of-paying",
-    tag: "Behavioural economics · 1998",
-    title: "The pain of paying",
-    body: "Paying hurts, and how much depends on how you pay. Handing over cash makes the cost feel real, while a card or a tap delays and softens that feeling. Drazen Prelec and George Loewenstein described this tug-of-war between the pleasure of buying and the pain of paying in 1998.",
+    get tag() {
+      return tg("auth.spending.painOfPaying.tag");
+    },
+    get title() {
+      return tg("auth.spending.painOfPaying.title");
+    },
+    get body() {
+      return tg("auth.spending.painOfPaying.body");
+    },
     example: {
-      label: "In an experiment",
-      text: "People bidding for Boston Celtics tickets bid more than twice as much when they could pay by credit card as when they had to pay in cash.",
+      get label() {
+        return tg("auth.spending.painOfPaying.exampleLabel");
+      },
+      get text() {
+        return tg("auth.spending.painOfPaying.exampleText");
+      },
     },
     sources: [
       { name: "MIT Better World", url: "https://betterworld.mit.edu/spectrum/issues/winter-1999/the-psychology-of-spending" },
@@ -34,35 +47,71 @@ export const SPENDING_IDEAS: SpendingIdea[] = [
   },
   {
     id: "diderot-effect",
-    tag: "Paris · 1769",
-    title: "The Diderot Effect",
-    body: "One new purchase makes everything you already own feel out of date, so you keep upgrading to match it. The philosopher Denis Diderot received a scarlet dressing gown, then replaced his chair, desk and prints to live up to it, and ended up in debt. The anthropologist Grant McCracken named the effect in 1986.",
-    example: {
-      label: "In his words",
-      text: "“I was absolute master of my old dressing gown, but I have become a slave to my new one.”",
+    get tag() {
+      return tg("auth.spending.diderotEffect.tag");
     },
-    sources: [{ name: "Wikipedia", url: "https://en.wikipedia.org/wiki/Diderot_effect" }],
+    get title() {
+      return tg("auth.spending.diderotEffect.title");
+    },
+    get body() {
+      return tg("auth.spending.diderotEffect.body");
+    },
+    example: {
+      get label() {
+        return tg("auth.spending.diderotEffect.exampleLabel");
+      },
+      get text() {
+        return tg("auth.spending.diderotEffect.exampleText");
+      },
+    },
+    sources: [
+      { name: "Wikipedia", url: "https://en.wikipedia.org/wiki/Diderot_effect" },
+    ],
   },
   {
     id: "latte-factor",
-    tag: "1995 · A debated idea",
-    title: "The Latte Factor",
-    body: "Financial author David Bach coined it in 1995: small daily purchases, like a $5 coffee, add up, and if invested instead they could grow into a fortune. It became hugely popular after his 1999 book Smart Women Finish Rich.",
-    example: {
-      label: "The criticism",
-      text: "His projection of over $2 million assumed an 11% yearly return, above the historical Dow Jones average of about 9.7%. Critics add that big shocks like job loss, divorce or medical bills hurt savings far more than small treats do.",
+    get tag() {
+      return tg("auth.spending.latteFactor.tag");
     },
-    sources: [{ name: "The Hustle", url: "https://thehustle.co/just-stop-buying-lattes-the-origins-of-a-millennial-housing-myth" }],
+    get title() {
+      return tg("auth.spending.latteFactor.title");
+    },
+    get body() {
+      return tg("auth.spending.latteFactor.body");
+    },
+    example: {
+      get label() {
+        return tg("auth.spending.latteFactor.exampleLabel");
+      },
+      get text() {
+        return tg("auth.spending.latteFactor.exampleText");
+      },
+    },
+    sources: [
+      { name: "The Hustle", url: "https://thehustle.co/just-stop-buying-lattes-the-origins-of-a-millennial-housing-myth" },
+    ],
   },
   {
     id: "mental-accounting",
-    tag: "Nobel Prize · 2017",
-    title: "Mental accounting",
-    body: "We sort money into separate mental accounts, such as bills, holidays or fun money, and judge each choice by its effect on that account rather than on our total wealth. Richard Thaler's work on it was part of his 2017 Nobel Prize in Economics.",
-    example: {
-      label: "In practice",
-      text: "Many households keep one pot for bills and another for holidays, with rules against using one to pay for the other, even though it is all the same money.",
+    get tag() {
+      return tg("auth.spending.mentalAccounting.tag");
     },
-    sources: [{ name: "Nobel Prize", url: "https://www.nobelprize.org/prizes/economic-sciences/2017/popular-information/" }],
+    get title() {
+      return tg("auth.spending.mentalAccounting.title");
+    },
+    get body() {
+      return tg("auth.spending.mentalAccounting.body");
+    },
+    example: {
+      get label() {
+        return tg("auth.spending.mentalAccounting.exampleLabel");
+      },
+      get text() {
+        return tg("auth.spending.mentalAccounting.exampleText");
+      },
+    },
+    sources: [
+      { name: "Nobel Prize", url: "https://www.nobelprize.org/prizes/economic-sciences/2017/popular-information/" },
+    ],
   },
 ];

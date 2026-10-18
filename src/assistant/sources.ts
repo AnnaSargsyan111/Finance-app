@@ -14,7 +14,7 @@ export interface Source {
 export const ALLOWED_HOSTS: ReadonlySet<string> = new Set(["adgf.am", "www.cba.am", "src.am"]);
 
 const ENTITIES: Record<string, string> = { "&ndash;": "-", "&mdash;": "-", "&nbsp;": " ", "&amp;": "&", "&quot;": '"', "&#039;": "'", "&#39;": "'", "&rsquo;": "'", "&lsquo;": "'", "&ldquo;": '"', "&rdquo;": '"', "&lt;": "<", "&gt;": ">" };
-const decode = (s: string) => s.replace(/&(?:ndash|mdash|nbsp|amp|quot|#0?39|rsquo|lsquo|ldquo|rdquo|lt|gt);/g, (m) => ENTITIES[m] ?? m).replace(/&#(d{2,5});/g, (_m, n: string) => String.fromCharCode(Number(n)));
+const decode = (s: string) => s.replace(/&(?:ndash|mdash|nbsp|amp|quot|#0?39|rsquo|lsquo|ldquo|rdquo|lt|gt);/g, (m) => ENTITIES[m] ?? m).replace(/&#(\d{2,5});/g, (_m, n: string) => String.fromCharCode(Number(n)));
 
 /** the readable text of an HTML page: no scripts, styles or tags, one line per block */
 export function readableText(html: string): string {

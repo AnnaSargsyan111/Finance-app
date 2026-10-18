@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IconInfo } from "./Icons";
+import { useT } from "../i18n/LocaleProvider";
 import { cx } from "../lib/cx";
 import s from "./infotip.module.css";
 
@@ -26,6 +27,7 @@ const GAP = 8;
  * when there is no room below, and follows the icon when the page scrolls.
  */
 export function InfoTip({ title, sections, className }: { title: string; sections: InfoSection[]; className?: string }) {
+  const t = useT();
   const id = useId();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -99,7 +101,7 @@ export function InfoTip({ title, sections, className }: { title: string; section
 
   return (
     <>
-      <button ref={btn} type="button" className={cx(s.btn, open && s.btnOpen, className)} aria-label={`What is ${title}?`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={toggle}>
+      <button ref={btn} type="button" className={cx(s.btn, open && s.btnOpen, className)} aria-label={t("shell.ui.whatIs", { title })} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={toggle}>
         <IconInfo size={15} />
       </button>
       {open
@@ -115,7 +117,7 @@ export function InfoTip({ title, sections, className }: { title: string; section
             >
               <div className={s.head}>
                 <p className={s.title}>{title}</p>
-                <button type="button" className={s.close} aria-label="Close explanation" onClick={() => { close(); btn.current?.focus(); }}>
+                <button type="button" className={s.close} aria-label={t("shell.ui.closeExplanation")} onClick={() => { close(); btn.current?.focus(); }}>
                   <span aria-hidden="true">×</span>
                 </button>
               </div>

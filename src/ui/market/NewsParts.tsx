@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Chip } from "../components/Display";
+import { useT, type Key } from "../i18n";
 import { cx } from "../lib/cx";
 import { NewsArt } from "./NewsArt";
 import s from "./market.module.css";
@@ -12,6 +13,7 @@ import s from "./market.module.css";
  * shows an empty placeholder. `labelArt` adds a small "Illustration" tag on that artwork (used on the article page).
  */
 export function NewsImage({ src, alt = "", className, article, labelArt }: { src: string | null; alt?: string; className?: string; article: { id: string; category: string; region?: string }; labelArt?: boolean }) {
+  const t = useT();
   const [failed, setFailed] = useState(false);
   const showImg = !!src && !failed;
   return (
@@ -22,13 +24,24 @@ export function NewsImage({ src, alt = "", className, article, labelArt }: { src
       ) : (
         <>
           <NewsArt seed={article.id} category={article.category} region={article.region} />
-          {labelArt ? <span className={s.artLabel}>Illustration</span> : null}
+          {labelArt ? <span className={s.artLabel}>{t("market.news.illustration")}</span> : null}
         </>
       )}
     </div>
   );
 }
 
+/** our topic labels (the server sends them in English); an unknown label is shown as sent */
+const CATEGORY_KEYS: Record<string, Key> = {
+  Markets: "market.news.category.markets",
+  Economy: "market.news.category.economy",
+  "Currencies & Commodities": "market.news.category.currencies",
+  Technology: "market.news.category.technology",
+  Armenia: "market.news.category.armenia",
+  World: "market.news.category.world",
+};
+
 export function CategoryChip({ category }: { category: string }) {
-  return <Chip>{category}</Chip>;
+  const t = useT();
+  return <Chip>{CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category}</Chip>;
 }

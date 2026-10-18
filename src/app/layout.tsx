@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Manrope } from "next/font/google";
+import { Manrope, Noto_Sans_Armenian } from "next/font/google";
+import { LocaleProvider } from "@/ui/i18n/LocaleProvider";
+import { getLocale } from "@/ui/i18n/server";
+import { translate } from "@/ui/i18n/translate";
 import "@/ui/styles/tokens.css";
 import "@/ui/styles/global.css";
 
@@ -12,20 +15,33 @@ const manrope = Manrope({
   fallback: ["ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "Arial"],
 });
 
-export const metadata: Metadata = {
-  title: { default: "Finova", template: "%s | Finova" },
-  description: "Finova: personal finance, market and news information, and informational investment ideas in one place.",
-};
+/** Manrope has no Armenian letters; this font covers them, so Armenian text is designed, not a random system font */
+const armenian = Noto_Sans_Armenian({
+  subsets: ["armenian"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-armenian",
+});
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: { default: "Finova", template: "%s | Finova" },
+    description: translate(await getLocale(), "common.meta.description"),
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#020203",
   colorScheme: "dark",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="en" className={manrope.variable}>
-      <body>{children}</body>
+    <html lang={locale} className={`${manrope.variable} ${armenian.variable}`}>
+      <body>
+        <LocaleProvider initial={locale}>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }

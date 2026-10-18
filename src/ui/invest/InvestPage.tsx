@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LinkButton } from "../components/Button";
 import { Disclaimer, PageHeader } from "../shell/AppShell";
+import { useT } from "../i18n";
 import { useSession } from "../shell/Session";
 import { ResultPage } from "./ResultPage";
 import { clearRecSession, clearResumeRequest, peekResume, rememberScroll, startRecSession } from "./session-memory";
@@ -15,6 +16,7 @@ import s from "./invest.module.css";
  * whole flow, so Adjust Preferences remounts it and always begin with a completely clean form.
  */
 export function InvestPage() {
+  const t = useT();
   const { user } = useSession();
   // "Back to my recommendation" on the history page asks for the latest recommendation back, exactly as it was left; any other visit starts clean
   const [restored, setRestored] = useState(() => peekResume(user.id));
@@ -35,20 +37,18 @@ export function InvestPage() {
   return (
     <>
       <PageHeader
-        title="Investment Recommendation"
-        subtitle="Answer a few questions and see companies that fit your risk and horizon. Information only: no trades are made."
+        title={t("invest.page.title")}
+        subtitle={t("invest.page.subtitle")}
         actions={
           <LinkButton href="/invest/history" variant="secondary" size="sm" onClick={rememberScroll}>
-            Recommendation History
+            {t("invest.page.history")}
           </LinkButton>
         }
       />
       <div key={runId} className={prefs ? undefined : s.narrow}>
         {prefs ? <ResultPage prefs={prefs} onAdjust={restart} restored={restored} /> : <StepFlow onSubmit={submit} />}
       </div>
-      <Disclaimer>
-        Finova is an informational tool and does not give personal investment advice. Recommendations come from a rules-based method applied to public, delayed data. Past performance does not guarantee future results, and any investment can lose value. Finova does not execute trades.
-      </Disclaimer>
+      <Disclaimer>{t("invest.page.disclaimer")}</Disclaimer>
     </>
   );
 }

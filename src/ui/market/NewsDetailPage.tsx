@@ -7,22 +7,25 @@ import { ExternalButton, LinkButton } from "../components/Button";
 import { EmptyState, ErrorState, Skeleton } from "../components/Feedback";
 import { IconArrowLeft, IconExternal } from "../components/Icons";
 import { useResource } from "../hooks/useResource";
+import { useT } from "../i18n";
 import { formatDateTime } from "../lib/format";
 import { CategoryChip, NewsImage } from "./NewsParts";
 import s from "./market.module.css";
 
 function BackLink() {
+  const t = useT();
   return (
     <div>
       <LinkButton href="/market?tab=news" variant="ghost" size="sm">
         <IconArrowLeft size={16} />
-        Back to News
+        {t("market.news.detail.back")}
       </LinkButton>
     </div>
   );
 }
 
 export function NewsDetailPage() {
+  const t = useT();
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
   const res = useResource((signal) => getNewsDetail(id, signal), [id]);
@@ -33,9 +36,17 @@ export function NewsDetailPage() {
       <div className={s.detail}>
         {notFound ? null : <BackLink />}
         {notFound ? (
-          <EmptyState title="This article is no longer available" message="Articles stay available for about a week after they appear. Head back to the news list to see the latest ones." action={<LinkButton href="/market?tab=news" variant="secondary" size="sm">Back to News</LinkButton>} />
+          <EmptyState
+            title={t("market.news.detail.notFoundTitle")}
+            message={t("market.news.detail.notFoundMessage")}
+            action={
+              <LinkButton href="/market?tab=news" variant="secondary" size="sm">
+                {t("market.news.detail.back")}
+              </LinkButton>
+            }
+          />
         ) : (
-          <ErrorState title="We couldn't load this article" message={errorMessage(res.error)} onRetry={res.reload} />
+          <ErrorState title={t("market.news.detail.errorTitle")} message={errorMessage(res.error)} onRetry={res.reload} />
         )}
       </div>
     );
@@ -43,7 +54,7 @@ export function NewsDetailPage() {
   if (!res.data) {
     return (
       <div className={s.detail} role="status" aria-busy="true">
-        <span className="sr-only">Loading article</span>
+        <span className="sr-only">{t("market.news.detail.loading")}</span>
         <Skeleton width={120} height={34} radius={99} />
         <Skeleton width={160} height={26} radius={99} />
         <Skeleton height={40} />
@@ -61,23 +72,23 @@ export function NewsDetailPage() {
       <div className={s.detailMeta}>
         <CategoryChip category={a.category} />
         <span>
-          Source: <strong style={{ color: "var(--text)", fontWeight: 600 }}>{a.source}</strong>
+          {t("market.news.detail.sourceLabel")} <strong style={{ color: "var(--text)", fontWeight: 600 }}>{a.source}</strong>
         </span>
         <time dateTime={a.publishedAt}>{formatDateTime(a.publishedAt)}</time>
       </div>
       <h1 className={s.detailTitle}>{a.title}</h1>
       <NewsImage src={a.imageUrl} article={a} className={s.detailHero} labelArt />
       <div>
-        {a.summary ? <p className={s.detailText}>{a.summary}</p> : <p className={s.detailText}>The publisher&apos;s feed didn&apos;t include a summary for this article. Use the button below to read it at the source.</p>}
+        {a.summary ? <p className={s.detailText}>{a.summary}</p> : <p className={s.detailText}>{t("market.news.detail.noSummary")}</p>}
         <p className={s.attribution} style={{ marginTop: 12 }}>
-          Summary provided by {a.source}. Finova does not copy full articles.
+          {t("market.news.detail.summaryBy", { source: a.source })}
         </p>
       </div>
       <div>
         <ExternalButton href={a.readFullUrl} variant="primary">
-          Read Full Article
+          {t("market.news.detail.readFull")}
           <IconExternal size={16} />
-          <span className="sr-only"> (opens the original article in a new tab)</span>
+          <span className="sr-only">{t("market.news.detail.opensNewTab")}</span>
         </ExternalButton>
       </div>
     </article>

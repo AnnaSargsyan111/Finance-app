@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useId, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useT } from "../i18n/LocaleProvider";
 import { cx } from "../lib/cx";
 import { cleanAmountInput, groupDigits } from "../lib/format";
 import { IconAlert, IconEye, IconEyeOff } from "./Icons";
@@ -53,6 +54,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
 
 /** Password input with a Show / Hide toggle. */
 export const PasswordField = forwardRef<HTMLInputElement, Omit<TextFieldProps, "type" | "trailing">>(function PasswordField(props, ref) {
+  const t = useT();
   const [shown, setShown] = useState(false);
   return (
     <TextField
@@ -60,10 +62,10 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<TextFieldProps, "
       {...props}
       type={shown ? "text" : "password"}
       trailing={
-        <button type="button" className={s.adornBtn} onClick={() => setShown((v) => !v)} aria-pressed={shown} aria-label={shown ? "Hide password" : "Show password"}>
+        <button type="button" className={s.adornBtn} onClick={() => setShown((v) => !v)} aria-pressed={shown} aria-label={shown ? t("shell.ui.hidePassword") : t("shell.ui.showPassword")}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             {shown ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-            {shown ? "Hide" : "Show"}
+            {shown ? t("shell.ui.hide") : t("shell.ui.show")}
           </span>
         </button>
       }

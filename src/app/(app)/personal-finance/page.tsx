@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/ui/i18n/server";
 import { PersonalFinancePage } from "@/ui/pf/PersonalFinancePage";
 
-export const metadata: Metadata = { title: "Personal Finance" };
+export const generateMetadata = () => pageMetadata("common.meta.personalFinance");
 
 export default function Page() {
   return <PersonalFinancePage />;

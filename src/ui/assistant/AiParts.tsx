@@ -1,4 +1,8 @@
+"use client";
+
 import { IconAlert, IconCheck, IconInfo } from "../components/Icons";
+import { useT } from "../i18n/LocaleProvider";
+import { translate } from "../i18n/translate";
 import { cx } from "../lib/cx";
 import { formatDate } from "../lib/format";
 import { HY } from "./hy";
@@ -7,15 +11,20 @@ import s from "./assistant.module.css";
 
 type Lang = "en" | "hy";
 
-const EN = {
-  confirmed: "Confirmed by an official source",
-  partial: "Not fully sure: please check the source",
-  none: "No reliable source found",
-  sources: "Sources",
-  footnote: "AI-assisted answer from official pages. Not personal advice.",
-} as const;
-
-const words = (lang: Lang) => (lang === "hy" ? HY.labels : EN);
+/**
+ * The labels follow the language OF THE ANSWER (an answer written in Armenian has Armenian labels, one in English has English labels),
+ * whatever the language of the screen. Armenian: HY.labels (kept with the answer engine). English: the dictionary (assistant.ai.*).
+ */
+const words = (lang: Lang) =>
+  lang === "hy"
+    ? HY.labels
+    : {
+        confirmed: translate("en", "assistant.ai.confirmed"),
+        partial: translate("en", "assistant.ai.partial"),
+        none: translate("en", "assistant.ai.none"),
+        sources: translate("en", "assistant.ai.sources"),
+        footnote: translate("en", "assistant.ai.footnote"),
+      };
 
 /** Icon and words together, so the level never relies on colour. The hidden colon makes screen readers read "Confirmed ...: answer". */
 export function ConfidenceLabel({ confidence, lang }: { confidence: Confidence; lang: Lang }) {
@@ -33,6 +42,7 @@ export function ConfidenceLabel({ confidence, lang }: { confidence: Confidence; 
 const isWebUrl = (u: string) => /^https?:\/\//i.test(u);
 
 export function AiSources({ sources, lang }: { sources: SourceRef[]; lang: Lang }) {
+  const t = useT(); // also re-renders the dates below when the language changes
   const w = words(lang);
   return (
     <div className={s.aiMeta} lang={lang}>
@@ -45,14 +55,14 @@ export function AiSources({ sources, lang }: { sources: SourceRef[]; lang: Lang 
                 {isWebUrl(src.url) ? (
                   <a href={src.url} target="_blank" rel="noopener noreferrer" className={s.sourceLink}>
                     {src.title}
-                    <span className="sr-only"> (opens in a new tab)</span>
+                    <span className="sr-only"> {t("assistant.ai.newTab")}</span>
                   </a>
                 ) : (
                   <span>{src.title}</span>
                 )}
                 {src.date ? (
                   <span className={s.sourceDate}>
-                    {lang === "en" ? "read " : ""}
+                    {lang === "en" ? `${translate("en", "assistant.ai.read")} ` : ""}
                     <span className="num">{formatDate(src.date)}</span>
                   </span>
                 ) : null}

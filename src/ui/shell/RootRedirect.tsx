@@ -16,5 +16,5 @@ export function RootRedirect() {
       });
     return () => ctrl.abort();
   }, [router]);
-  return <Splash text="Loading" />;
+  return <Splash />;
 }

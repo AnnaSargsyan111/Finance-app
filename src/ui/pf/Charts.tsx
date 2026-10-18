@@ -3,8 +3,9 @@
 import { Bar, BarChart, Cell, LabelList, Pie, PieChart, ReferenceLine, ResponsiveContainer, XAxis } from "recharts";
 import { AXIS_COLOR, CHART_COLORS, ChartFigure, ChartPlaceholder, DataTable, NEG_COLOR } from "../components/ChartParts";
 import { useReducedMotion } from "../hooks/useReducedMotion";
+import { useT } from "../i18n";
 import { formatAmd, formatNumber, formatPercent } from "../lib/format";
-import type { Preview } from "./calc";
+import { categoryLabel, type Preview } from "./calc";
 import s from "./pf.module.css";
 
 const amd = (cents: number) => cents / 100;
@@ -12,22 +13,24 @@ const amd = (cents: number) => cents / 100;
 /* ------------------------------------------------------------------ Expense Breakdown (pie / donut) */
 export function ExpenseBreakdownChart({ preview }: { preview: Preview }) {
   const reduced = useReducedMotion();
-  const items = preview.breakdown;
+  const t = useT();
+  const items = preview.breakdown.map((i) => ({ ...i, label: categoryLabel(i.key, i.key === null, i.label) }));
   if (items.length === 0) {
-    return <ChartPlaceholder kind="pie" title="No expenses entered yet" message="Enter an amount in at least one expense category to see how your spending splits up." />;
+    return <ChartPlaceholder kind="pie" title={t("pf.charts.pie.emptyTitle")} message={t("pf.charts.pie.emptyMessage")} />;
   }
   const total = preview.expensesCents;
-  const summary = `Expense breakdown. ${items.map((i) => `${i.label} ${i.percent}%`).join(", ")}. Total expenses ${formatAmd(amd(total))}.`;
+  const summary = t("pf.charts.pie.summary", { items: items.map((i) => t("pf.charts.pie.summaryItem", { label: i.label, percent: i.percent })).join(", "), total: formatAmd(amd(total)) });
   return (
     <ChartFigure
       summary={summary}
+      tableLabel={t("pf.charts.viewTable")}
       table={
         <DataTable
-          caption="Expense breakdown by category"
+          caption={t("pf.charts.pie.tableCaption")}
           columns={[
-            { key: "cat", label: "Category" },
-            { key: "share", label: "Share", numeric: true },
-            { key: "amount", label: "Amount (AMD)", numeric: true },
+            { key: "cat", label: t("pf.charts.pie.colCategory") },
+            { key: "share", label: t("pf.charts.pie.colShare"), numeric: true },
+            { key: "amount", label: t("pf.charts.pie.colAmount"), numeric: true },
           ]}
           rows={items.map((i) => ({ cat: i.label, share: `${i.percent}%`, amount: formatNumber(amd(i.cents), i.cents % 100 ? 2 : 0) }))}
         />
@@ -45,11 +48,11 @@ export function ExpenseBreakdownChart({ preview }: { preview: Preview }) {
             </PieChart>
           </ResponsiveContainer>
           <div className={s.pieCenter} aria-hidden="true">
-            <span className={s.pieCenterLabel}>Expenses</span>
+            <span className={s.pieCenterLabel}>{t("pf.charts.pie.center")}</span>
             <span className={s.pieCenterValue}>{formatNumber(amd(total), total % 100 ? 2 : 0)}</span>
           </div>
         </div>
-        <ul className={s.legend} aria-label="Expense categories">
+        <ul className={s.legend} aria-label={t("pf.charts.pie.legend")}>
           {items.map((i, k) => (
             <li key={`${i.label}-${k}`} className={s.legendItem}>
               <span className={s.swatch} style={{ background: CHART_COLORS[k % CHART_COLORS.length] }} aria-hidden="true" />
@@ -67,28 +70,32 @@ export function ExpenseBreakdownChart({ preview }: { preview: Preview }) {
 /* ------------------------------------------------------------------ Cash Flow (bars) */
 export function CashFlowChart({ preview }: { preview: Preview }) {
   const reduced = useReducedMotion();
+  const t = useT();
   if (preview.isEmpty) {
-    return <ChartPlaceholder kind="bar" title="No income or expenses entered yet" message="Enter your income and expenses for this period to compare them here." />;
+    return <ChartPlaceholder kind="bar" title={t("pf.charts.bar.emptyTitle")} message={t("pf.charts.bar.emptyMessage")} />;
   }
   const data = [
-    { name: "Income", value: amd(preview.incomeCents), color: CHART_COLORS[1], entered: preview.incomeEntered },
-    { name: "Expenses", value: amd(preview.expensesCents), color: CHART_COLORS[5], entered: true },
-    { name: "Available / Difference", value: amd(preview.availableCents), color: preview.availableCents < 0 ? NEG_COLOR : CHART_COLORS[0], entered: true },
+    { id: "income", name: t("pf.charts.bar.income"), short: t("pf.charts.bar.income"), value: amd(preview.incomeCents), color: CHART_COLORS[1], entered: preview.incomeEntered },
+    { id: "expenses", name: t("pf.charts.bar.expenses"), short: t("pf.charts.bar.expenses"), value: amd(preview.expensesCents), color: CHART_COLORS[5], entered: true },
+    { id: "available", name: t("pf.charts.bar.available"), short: t("pf.charts.bar.availableShort"), value: amd(preview.availableCents), color: preview.availableCents < 0 ? NEG_COLOR : CHART_COLORS[0], entered: true },
   ];
-  const summary = `Cash flow. Income ${preview.incomeEntered ? formatAmd(data[0].value) : "not entered"}. Expenses ${formatAmd(data[1].value)}. Available / Difference ${formatAmd(data[2].value)}.`;
-  const short = (n: string) => (n === "Available / Difference" ? "Available" : n);
+  const summary = preview.incomeEntered
+    ? t("pf.charts.bar.summary", { income: formatAmd(data[0].value), expenses: formatAmd(data[1].value), available: formatAmd(data[2].value) })
+    : t("pf.charts.bar.summaryNoIncome", { expenses: formatAmd(data[1].value), available: formatAmd(data[2].value) });
+  const short = (n: string) => data.find((d) => d.name === n)?.short ?? n;
   return (
     <ChartFigure
       summary={summary}
-      caption={preview.incomeMissing ? "Income has not been entered, so it counts as 0 in this comparison." : undefined}
+      tableLabel={t("pf.charts.viewTable")}
+      caption={preview.incomeMissing ? t("pf.charts.bar.caption") : undefined}
       table={
         <DataTable
-          caption="Cash flow"
+          caption={t("pf.charts.bar.tableCaption")}
           columns={[
-            { key: "k", label: "Measure" },
-            { key: "v", label: "Amount (AMD)", numeric: true },
+            { key: "k", label: t("pf.charts.bar.colMeasure") },
+            { key: "v", label: t("pf.charts.bar.colAmount"), numeric: true },
           ]}
-          rows={data.map((d) => ({ k: d.name, v: d.name === "Income" && !d.entered ? "Not entered" : formatAmd(d.value, { suffix: false }) }))}
+          rows={data.map((d) => ({ k: d.name, v: d.id === "income" && !d.entered ? t("pf.charts.bar.notEntered") : formatAmd(d.value, { suffix: false }) }))}
         />
       }
     >
@@ -99,7 +106,7 @@ export function CashFlowChart({ preview }: { preview: Preview }) {
             <ReferenceLine y={0} stroke="#4F5753" />
             <Bar dataKey="value" radius={[8, 8, 8, 8]} isAnimationActive={!reduced} maxBarSize={120}>
               {data.map((d, i) => (
-                <Cell key={i} fill={d.color} fillOpacity={d.name === "Income" && !d.entered ? 0.35 : 1} />
+                <Cell key={i} fill={d.color} fillOpacity={d.id === "income" && !d.entered ? 0.35 : 1} />
               ))}
               <LabelList
                 dataKey="value"

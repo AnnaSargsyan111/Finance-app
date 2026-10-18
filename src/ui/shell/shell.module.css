@@ -244,9 +244,23 @@
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
+/* the EN | HAY switch: in the top bar on desktop, at the end of the menu sheet on a phone */
+.topRight .langSwitch {
+  display: none;
+}
+.sheetLang {
+  display: flex;
+  justify-content: flex-start;
+  padding: var(--s-4) var(--s-4) 0;
+  margin-top: var(--s-2);
+  border-top: 1px solid var(--border-faint);
+}
 @media (min-width: 1080px) {
   .nav {
     display: flex;
+  }
+  .topRight .langSwitch {
+    display: inline-flex;
   }
   .menuBtn,
   .sheet {
@@ -256,13 +270,26 @@
     margin-left: 0;
   }
 }
-/* five items: tighter links just above the breakpoint so the bar never overflows */
+/* five items and the language switch: tighter links and a smaller switch just above the breakpoint so the bar never overflows at 1080px */
 @media (min-width: 1080px) and (max-width: 1279px) {
   .topbarInner {
-    gap: var(--s-4);
+    gap: var(--s-3);
+  }
+  .nav {
+    gap: 2px;
   }
   .navLink {
-    padding: 0 var(--s-3);
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .navActive::before {
+    margin-right: 6px;
+  }
+  .topRight {
+    gap: var(--s-2);
+  }
+  .langSwitch button {
+    padding: 0 10px;
   }
 }
 

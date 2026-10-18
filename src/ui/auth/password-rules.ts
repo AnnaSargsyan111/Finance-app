@@ -3,6 +3,8 @@
  * validates the same rules on sign-up and reset-password). Labels are read from GET /api/auth/password-rules when it
  * answers, otherwise these defaults are used. The password is never stored client-side.
  */
+import { tg, type Key } from "../i18n/translate";
+
 export type RuleId = "minLength" | "uppercase" | "lowercase" | "number" | "symbol";
 
 export const MIN_LENGTH = 8;
@@ -16,18 +18,53 @@ export const RULE_TESTS: Record<RuleId, (p: string) => boolean> = {
   symbol: (p) => /[^\p{L}\p{N}\s]/u.test(p),
 };
 
+/** the checklist labels come from the dictionary (auth.passwordRules), so they follow the chosen language */
+export const RULE_LABEL_KEYS = {
+  minLength: "auth.passwordRules.minLength",
+  uppercase: "auth.passwordRules.uppercase",
+  lowercase: "auth.passwordRules.lowercase",
+  number: "auth.passwordRules.number",
+  symbol: "auth.passwordRules.symbol",
+} as const satisfies Record<RuleId, Key>;
+
 export const DEFAULT_RULES: { id: RuleId; label: string }[] = [
-  { id: "minLength", label: "8+ characters" },
-  { id: "uppercase", label: "Uppercase" },
-  { id: "lowercase", label: "Lowercase" },
-  { id: "number", label: "Number" },
-  { id: "symbol", label: "Symbol" },
+  {
+    id: "minLength",
+    get label() {
+      return tg(RULE_LABEL_KEYS.minLength);
+    },
+  },
+  {
+    id: "uppercase",
+    get label() {
+      return tg(RULE_LABEL_KEYS.uppercase);
+    },
+  },
+  {
+    id: "lowercase",
+    get label() {
+      return tg(RULE_LABEL_KEYS.lowercase);
+    },
+  },
+  {
+    id: "number",
+    get label() {
+      return tg(RULE_LABEL_KEYS.number);
+    },
+  },
+  {
+    id: "symbol",
+    get label() {
+      return tg(RULE_LABEL_KEYS.symbol);
+    },
+  },
 ];
 
 export function checkPassword(password: string, rules: { id: string; label: string }[] = DEFAULT_RULES) {
   const results = rules
     .filter((r): r is { id: RuleId; label: string } => r.id in RULE_TESTS)
-    .map((r) => ({ id: r.id, label: r.label, ok: RULE_TESTS[r.id](password) }));
+    // the server sends English labels: a known rule is labelled from the dictionary (same English wording, other languages follow)
+    .map((r) => ({ id: r.id, label: tg(RULE_LABEL_KEYS[r.id]), ok: RULE_TESTS[r.id](password) }));
   const tooLong = password.length > MAX_LENGTH;
   return { valid: results.every((r) => r.ok) && !tooLong, tooLong, results };
 }

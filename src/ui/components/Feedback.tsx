@@ -1,4 +1,7 @@
+"use client";
+
 import type { CSSProperties, ReactNode } from "react";
+import { useT } from "../i18n/LocaleProvider";
 import { cx } from "../lib/cx";
 import { IconAlert, IconInfo } from "./Icons";
 import s from "./ui.module.css";
@@ -26,10 +29,11 @@ export function SkeletonLines({ lines = 3, gap = 10 }: { lines?: number; gap?: n
 }
 
 /** A whole widget in its loading state: skeleton body + an accessible "Loading" status. */
-export function LoadingBlock({ label = "Loading", height = 220, children }: { label?: string; height?: number; children?: ReactNode }) {
+export function LoadingBlock({ label, height = 220, children }: { label?: string; height?: number; children?: ReactNode }) {
+  const t = useT();
   return (
     <div role="status" aria-live="polite" aria-busy="true" style={{ minHeight: height, display: "flex", flexDirection: "column", gap: 12 }}>
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t("shell.ui.loading")}</span>
       {children ?? (
         <>
           <Skeleton height={20} width="40%" />
@@ -40,17 +44,18 @@ export function LoadingBlock({ label = "Loading", height = 220, children }: { la
   );
 }
 
-export function ErrorState({ title = "Something went wrong", message, onRetry, retryLabel = "Retry", compact }: { title?: string; message?: string; onRetry?: () => void; retryLabel?: string; compact?: boolean }) {
+export function ErrorState({ title, message, onRetry, retryLabel, compact }: { title?: string; message?: string; onRetry?: () => void; retryLabel?: string; compact?: boolean }) {
+  const t = useT();
   return (
     <div className={cx(s.state, s.stateError)} role="alert" style={compact ? { minHeight: 0, padding: "var(--s-5) var(--s-4)" } : undefined}>
       <span className={s.stateIcon}>
         <IconAlert size={22} />
       </span>
-      <p className={s.stateTitle}>{title}</p>
+      <p className={s.stateTitle}>{title ?? t("shell.ui.somethingWentWrong")}</p>
       {message ? <p className={s.stateMsg}>{message}</p> : null}
       {onRetry ? (
         <button type="button" className={cx(s.btn, s.secondary, s.sm)} onClick={onRetry}>
-          {retryLabel}
+          {retryLabel ?? t("shell.ui.retry")}
         </button>
       ) : null}
     </div>
@@ -82,10 +87,11 @@ export function Note({ tone = "info", children, action }: { tone?: "info" | "war
 }
 
 /** Visible label for MOCKED endpoints (see src/ui/api/mock-registry.ts). */
-export function DemoBadge({ title = "This section uses sample data because its backend endpoint is not live yet." }: { title?: string }) {
+export function DemoBadge({ title }: { title?: string }) {
+  const t = useT();
   return (
-    <span className={s.demo} title={title}>
-      Demo data
+    <span className={s.demo} title={title ?? t("shell.ui.demoTitle")}>
+      {t("shell.ui.demoData")}
     </span>
   );
 }

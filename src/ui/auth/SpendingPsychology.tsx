@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cx } from "../lib/cx";
 import { Logo } from "../components/Icons";
 import { useReducedMotion } from "../hooks/useReducedMotion";
+import { useT } from "../i18n";
 import { FLIP_AT_RATIO, SHOW_AHEAD_PX, decideCard, flipDelays, type ScrollDirection } from "./flip-cards";
 import { SourceLink } from "./MarketFacts";
 import { SPENDING_IDEAS } from "./spending-psychology-data";
@@ -26,6 +27,7 @@ const FACE_UP: CardState = { flipped: true, instant: true, delay: 0 };
  * into them shows them already face-up. The rules live in flip-cards.ts. With reduced motion they are simply face-up.
  */
 export function SpendingPsychology() {
+  const t = useT();
   const reduced = useReducedMotion();
   const cardEls = useRef<(HTMLLIElement | null)[]>([]);
   const direction = useRef<ScrollDirection>("down");
@@ -84,11 +86,11 @@ export function SpendingPsychology() {
     <section className={cx(s.section, s.sectionAlt)} aria-labelledby="spending-psychology-title">
       <div className={s.inner}>
         <header className={s.head}>
-          <span className={s.eyebrow}>Know your habits</span>
+          <span className={s.eyebrow}>{t("auth.spending.eyebrow")}</span>
           <h2 id="spending-psychology-title" className={s.title}>
-            The psychology of spending
+            {t("auth.spending.title")}
           </h2>
-          <p className={s.lead}>Four ideas from behavioural economics that explain why money so often leaves our hands faster than we planned.</p>
+          <p className={s.lead}>{t("auth.spending.lead")}</p>
         </header>
 
         <ul className={s.facts}>
@@ -127,7 +129,7 @@ export function SpendingPsychology() {
           ))}
         </ul>
 
-        <p className={s.note}>Summaries of published research and popular ideas, with sources. Some, like the Latte Factor, are debated. For general information only, not financial advice.</p>
+        <p className={s.note}>{t("auth.spending.note")}</p>
       </div>
     </section>
   );

@@ -8,6 +8,8 @@
  */
 import { formatAmd } from "../lib/format";
 import { STOCK_METRIC_INFO } from "../market/stock-metric-info";
+import type { Locale } from "../i18n/locale";
+import { HY } from "./hy";
 import { respondHy } from "./script-hy";
 import { LIMITS, checkPlanInput, durationLabel, monthsNeeded, netRatePct, planFor } from "./goal-plan";
 import type { BotMessage, ChatMessage, Chip, ConvState } from "./types";
@@ -23,6 +25,21 @@ export const STARTER_CHIPS: Chip[] = [
   { label: "Should I buy a stock?", value: "Should I buy a stock?" },
 ];
 
+/**
+ * The suggestions shown on the Armenian screen. Each `value` is an Armenian sentence, so the Armenian side of the engine
+ * (script-hy.ts) answers it with its written, reviewed Armenian texts; nothing is translated on the fly.
+ */
+export const STARTER_CHIPS_HY: Chip[] = [
+  { label: "Պլանավորել խնայողության համար", value: "Ուզում եմ պլանավորել խնայողության նպատակ" },
+  { label: "Բանկային ավանդները պաշտպանվա՞ծ են", value: "Հայաստանում բանկային ավանդները պաշտպանվա՞ծ են" },
+  { label: "Ինչպե՞ս է հարկվում ավանդի տոկոսը", value: "Ինչպե՞ս է հարկվում ավանդի տոկոսը" },
+  { label: "Ի՞նչ է P/E-ն", value: "Ի՞նչ է P/E-ն" },
+  { label: "Ի՞նչ է գնաճը", value: "Ի՞նչ է գնաճը" },
+  { label: "Գնե՞մ բաժնետոմս", value: "Գնե՞մ բաժնետոմս" },
+];
+
+export const starterChips = (locale: Locale): Chip[] => (locale === "hy" ? STARTER_CHIPS_HY : STARTER_CHIPS);
+
 const WELCOME = "Hi, I'm the Finova Assistant. I can explain money and market terms, show how Finova works, and help you plan a savings goal. I can't give personal investment advice. What would you like to do?";
 
 const INITIAL: ConvState = { n: 0, mode: "free", goalName: null, amount: null, months: null, saved: 0, income: null, ratePct: null, topic: null };
@@ -32,8 +49,8 @@ function finish(state: ConvState, drafts: Draft[]): { state: ConvState; messages
   return { state: { ...state, n: state.n + drafts.length }, messages };
 }
 
-export function initialConversation(): { state: ConvState; messages: ChatMessage[] } {
-  const r = finish(INITIAL, [{ text: WELCOME, chips: STARTER_CHIPS }]);
+export function initialConversation(locale: Locale = "en"): { state: ConvState; messages: ChatMessage[] } {
+  const r = finish(INITIAL, [{ text: locale === "hy" ? HY.welcome : WELCOME, chips: starterChips(locale) }]);
   return { state: r.state, messages: r.messages };
 }
 

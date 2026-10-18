@@ -5,6 +5,7 @@ import { listPeriods } from "../api/pf";
 import { Button } from "../components/Button";
 import { ConfirmDialog } from "../components/Display";
 import { useResource } from "../hooks/useResource";
+import { tg, useT } from "../i18n";
 import { currentMonthYerevan, formatDate, formatMonth } from "../lib/format";
 import { PageHeader } from "../shell/AppShell";
 import { selectionKey, type Selection } from "./calc";
@@ -19,6 +20,7 @@ const labelOf = (sel: Selection) => (sel.kind === "month" ? formatMonth(sel.mont
  * workspace is keyed by the selected period, so switching periods always starts from that period's saved data.
  */
 export function PersonalFinancePage() {
+  const t = useT(); // also re-renders the page (and the period labels below) when the language changes
   const [selection, setSelection] = useState<Selection>(() => ({ kind: "month", month: currentMonthYerevan() }));
   const [pending, setPending] = useState<Selection | null>(null);
   const dirtyRef = useRef(false);
@@ -52,7 +54,7 @@ export function PersonalFinancePage() {
       if (!a || a.target === "_blank") return;
       const url = new URL(a.href, window.location.href);
       if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
-      if (!window.confirm("You have unsaved changes in this period. Leave without saving?")) {
+      if (!window.confirm(tg("pf.page.leaveConfirm"))) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -69,7 +71,7 @@ export function PersonalFinancePage() {
 
   return (
     <>
-      <PageHeader title="Personal Finance" subtitle="Enter your income and expenses for a period and see where your money goes. Everything here stays separate from investment recommendations." />
+      <PageHeader title={t("pf.page.title")} subtitle={t("pf.page.subtitle")} />
       <div className={s.top}>
         <PeriodSelector selection={selection} onSelect={requestSelect} saved={saved.data ?? []} />
       </div>
@@ -77,12 +79,12 @@ export function PersonalFinancePage() {
 
       <ConfirmDialog
         open={pending !== null}
-        title="Discard unsaved changes?"
+        title={t("pf.page.discardTitle")}
         onClose={() => setPending(null)}
         actions={
           <>
             <Button variant="ghost" onClick={() => setPending(null)}>
-              Keep editing
+              {t("pf.page.keepEditing")}
             </Button>
             <Button
               variant="danger"
@@ -94,12 +96,12 @@ export function PersonalFinancePage() {
                 setPending(null);
               }}
             >
-              Discard and switch
+              {t("pf.page.discardSwitch")}
             </Button>
           </>
         }
       >
-        You have unsaved changes for {labelOf(selection)}. Switching to {pending ? labelOf(pending) : "another period"} will discard them.
+        {t("pf.page.discardBody", { current: labelOf(selection), next: pending ? labelOf(pending) : t("pf.page.anotherPeriod") })}
       </ConfirmDialog>
     </>
   );

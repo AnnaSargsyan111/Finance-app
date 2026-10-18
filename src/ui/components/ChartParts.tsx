@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
+import { useT } from "../i18n/LocaleProvider";
 import { IconChart } from "./Icons";
 import s from "./chart.module.css";
 import ui from "./ui.module.css";
@@ -15,7 +16,8 @@ export const GRID_COLOR = "rgba(79,87,83,0.35)";
  * Accessible chart wrapper: the drawing is exposed as one image with a text summary, and the same numbers are
  * available as a compact table (so meaning never depends on colour or on seeing the chart).
  */
-export function ChartFigure({ summary, children, table, tableLabel = "View data as a table", caption }: { summary: string; children: ReactNode; table?: ReactNode; tableLabel?: string; caption?: ReactNode }) {
+export function ChartFigure({ summary, children, table, tableLabel, caption }: { summary: string; children: ReactNode; table?: ReactNode; tableLabel?: string; caption?: ReactNode }) {
+  const t = useT();
   const id = useId();
   return (
     <figure className={s.figure}>
@@ -29,7 +31,7 @@ export function ChartFigure({ summary, children, table, tableLabel = "View data 
       ) : null}
       {table ? (
         <details className={s.details}>
-          <summary>{tableLabel}</summary>
+          <summary>{tableLabel ?? t("shell.ui.viewTable")}</summary>
           <div className={ui.tableWrap}>{table}</div>
         </details>
       ) : null}

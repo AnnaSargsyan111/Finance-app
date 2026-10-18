@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "../i18n/LocaleProvider";
 import { cx } from "../lib/cx";
 import { IconCheck, IconClose } from "./Icons";
 import s from "./toast.module.css";
@@ -59,16 +60,17 @@ export function useToasts(durationMs = 3000) {
  * their close buttons) capture clicks.
  */
 export function ToastViewport({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
+  const t = useT();
   if (toasts.length === 0) return null;
   return (
     <div className={s.viewport} role="status" aria-live="polite">
-      {toasts.map((t) => (
-        <div key={t.id} className={cx(s.toast, t.tone === "error" && s.toastError)}>
+      {toasts.map((toast) => (
+        <div key={toast.id} className={cx(s.toast, toast.tone === "error" && s.toastError)}>
           <span className={s.icon} aria-hidden="true">
             <IconCheck size={16} />
           </span>
-          <span className={s.msg}>{t.message}</span>
-          <button type="button" className={s.close} onClick={() => onDismiss(t.id)} aria-label="Dismiss notification">
+          <span className={s.msg}>{toast.message}</span>
+          <button type="button" className={s.close} onClick={() => onDismiss(toast.id)} aria-label={t("shell.ui.dismiss")}>
             <IconClose size={14} />
           </button>
         </div>

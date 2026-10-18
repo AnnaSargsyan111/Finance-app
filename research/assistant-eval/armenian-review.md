@@ -204,7 +204,7 @@ Your version:
 | Exchange rate | փոխարժեք | |
 | Buy rate / sell rate | առքի փոխարժեք / վաճառքի փոխարժեք | |
 | Cash / non-cash | կանխիկ / անկանխիկ | |
-| Central Bank of Armenia | Հայաստանի կենտրոնական բանկ | |
+| Central Bank of Armenia | Հայաստանի Կենտրոնական բանկ | |
 | Deposit Guarantee Fund | Ավանդների երաշխավորման հիմնադրամ | |
 | State Revenue Committee | Պետական եկամուտների կոմիտե | |
 | Income tax | եկամտահարկ | |

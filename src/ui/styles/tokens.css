@@ -74,7 +74,7 @@
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
   --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.6);
 
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-manrope), var(--font-armenian), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 

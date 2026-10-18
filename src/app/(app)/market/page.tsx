@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
+import { pageMetadata } from "@/ui/i18n/server";
 import { MarketPage } from "@/ui/market/MarketPage";
 
-export const metadata: Metadata = { title: "Market & News" };
+export const generateMetadata = () => pageMetadata("common.meta.market");
 
 export default function Page() {
   return (

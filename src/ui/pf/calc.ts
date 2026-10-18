@@ -5,11 +5,22 @@
  * Money is handled as integer cents (amounts are limited to 1e12 with 2 decimals, so cents stay exact in a JS number).
  */
 import type { PeriodRef, PeriodView, PutPeriodBody } from "../api/types";
+import { tg, translate, type Key } from "../i18n/translate";
 
 export const MAX_AMOUNT_CENTS = 1e12 * 100;
 export const MAX_CUSTOM_CATEGORIES = 20;
 export const CUSTOM_LABEL_MAX = 40;
-export const DEFAULT_LABELS = ["Housing", "Food & Dining", "Transportation", "Bills & Utilities", "Shopping", "Entertainment", "Other"];
+/** the 7 default categories by their stable server key */
+export const DEFAULT_KEYS = ["housing", "food_dining", "transportation", "bills_utilities", "shopping", "entertainment", "other"] as const;
+const isDefaultKey = (k: string | null | undefined): k is (typeof DEFAULT_KEYS)[number] => !!k && (DEFAULT_KEYS as readonly string[]).includes(k);
+
+/** The name of a category in the chosen language: default categories by their key (unknown key: the server's label), custom ones as typed. */
+export function categoryLabel(key: string | null | undefined, isCustom: boolean, serverLabel: string): string {
+  return !isCustom && isDefaultKey(key) ? tg(`pf.category.${key}` as Key) : serverLabel;
+}
+
+/** the English names of the defaults (what the server compares custom names with) */
+export const DEFAULT_LABELS: string[] = DEFAULT_KEYS.map((k) => translate("en", `pf.category.${k}`));
 
 const AMOUNT_RE = /^\d{1,13}(\.\d{1,2})?$/;
 
@@ -25,8 +36,8 @@ export function toCents(raw: string): number | null {
 export function amountError(raw: string): string | null {
   const c = toCents(raw);
   if (c === null) return null;
-  if (Number.isNaN(c)) return "Enter a number with at most 2 decimals.";
-  if (c > MAX_AMOUNT_CENTS) return "This amount is too large.";
+  if (Number.isNaN(c)) return tg("pf.validation.amountFormat");
+  if (c > MAX_AMOUNT_CENTS) return tg("pf.validation.amountTooLarge");
   return null;
 }
 
@@ -88,7 +99,9 @@ export interface FormErrors {
 
 export function validateForm(f: FormState): FormErrors {
   const rows: FormErrors["rows"] = {};
-  const seen = new Set(DEFAULT_LABELS.map((l) => l.toLowerCase()));
+  // a custom name may not equal a default name: the English one (as the server checks it) or the one shown in the chosen language
+  const defaultNames = new Set([...DEFAULT_LABELS, ...DEFAULT_KEYS.map((k) => categoryLabel(k, false, ""))].map((l) => l.toLowerCase()));
+  const seen = new Set(defaultNames);
   let customCount = 0;
   const incomeErr = amountError(f.income) ?? undefined;
   for (const r of f.rows) {
@@ -98,15 +111,15 @@ export function validateForm(f: FormState): FormErrors {
     if (r.isCustom && !isBlankCustom(r)) {
       customCount++;
       const label = r.label.trim().replace(/\s+/g, " ");
-      if (!label) e.label = "Enter a category name.";
-      else if (label.length > CUSTOM_LABEL_MAX) e.label = `Use at most ${CUSTOM_LABEL_MAX} characters.`;
-      else if (DEFAULT_LABELS.some((d) => d.toLowerCase() === label.toLowerCase())) e.label = "This name is already used by a default category.";
-      else if (seen.has(label.toLowerCase())) e.label = "Category names must be unique.";
+      if (!label) e.label = tg("pf.validation.nameRequired");
+      else if (label.length > CUSTOM_LABEL_MAX) e.label = tg("pf.validation.nameTooLong", { n: CUSTOM_LABEL_MAX });
+      else if (defaultNames.has(label.toLowerCase())) e.label = tg("pf.validation.nameDefault");
+      else if (seen.has(label.toLowerCase())) e.label = tg("pf.validation.nameUnique");
       else seen.add(label.toLowerCase());
     }
     if (e.label || e.amount) rows[r.id] = e;
   }
-  const general = customCount > MAX_CUSTOM_CATEGORIES ? `You can add at most ${MAX_CUSTOM_CATEGORIES} custom categories per period.` : undefined;
+  const general = customCount > MAX_CUSTOM_CATEGORIES ? tg("pf.validation.tooManyCustom", { n: MAX_CUSTOM_CATEGORIES }) : undefined;
   return { income: incomeErr, rows, general, ok: !incomeErr && !general && Object.keys(rows).length === 0 };
 }
 
@@ -132,7 +145,8 @@ export interface Preview {
   incomeCents: number;
   expensesCents: number;
   availableCents: number;
-  breakdown: { label: string; cents: number; percent: number }[];
+  /** `label` is the name the server/user gave; `key` is the default category key (null for a custom one): show it with categoryLabel() */
+  breakdown: { label: string; key: string | null; cents: number; percent: number }[];
   /** nothing entered: charts must show their empty state, never zero-value bars */
   isEmpty: boolean;
   incomeMissing: boolean;
@@ -160,14 +174,14 @@ export function apportionPercents(amounts: number[]): number[] {
 export function buildPreview(f: FormState): Preview {
   const ic = toCents(f.income);
   const incomeCents = ic === null || Number.isNaN(ic) ? 0 : ic;
-  const items: { label: string; cents: number }[] = [];
+  const items: { label: string; key: string | null; cents: number }[] = [];
   let expensesCents = 0;
   for (const r of f.rows) {
     if (isBlankCustom(r)) continue;
     const c = toCents(r.amount);
     if (c === null || Number.isNaN(c)) continue;
     expensesCents += c;
-    if (c > 0) items.push({ label: r.isCustom ? r.label.trim() || "Custom category" : r.label, cents: c });
+    if (c > 0) items.push({ label: r.isCustom ? r.label.trim() || tg("pf.category.customFallback") : r.label, key: r.isCustom ? null : r.key, cents: c });
   }
   items.sort((a, b) => (a.cents === b.cents ? a.label.localeCompare(b.label) : b.cents - a.cents));
   const pct = apportionPercents(items.map((i) => i.cents));
@@ -204,9 +218,9 @@ export function daysBetween(start: string, end: string): number {
 }
 
 export function customRangeError(start: string, end: string): string | null {
-  if (!start || !end) return "Choose both a start and an end date.";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return "Enter valid dates.";
-  if (end < start) return "The end date can't be before the start date.";
-  if (daysBetween(start, end) + 1 > 366) return "A custom period can span at most 366 days.";
+  if (!start || !end) return tg("pf.validation.datesRequired");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return tg("pf.validation.datesInvalid");
+  if (end < start) return tg("pf.validation.endBeforeStart");
+  if (daysBetween(start, end) + 1 > 366) return tg("pf.validation.rangeTooLong");
   return null;
 }

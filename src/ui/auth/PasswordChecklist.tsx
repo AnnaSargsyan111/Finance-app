@@ -2,6 +2,7 @@
 
 import { cx } from "../lib/cx";
 import { IconCheck } from "../components/Icons";
+import { useT } from "../i18n";
 import { checkPassword } from "./password-rules";
 import s from "./auth.module.css";
 
@@ -10,10 +11,11 @@ import s from "./auth.module.css";
  * modal — one component, reused exactly, so all three surfaces turn each rule on identically.
  */
 export function PasswordChecklist({ password, rules }: { password: string; rules: { id: string; label: string }[] }) {
+  const t = useT();
   const { results } = checkPassword(password, rules);
   return (
     <div>
-      <ul className={s.checklist} aria-label="Password requirements">
+      <ul className={s.checklist} aria-label={t("auth.passwordRules.label")}>
         {results.map((r) => (
           <li key={r.id} className={cx(s.rule, r.ok && s.ruleOk)}>
             <span className={s.ruleMark} aria-hidden="true">
@@ -21,7 +23,7 @@ export function PasswordChecklist({ password, rules }: { password: string; rules
             </span>
             <span>
               {r.label}
-              <span className="sr-only">{r.ok ? " (met)" : " (not met yet)"}</span>
+              <span className="sr-only">{r.ok ? t("auth.passwordRules.met") : t("auth.passwordRules.notMet")}</span>
             </span>
           </li>
         ))}

@@ -10,8 +10,9 @@ import { AmountField, Checkbox } from "../components/Fields";
 import { IconArrowLeft, IconArrowRight, IconCheck } from "../components/Icons";
 import { useDebounced } from "../hooks/useDebounce";
 import { useResource } from "../hooks/useResource";
+import { useT } from "../i18n";
 import { formatAmd, formatDate, formatNumber, formatUsd } from "../lib/format";
-import { amountProblem, EMERGENCY_LABEL, HORIZONS, horizonLabel, progressPercent, RISKS, riskLabel } from "./labels";
+import { amountProblem, HORIZONS, horizonHelp, horizonLabel, progressPercent, RISKS, riskHelp, riskLabel } from "./labels";
 import s from "./invest.module.css";
 
 export interface Preferences {
@@ -21,9 +22,10 @@ export interface Preferences {
 }
 
 type Step = 1 | 2 | 3 | 4;
-const STEP_NAMES: Record<Step, string> = { 1: "Amount", 2: "Risk tolerance", 3: "Investment horizon", 4: "Review" };
+const STEP_NAME_KEYS = { 1: "invest.flow.stepNames.amount", 2: "invest.flow.stepNames.risk", 3: "invest.flow.stepNames.horizon", 4: "invest.flow.stepNames.review" } as const;
 
 function UsdEquivalent({ raw }: { raw: string }) {
+  const t = useT();
   const valid = amountProblem(raw) === null;
   const amount = valid ? Number(raw) : 0;
   const debounced = useDebounced(amount, 300);
@@ -37,22 +39,25 @@ function UsdEquivalent({ raw }: { raw: string }) {
         <>
           <span className={s.usdBig}>
             {formatNumber(amount)} AMD <span aria-hidden="true">≈</span>
-            <span className="sr-only"> is about </span> {formatUsd(res.data.data.usd, 0)} USD
+            <span className="sr-only"> {t("invest.usd.isAbout")} </span> {formatUsd(res.data.data.usd, 0)} USD
           </span>
           <span className={s.usdMeta}>
-            Rate {formatNumber(res.data.data.rate, 2)} AMD per USD, {res.data.data.source}, {formatDate(res.data.data.rateDate)}
-            {res.data.meta.stale ? " (may be out of date)" : ""}
+            {t(res.data.meta.stale ? "invest.usd.rateStale" : "invest.usd.rate", {
+              rate: formatNumber(res.data.data.rate, 2),
+              source: res.data.data.source,
+              date: formatDate(res.data.data.rateDate),
+            })}
           </span>
         </>
       ) : failed ? (
         <>
           <span className={s.usdBig}>{formatNumber(amount)} AMD</span>
-          <span className={s.usdMeta}>USD equivalent unavailable right now.</span>
+          <span className={s.usdMeta}>{t("invest.usd.unavailable")}</span>
         </>
       ) : (
         <>
-          <Spinner label="Converting to USD" />
-          <span className={s.usdMeta}>Converting to USD...</span>
+          <Spinner label={t("invest.usd.converting")} />
+          <span className={s.usdMeta}>{t("invest.usd.convertingDots")}</span>
         </>
       )}
     </div>
@@ -76,9 +81,10 @@ function Choice({ name, value, label, help, checked, onChange }: { name: string;
 
 /**
  * The step-by-step preference form. ALL of its state lives in this component only (no storage, no URL): remounting it
- * (Adjust Preferences) always gives a completely clean form.
+ * (Adjust Preferences) always gives a completely clean form. Changing the language only re-renders it: the answers are kept.
  */
 export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
+  const t = useT();
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState("");
   const [risk, setRisk] = useState<Risk | null>(null);
@@ -97,9 +103,9 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
   }, [step]);
 
   const amountErr = touched.amount ? amountProblem(amount) : null;
-  const riskErr = touched.risk && !risk ? "Choose how much risk you are comfortable with." : null;
-  const horizonErr = touched.horizon && !horizon ? "Choose how long you plan to invest." : null;
-  const confirmErr = touched.confirm && !confirmed ? "Please confirm this before you continue." : null;
+  const riskErr = touched.risk && !risk ? t("invest.flow.errRisk") : null;
+  const horizonErr = touched.horizon && !horizon ? t("invest.flow.errHorizon") : null;
+  const confirmErr = touched.confirm && !confirmed ? t("invest.flow.errConfirm") : null;
   const pct = progressPercent({ amount, risk, horizon, confirmed });
 
   function next() {
@@ -126,18 +132,18 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
     body = (
       <div className={s.stepBody}>
         <AmountField
-          label="Investment amount"
+          label={t("invest.flow.amountLabel")}
           name="amount"
           unit="AMD"
           maxDecimals={0}
           liveFormat
-          placeholder="e.g. 500,000"
+          placeholder={t("invest.flow.amountPlaceholder")}
           autoFocus
           value={amount}
           onChange={(v) => setAmount(v)}
           onBlur={() => amount && setTouched((t) => ({ ...t, amount: true }))}
           error={amountErr}
-          hint="Between 1,000 and 1,000,000,000 AMD."
+          hint={t("invest.flow.amountHint")}
         />
         <UsdEquivalent raw={amount} />
       </div>
@@ -145,18 +151,18 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
   if (step === 2)
     body = (
       <fieldset className={s.choices} aria-describedby={riskErr ? "risk-err" : undefined}>
-        <legend className="sr-only">Risk tolerance</legend>
+        <legend className="sr-only">{t("invest.flow.riskLegend")}</legend>
         {RISKS.map((r) => (
-          <Choice key={r.value} name="risk" value={r.value} label={r.label} help={r.help} checked={risk === r.value} onChange={() => setRisk(r.value)} />
+          <Choice key={r} name="risk" value={r} label={riskLabel(t, r)} help={riskHelp(t, r)} checked={risk === r} onChange={() => setRisk(r)} />
         ))}
       </fieldset>
     );
   if (step === 3)
     body = (
       <fieldset className={s.choices} aria-describedby={horizonErr ? "horizon-err" : undefined}>
-        <legend className="sr-only">Investment horizon</legend>
+        <legend className="sr-only">{t("invest.flow.horizonLegend")}</legend>
         {HORIZONS.map((h) => (
-          <Choice key={h.value} name="horizon" value={h.value} label={h.label} help={h.help} checked={horizon === h.value} onChange={() => setHorizon(h.value)} />
+          <Choice key={h} name="horizon" value={h} label={horizonLabel(t, h)} help={horizonHelp(t, h)} checked={horizon === h} onChange={() => setHorizon(h)} />
         ))}
       </fieldset>
     );
@@ -165,38 +171,40 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
       <div className={s.stepBody}>
         <dl className={s.reviewList}>
           <div className={s.reviewRow}>
-            <dt>Amount</dt>
+            <dt>{t("invest.flow.reviewAmount")}</dt>
             <dd>{formatAmd(Number(amount))}</dd>
-            <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
-              Change<span className="sr-only"> amount</span>
+            <Button variant="ghost" size="sm" onClick={() => setStep(1)} aria-label={t("invest.flow.changeAmount")}>
+              {t("invest.flow.change")}
             </Button>
           </div>
           <div className={s.reviewRow}>
-            <dt>Risk tolerance</dt>
-            <dd>{risk ? riskLabel(risk) : "-"}</dd>
-            <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
-              Change<span className="sr-only"> risk tolerance</span>
+            <dt>{t("invest.flow.reviewRisk")}</dt>
+            <dd>{risk ? riskLabel(t, risk) : "-"}</dd>
+            <Button variant="ghost" size="sm" onClick={() => setStep(2)} aria-label={t("invest.flow.changeRisk")}>
+              {t("invest.flow.change")}
             </Button>
           </div>
           <div className={s.reviewRow}>
-            <dt>Investment horizon</dt>
-            <dd>{horizon ? horizonLabel(horizon) : "-"}</dd>
-            <Button variant="ghost" size="sm" onClick={() => setStep(3)}>
-              Change<span className="sr-only"> horizon</span>
+            <dt>{t("invest.flow.reviewHorizon")}</dt>
+            <dd>{horizon ? horizonLabel(t, horizon) : "-"}</dd>
+            <Button variant="ghost" size="sm" onClick={() => setStep(3)} aria-label={t("invest.flow.changeHorizon")}>
+              {t("invest.flow.change")}
             </Button>
           </div>
         </dl>
-        <Checkbox label={EMERGENCY_LABEL} checked={confirmed} onChange={setConfirmed} error={confirmErr} />
-        <p className={s.miniNote}>Finova provides information only. Results are not personal investment advice and no trades are made.</p>
+        <Checkbox label={t("invest.flow.emergency")} checked={confirmed} onChange={setConfirmed} error={confirmErr} />
+        <p className={s.miniNote}>{t("invest.flow.miniNote")}</p>
       </div>
     );
 
   const heading: Record<Step, { title: string; lead: string }> = {
-    1: { title: "How much would you like to invest?", lead: "Enter the amount in Armenian dram. We show the US dollar equivalent as you type." },
-    2: { title: "How much risk are you comfortable with?", lead: "This decides how steady or how fast-moving the companies we look at can be." },
-    3: { title: "How long do you plan to invest?", lead: "A longer horizon lets us look at companies with more time to grow." },
-    4: { title: "Review your preferences", lead: "Check the details, then ask for your recommendation." },
+    1: { title: t("invest.flow.title1"), lead: t("invest.flow.lead1") },
+    2: { title: t("invest.flow.title2"), lead: t("invest.flow.lead2") },
+    3: { title: t("invest.flow.title3"), lead: t("invest.flow.lead3") },
+    4: { title: t("invest.flow.title4"), lead: t("invest.flow.lead4") },
   };
+  // "Step <b>2</b> of 4 · Risk tolerance": the number is bold, so the text is cut at its {step} placeholder
+  const [stepBefore, stepAfter] = t("invest.flow.stepOf", { name: t(STEP_NAME_KEYS[step]) }).split("{step}");
 
   return (
     <form
@@ -211,11 +219,13 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
       <div className={s.stepHead}>
         <div className={s.stepMeta}>
           <span>
-            Step <strong>{step}</strong> of 4 · {STEP_NAMES[step]}
+            {stepBefore}
+            {stepAfter === undefined ? null : <strong>{step}</strong>}
+            {stepAfter}
           </span>
-          <span>{pct}% complete</span>
+          <span>{t("invest.flow.complete", { pct })}</span>
         </div>
-        <ProgressBar value={pct} label="Recommendation progress" valueText={`${pct}% complete, step ${step} of 4`} />
+        <ProgressBar value={pct} label={t("invest.flow.progressLabel")} valueText={t("invest.flow.progressText", { pct, step })} />
       </div>
       <div className={s.stepHead}>
         <h2 id="flow-title" className={s.stepTitle} tabIndex={-1} ref={headingRef} style={{ outline: "none" }}>
@@ -238,13 +248,13 @@ export function StepFlow({ onSubmit }: { onSubmit: (p: Preferences) => void }) {
         {step > 1 ? (
           <Button variant="ghost" onClick={back}>
             <IconArrowLeft size={16} />
-            Back
+            {t("invest.flow.back")}
           </Button>
         ) : (
           <span />
         )}
         <Button type="submit" variant="primary">
-          {step === 4 ? "Get recommendation" : "Continue"}
+          {step === 4 ? t("invest.flow.getRecommendation") : t("invest.flow.continue")}
           {step === 4 ? null : <IconArrowRight size={16} />}
         </Button>
       </div>

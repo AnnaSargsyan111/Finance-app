@@ -9,6 +9,7 @@ import { Button } from "../components/Button";
 import { Note } from "../components/Feedback";
 import { PasswordField, TextField } from "../components/Fields";
 import { Logo } from "../components/Icons";
+import { LanguageSwitch, tg, useT } from "../i18n";
 import { Splash } from "../shell/Splash";
 import { GetStarted } from "./GetStarted";
 import { LoginRules } from "./LoginRules";
@@ -28,15 +29,19 @@ interface FormProps {
   onAuthed: (kind: "signup" | "login") => void;
 }
 
+/** API error codes are mapped to dictionary texts; the server's own (English) message is only the fallback for any other code */
 function formError(e: unknown): string {
-  if (!isApiError(e)) return "Something went wrong. Please try again.";
-  if (e.code === "NETWORK") return "Can't reach Finova. Check your connection and try again.";
-  if (e.code === "RATE_LIMITED") return e.message || "Too many attempts. Please wait a few minutes and try again.";
+  if (!isApiError(e)) return tg("auth.errors.generic");
+  if (e.code === "NETWORK") return tg("auth.errors.network");
+  if (e.code === "RATE_LIMITED") return tg("auth.errors.rateLimited");
+  if (e.code === "EMAIL_TAKEN") return tg("auth.errors.emailTaken");
+  if (e.code === "INVALID_CREDENTIALS") return tg("auth.errors.invalidCredentials");
   return e.message;
 }
 
 /* ------------------------------------------------------------------ sign up */
 function SignUpForm({ rules, goto, onAuthed }: FormProps) {
+  const t = useT();
   const [firstName, setFirst] = useState("");
   const [lastName, setLast] = useState("");
   const [email, setEmail] = useState("");
@@ -75,19 +80,19 @@ function SignUpForm({ rules, goto, onAuthed }: FormProps) {
     <form className={s.form} onSubmit={submit} noValidate>
       {error ? <Note tone="error">{error}</Note> : null}
       <div className={s.row}>
-        <TextField label="First Name" name="firstName" autoComplete="given-name" value={firstName} onChange={(e) => setFirst(e.target.value)} error={fields.firstName} maxLength={60} required />
-        <TextField label="Last Name" name="lastName" autoComplete="family-name" value={lastName} onChange={(e) => setLast(e.target.value)} error={fields.lastName} maxLength={60} required />
+        <TextField label={t("auth.fields.firstName")} name="firstName" autoComplete="given-name" value={firstName} onChange={(e) => setFirst(e.target.value)} error={fields.firstName} maxLength={60} required />
+        <TextField label={t("auth.fields.lastName")} name="lastName" autoComplete="family-name" value={lastName} onChange={(e) => setLast(e.target.value)} error={fields.lastName} maxLength={60} required />
       </div>
-      <TextField label="Email" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} maxLength={254} required />
-      <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} required />
+      <TextField label={t("auth.fields.email")} name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} maxLength={254} required />
+      <PasswordField label={t("auth.fields.password")} name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} required />
       <PasswordChecklist password={password} rules={rules} />
       <Button type="submit" variant="primary" block loading={busy}>
-        Create account
+        {t("auth.signup.submit")}
       </Button>
       <p className={s.switch}>
-        Already have an account?{" "}
+        {t("auth.signup.haveAccount")}{" "}
         <button type="button" className={s.linkBtn} onClick={() => goto("login")}>
-          Log in
+          {t("auth.signup.logIn")}
         </button>
       </p>
     </form>
@@ -96,6 +101,7 @@ function SignUpForm({ rules, goto, onAuthed }: FormProps) {
 
 /* ------------------------------------------------------------------ log in */
 function LoginForm({ goto, onAuthed }: FormProps) {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -120,7 +126,7 @@ function LoginForm({ goto, onAuthed }: FormProps) {
     } catch (err) {
       setPassword("");
       // one generic message for wrong credentials (no account enumeration)
-      setError(isApiError(err) && err.code === "INVALID_CREDENTIALS" ? "Email or password is incorrect." : formError(err));
+      setError(formError(err));
       setBusy(false);
     }
   }
@@ -128,21 +134,21 @@ function LoginForm({ goto, onAuthed }: FormProps) {
   return (
     <form className={s.form} onSubmit={submit} noValidate>
       {error ? <Note tone="error">{error}</Note> : null}
-      <TextField label="Email address" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} required />
-      <PasswordField label="Password" name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} required />
+      <TextField label={t("auth.fields.emailAddress")} name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} required />
+      <PasswordField label={t("auth.fields.password")} name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} required />
       <div className={s.between}>
         <span />
         <button type="button" className={s.linkBtn} onClick={() => goto("forgot")}>
-          Forgot password?
+          {t("auth.login.forgot")}
         </button>
       </div>
       <Button type="submit" variant="primary" block loading={busy}>
-        Log in
+        {t("auth.login.submit")}
       </Button>
       <p className={s.switch}>
-        Don&apos;t have an account yet?{" "}
+        {t("auth.login.noAccount")}{" "}
         <button type="button" className={s.linkBtn} onClick={() => goto("signup")}>
-          Sign up
+          {t("auth.login.signUp")}
         </button>
       </p>
     </form>
@@ -151,6 +157,7 @@ function LoginForm({ goto, onAuthed }: FormProps) {
 
 /* ------------------------------------------------------------------ forgot */
 function ForgotForm({ goto }: FormProps) {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -182,9 +189,9 @@ function ForgotForm({ goto }: FormProps) {
   if (sent)
     return (
       <div className={s.success} role="status">
-        <Note>If an account exists, we&apos;ve sent an email with a link to reset your password.</Note>
+        <Note>{t("auth.forgot.sent")}</Note>
         <Button variant="secondary" block onClick={() => goto("login")}>
-          Back to log in
+          {t("auth.forgot.backToLogin")}
         </Button>
       </div>
     );
@@ -192,13 +199,13 @@ function ForgotForm({ goto }: FormProps) {
   return (
     <form className={s.form} onSubmit={submit} noValidate>
       {error ? <Note tone="error">{error}</Note> : null}
-      <TextField label="Email address" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} required />
+      <TextField label={t("auth.fields.emailAddress")} name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} required />
       <Button type="submit" variant="primary" block loading={busy}>
-        Send reset link
+        {t("auth.forgot.submit")}
       </Button>
       <p className={s.switch}>
         <button type="button" className={s.linkBtn} onClick={() => goto("login")}>
-          Back to log in
+          {t("auth.forgot.backToLogin")}
         </button>
       </p>
     </form>
@@ -207,10 +214,12 @@ function ForgotForm({ goto }: FormProps) {
 
 /* ------------------------------------------------------------------ reset */
 function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
+  const t = useT();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkInvalid, setLinkInvalid] = useState(false); // the error is "invalid or expired link": offers a button to request a new one
   const [fieldErr, setFieldErr] = useState<string | undefined>();
 
   async function submit(e: FormEvent) {
@@ -224,13 +233,17 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
     }
     setBusy(true);
     setError(null);
+    setLinkInvalid(false);
     setFieldErr(undefined);
     try {
       await resetPassword(token, password);
       setDone(true);
     } catch (err) {
       setPassword("");
-      if (isApiError(err) && err.code === "TOKEN_INVALID_OR_EXPIRED") setError("This reset link is invalid or has expired. Request a new one.");
+      if (isApiError(err) && err.code === "TOKEN_INVALID_OR_EXPIRED") {
+        setError(tg("auth.reset.linkInvalid"));
+        setLinkInvalid(true);
+      }
       else if (isApiError(err) && err.fields?.newPassword) setFieldErr(err.fields.newPassword);
       else setError(formError(err));
     } finally {
@@ -241,9 +254,9 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
   if (!token)
     return (
       <div className={s.success}>
-        <Note tone="warn">This reset link is missing its token. Request a new link to continue.</Note>
+        <Note tone="warn">{t("auth.reset.tokenMissing")}</Note>
         <Button variant="secondary" block onClick={() => goto("forgot")}>
-          Request a new link
+          {t("auth.reset.requestNew")}
         </Button>
       </div>
     );
@@ -251,9 +264,9 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
   if (done)
     return (
       <div className={s.success} role="status">
-        <Note>Your password has been changed. You can log in with the new password.</Note>
+        <Note>{t("auth.reset.done")}</Note>
         <Button variant="primary" block onClick={() => goto("login")}>
-          Log in
+          {t("auth.reset.logIn")}
         </Button>
       </div>
     );
@@ -264,9 +277,9 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
         <Note
           tone="error"
           action={
-            error.includes("Request a new one") ? (
+            linkInvalid ? (
               <button type="button" className={s.linkBtn} onClick={() => goto("forgot")}>
-                New link
+                {t("auth.reset.newLink")}
               </button>
             ) : null
           }
@@ -274,14 +287,14 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
           {error}
         </Note>
       ) : null}
-      <PasswordField label="New password" name="newPassword" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fieldErr} required />
+      <PasswordField label={t("auth.fields.newPassword")} name="newPassword" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fieldErr} required />
       <PasswordChecklist password={password} rules={rules} />
       <Button type="submit" variant="primary" block loading={busy}>
-        Reset password
+        {t("auth.reset.submit")}
       </Button>
       <p className={s.switch}>
         <button type="button" className={s.linkBtn} onClick={() => goto("login")}>
-          Back to log in
+          {t("auth.reset.backToLogin")}
         </button>
       </p>
     </form>
@@ -289,14 +302,8 @@ function ResetForm({ rules, goto, token }: FormProps & { token: string }) {
 }
 
 /* ------------------------------------------------------------------ page */
-const COPY: Record<Mode, { title: string; lead: string }> = {
-  signup: { title: "Create your account", lead: "Start tracking your money and the markets in one calm place." },
-  login: { title: "Welcome back", lead: "Log in to continue to Finova." },
-  forgot: { title: "Forgot your password?", lead: "Enter your email and we'll send you a link to reset it." },
-  reset: { title: "Choose a new password", lead: "Pick a strong password you haven't used before." },
-};
-
 export function AuthPage() {
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const raw = params.get("mode");
@@ -360,9 +367,8 @@ export function AuthPage() {
     [router, next],
   );
 
-  if (transition) return <Splash text={transition === "signup" ? "Setting up your account" : "Signing you in"} />;
+  if (transition) return <Splash text={transition === "signup" ? t("auth.transition.signup") : t("auth.transition.login")} />;
 
-  const copy = COPY[mode];
   const props: FormProps = { rules, goto, onAuthed };
 
   return (
@@ -378,20 +384,20 @@ export function AuthPage() {
             </div>
             <div>
               <p className={s.hero}>
-                Your money, <span className={s.heroMuted}>in one clear view.</span>
+                {t("auth.aside.heroLead")}<span className={s.heroMuted}>{t("auth.aside.heroMuted")}</span>
               </p>
               <ul className={s.points}>
                 <li>
                   <span className={s.pointDot} />
-                  <span>Plan income and expenses period by period, with charts that follow your numbers.</span>
+                  <span>{t("auth.aside.point1")}</span>
                 </li>
                 <li>
                   <span className={s.pointDot} />
-                  <span>Follow exchange rates, big-tech stocks and trusted financial news.</span>
+                  <span>{t("auth.aside.point2")}</span>
                 </li>
                 <li>
                   <span className={s.pointDot} />
-                  <span>Explore informational investment ideas that match your risk and horizon.</span>
+                  <span>{t("auth.aside.point3")}</span>
                 </li>
               </ul>
             </div>
@@ -405,20 +411,23 @@ export function AuthPage() {
               <path d="M0 96 C40 90 60 70 100 74 S170 100 210 70 280 30 330 46 400 80 440 40 500 20 520 14 V120 H0 Z" fill="url(#sparkfill)" />
               <path d="M0 96 C40 90 60 70 100 74 S170 100 210 70 280 30 330 46 400 80 440 40 500 20 520 14" stroke="#91F60D" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
-            <p className={s.foot}>Informational tool. Not investment advice.</p>
+            <p className={s.foot}>{t("auth.aside.disclaimer")}</p>
           </aside>
         )}
 
         <main className={s.panel} id="content">
+          <div className={s.langBar}>
+            <LanguageSwitch />
+          </div>
           <div className={s.mobileBrand}>
             <Logo size={30} />
             <span>Finova</span>
           </div>
           <div className={s.card}>
             <h1 className={s.title} tabIndex={-1} ref={headingRef} style={{ outline: "none" }}>
-              {copy.title}
+              {t(`auth.mode.${mode}.title`)}
             </h1>
-            <p className={s.lead}>{copy.lead}</p>
+            <p className={s.lead}>{t(`auth.mode.${mode}.lead`)}</p>
             {/* key = mode: switching between the states of this one page starts each form fresh */}
             {mode === "signup" ? <SignUpForm key="signup" {...props} /> : null}
             {mode === "login" ? <LoginForm key="login" {...props} /> : null}

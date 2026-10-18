@@ -10,6 +10,7 @@ import { Card, ChangeChip, Segmented } from "../components/Display";
 import { EmptyState, ErrorState, Note, Skeleton, Spinner } from "../components/Feedback";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { useResource } from "../hooks/useResource";
+import { useT } from "../i18n";
 import { cx } from "../lib/cx";
 import { formatDate, formatDayMonth, formatFx, fxDecimals } from "../lib/format";
 import { BankRates } from "./BankRates";
@@ -19,18 +20,20 @@ import { MetaLine } from "./MetaLine";
 import s from "./market.module.css";
 
 function FxTip({ active, payload, pair }: { active?: boolean; payload?: { payload: FxPoint }[]; pair: string }) {
+  const t = useT();
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
     <div className={s.tip}>
       <div className={s.tipDate}>{formatDate(p.date)}</div>
       <div className={s.tipVal}>{formatFx(p.rate, pair)} AMD</div>
-      {p.isCarriedForward ? <div className={s.tipNote}>Weekend or holiday: last working-day rate ({formatDate(p.sourceDate)})</div> : null}
+      {p.isCarriedForward ? <div className={s.tipNote}>{t("market.fx.tipCarried", { date: formatDate(p.sourceDate) })}</div> : null}
     </div>
   );
 }
 
 function FxChart({ pair, days }: { pair: string; days: number }) {
+  const t = useT();
   const reduced = useReducedMotion();
   const res = useResource((signal) => getFxHistory(pair, days, signal), [pair, days]);
   const series = res.data?.data.series ?? [];
@@ -43,14 +46,26 @@ function FxChart({ pair, days }: { pair: string; days: number }) {
     const pad = (max - min || max * 0.01) * 0.15;
     return { min, max, domain: [min - pad, max + pad] as [number, number], runs: carriedRuns(series), carried: series.filter((p) => p.isCarriedForward).length };
   }, [series]);
-  const label = FX_PERIODS.find((p) => p.days === days)?.label ?? `${days}D`;
+  const periodId = FX_PERIODS.find((p) => p.days === days)?.id;
+  const label = periodId ? t(`market.fx.period.${periodId}`) : `${days}D`;
 
-  if (res.status === "error" && !res.data) return <ErrorState title={`We couldn't load the ${pair} history`} message={errorMessage(res.error)} onRetry={res.reload} compact />;
+  if (res.status === "error" && !res.data) return <ErrorState title={t("market.fx.chartError", { pair })} message={errorMessage(res.error)} onRetry={res.reload} compact />;
   if (!res.data || !stats) return <Skeleton height={340} />;
 
   const first = series[0];
   const last = series[series.length - 1];
-  const summary = `${pair} exchange rate over the last ${label}: from ${formatFx(first.rate, pair)} on ${formatDate(first.date)} to ${formatFx(last.rate, pair)} on ${formatDate(last.date)}. Lowest ${formatFx(stats.min, pair)}, highest ${formatFx(stats.max, pair)}. ${stats.carried} of ${series.length} days are weekend or holiday values carried forward.`;
+  const summary = t("market.fx.chartSummary", {
+    pair,
+    period: label,
+    firstRate: formatFx(first.rate, pair),
+    firstDate: formatDate(first.date),
+    lastRate: formatFx(last.rate, pair),
+    lastDate: formatDate(last.date),
+    min: formatFx(stats.min, pair),
+    max: formatFx(stats.max, pair),
+    carried: stats.carried,
+    total: series.length,
+  });
 
   return (
     <div style={{ opacity: res.loading ? 0.6 : 1, transition: "opacity .2s" }} aria-busy={res.loading}>
@@ -59,13 +74,13 @@ function FxChart({ pair, days }: { pair: string; days: number }) {
         table={
           <div className={s.scrollTable}>
             <DataTable
-              caption={`${pair} daily rates`}
+              caption={t("market.fx.tableCaption", { pair })}
               columns={[
-                { key: "d", label: "Date" },
-                { key: "r", label: "Rate (AMD)", numeric: true },
-                { key: "n", label: "Note" },
+                { key: "d", label: t("market.fx.colDate") },
+                { key: "r", label: t("market.fx.colRate"), numeric: true },
+                { key: "n", label: t("market.fx.colNote") },
               ]}
-              rows={[...series].reverse().map((p) => ({ d: formatDate(p.date), r: formatFx(p.rate, pair), n: p.isCarriedForward ? `Carried forward from ${formatDate(p.sourceDate)}` : "" }))}
+              rows={[...series].reverse().map((p) => ({ d: formatDate(p.date), r: formatFx(p.rate, pair), n: p.isCarriedForward ? t("market.fx.carriedFrom", { date: formatDate(p.sourceDate) }) : "" }))}
             />
           </div>
         }
@@ -92,11 +107,11 @@ function FxChart({ pair, days }: { pair: string; days: number }) {
         </div>
         <div className={s.legendRow} aria-hidden={stats.carried === 0 ? true : undefined}>
           <span className={s.legendKey}>
-            <span className={s.keyLine} /> Official CBA rate
+            <span className={s.keyLine} /> {t("market.fx.legendOfficial")}
           </span>
           {stats.carried > 0 ? (
             <span className={s.legendKey}>
-              <span className={s.keyBand} /> Weekend / holiday: last working-day rate carried forward ({stats.carried} {stats.carried === 1 ? "day" : "days"})
+              <span className={s.keyBand} /> {t("market.fx.legendCarried", { n: stats.carried })}
             </span>
           ) : null}
         </div>
@@ -106,6 +121,7 @@ function FxChart({ pair, days }: { pair: string; days: number }) {
 }
 
 export function FxSection() {
+  const t = useT();
   const latest = useResource((signal) => getFxLatest(signal), []);
   const [pair, setPair] = useState<string>(FX_PAIRS[0]);
   const [period, setPeriod] = useState<FxPeriodId>("1M");
@@ -115,13 +131,13 @@ export function FxSection() {
     <div className={s.panel}>
       <BankRates official={latest.data?.data.rates} />
 
-      <Card title="Central Bank of Armenia rates" eyebrow="Official reference rates">
+      <Card title={t("market.fx.cardTitle")} eyebrow={t("market.fx.cardEyebrow")}>
         <div className={s.rates}>
           {latest.status === "error" && !latest.data ? (
-            <ErrorState title="We couldn't load exchange rates" message={errorMessage(latest.error)} onRetry={latest.reload} />
+            <ErrorState title={t("market.fx.errorTitle")} message={errorMessage(latest.error)} onRetry={latest.reload} />
           ) : (
             <>
-              <div className={s.pairs} role="radiogroup" aria-label="Currency pair">
+              <div className={s.pairs} role="radiogroup" aria-label={t("market.fx.pairGroup")}>
                 {latest.data
                   ? latest.data.data.rates.map((r) => {
                       const active = r.pair === pair;
@@ -149,13 +165,13 @@ export function FxSection() {
                         >
                           <span className={s.pairName}>
                             {r.pair}
-                            {active ? <span className={s.pairSel}>Chart</span> : null}
+                            {active ? <span className={s.pairSel}>{t("market.fx.chartBadge")}</span> : null}
                           </span>
                           <CountFigure value={r.rate} decimals={fxDecimals(r.pair)} srText={formatFx(r.rate, r.pair)} />
                           <span>
                             <ChangeChip change={r.diff} decimals={fxDecimals(r.pair)} />
                           </span>
-                          <span className={s.pairDate}>CBA official rate, {formatDate(r.sourceDate)}</span>
+                          <span className={s.pairDate}>{t("market.fx.officialRateOn", { date: formatDate(r.sourceDate) })}</span>
                         </button>
                       );
                     })
@@ -168,28 +184,28 @@ export function FxSection() {
                       </div>
                     ))}
               </div>
-              {latest.data ? <MetaLine meta={latest.data.meta} label="Rates fetched" /> : null}
+              {latest.data ? <MetaLine meta={latest.data.meta} kind="ratesFetched" /> : null}
             </>
           )}
         </div>
       </Card>
 
       <Card
-        title={`${pair} history`}
-        eyebrow="Historical movement"
+        title={t("market.fx.historyTitle", { pair })}
+        eyebrow={t("market.fx.historyEyebrow")}
         actions={
           <>
-            {latest.loading ? <Spinner label="Refreshing" /> : null}
-            <Segmented label="Time period" value={period} onChange={setPeriod} options={FX_PERIODS.map((p) => ({ value: p.id, label: p.label, title: `Last ${p.days} days` }))} />
+            {latest.loading ? <Spinner label={t("market.fx.refreshing")} /> : null}
+            <Segmented label={t("market.fx.periodGroup")} value={period} onChange={setPeriod} options={FX_PERIODS.map((p) => ({ value: p.id, label: t(`market.fx.period.${p.id}`), title: t("market.fx.periodDays", { days: p.days }) }))} />
           </>
         }
       >
         <FxChart pair={pair} days={days} />
         <div style={{ marginTop: 16 }}>
-          <Note>The CBA publishes one official rate per working day. On weekends and holidays the latest working-day rate is used, and those days are shaded on the chart.</Note>
+          <Note>{t("market.fx.cbaNote")}</Note>
         </div>
       </Card>
-      {latest.data && latest.data.data.rates.length === 0 ? <EmptyState title="No exchange rates available" message="Rates will appear here once the data source responds." /> : null}
+      {latest.data && latest.data.data.rates.length === 0 ? <EmptyState title={t("market.fx.emptyTitle")} message={t("market.fx.emptyMessage")} /> : null}
     </div>
   );
 }

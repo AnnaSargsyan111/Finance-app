@@ -3,7 +3,12 @@
  * cookie). Never calls a third-party origin. Errors follow the standard envelope `{error:{code,message,fields?}}`.
  * A 401 anywhere (except on the auth screens themselves) sends the user to /auth?mode=login&next=<current route>.
  */
+import { getCurrentLocale } from "../i18n/locale";
+import { translateFields, translateServerMessage } from "../i18n/server-messages";
+import { hasText, tg, type Key } from "../i18n/translate";
 import type { Enveloped, Meta } from "./types";
+
+export { translateFields };
 
 export class ApiError extends Error {
   constructor(
@@ -23,9 +28,23 @@ export class ApiError extends Error {
 export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
 export const isAbort = (e: unknown): boolean => e instanceof DOMException && e.name === "AbortError";
 
-export function errorMessage(e: unknown, fallback = "Something went wrong. Please try again."): string {
+/**
+ * The text to show for a failed call. English: exactly the server's message (or the fallback). Another language: the dictionary text of the
+ * server's exact message (errors.server.<slug>), else the text of the error code (errors.code.<CODE>), else the server's own text.
+ * The exact message is tried before the code because it is more specific ("Period not found" before "not found").
+ */
+export function errorMessage(e: unknown, fallback = tg("errors.generic")): string {
   if (isApiError(e)) {
-    if (e.code === "NETWORK") return "Can't reach Finova. Check your connection and try again.";
+    if (getCurrentLocale() !== "en") {
+      if (e.message) {
+        const translated = translateServerMessage(e.message);
+        if (translated !== e.message) return translated;
+      }
+      const codeKey = `errors.code.${e.code}`;
+      if (hasText("en", codeKey)) return tg(codeKey as Key);
+      return e.message || fallback;
+    }
+    if (e.code === "NETWORK") return tg("errors.network");
     return e.message || fallback;
   }
   return fallback;
@@ -132,5 +151,6 @@ function unwrap<T>(json: unknown): Enveloped<T> {
 
 /** Map `fields` like {"expenses.3.amount": "..."} or {"password": "..."} to friendlier lookups. */
 export function fieldError(e: unknown, name: string): string | undefined {
-  return isApiError(e) ? e.fields?.[name] : undefined;
+  const v = isApiError(e) ? e.fields?.[name] : undefined;
+  return v === undefined ? undefined : translateServerMessage(v);
 }

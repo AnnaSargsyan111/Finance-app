@@ -6,8 +6,9 @@
  * action attached to each alert, plus a what-if).
  */
 import type { PeriodView } from "../api/types";
+import { tg } from "../i18n/translate";
 import { formatAmd, formatPercent } from "../lib/format";
-import { toCents, type FormState } from "./calc";
+import { categoryLabel, toCents, type FormState } from "./calc";
 
 export const NEEDS_KEYS = ["housing", "bills_utilities", "transportation", "food_dining"] as const;
 export const WANTS_KEYS = ["shopping", "entertainment"] as const;
@@ -53,7 +54,7 @@ export function moneyOf(view: PeriodView): Money {
     const amount = num(e.amount);
     if (amount <= 0) continue;
     spent += amount;
-    cats.set(e.isCustom || !e.key ? `c:${e.label.trim().toLowerCase()}` : e.key, { label: e.label, amount });
+    cats.set(e.isCustom || !e.key ? `c:${e.label.trim().toLowerCase()}` : e.key, { label: categoryLabel(e.key, e.isCustom, e.label), amount });
   }
   const income = view.income === null ? null : num(view.income);
   return { income: income !== null && income > 0 ? income : null, spent, cats };
@@ -67,7 +68,7 @@ export function moneyFromForm(f: FormState): Money {
     const c = toCents(r.amount);
     if (c === null || Number.isNaN(c) || c <= 0) continue;
     const amount = c / 100;
-    const label = r.isCustom ? r.label.trim() || "Custom category" : r.label;
+    const label = r.isCustom ? r.label.trim() || tg("pf.category.customFallback") : categoryLabel(r.key, false, r.label);
     const key = r.isCustom || !r.key ? `c:${label.toLowerCase()}` : r.key;
     spent += amount;
     cats.set(key, { label, amount: (cats.get(key)?.amount ?? 0) + amount });
@@ -111,7 +112,12 @@ export interface Analysis {
 }
 
 const FLEX_KEYS = ["shopping", "entertainment", "other"] as const;
-const FLEX_LABEL: Record<string, string> = { shopping: "Shopping", entertainment: "Entertainment", other: "Other" };
+
+/** "Shopping (80,000 AMD) and Other (40,000 AMD)": the (up to) two most flexible places, as one phrase */
+export function flexLineOf(flexible: { label: string; amount: number }[]): string {
+  const parts = flexible.slice(0, 2).map((x) => tg("pf.rules.catAmount", { label: x.label, amount: formatAmd(x.amount) }));
+  return parts.length === 2 ? tg("pf.rules.and", { a: parts[0], b: parts[1] }) : (parts[0] ?? "");
+}
 
 const LEVEL_ORDER: Record<Level, number> = { high: 0, medium: 1, low: 2 };
 
@@ -124,13 +130,10 @@ export function analyse(now: Money, prev: Money | null): Analysis {
   const wants = sumKeys(now, WANTS_KEYS);
   const rest = Math.max(0, now.spent - needs - wants);
 
-  const flexible = FLEX_KEYS.map((k) => ({ key: k, label: FLEX_LABEL[k], amount: amountOf(now, k) }))
+  const flexible = FLEX_KEYS.map((k) => ({ key: k, label: categoryLabel(k, false, k), amount: amountOf(now, k) }))
     .filter((x) => x.amount > 0)
     .sort((a, b) => b.amount - a.amount);
-  const flexLine = flexible
-    .slice(0, 2)
-    .map((x) => `${x.label} (${formatAmd(x.amount)})`)
-    .join(" and ");
+  const flexLine = flexLineOf(flexible);
 
   const alerts: Alert[] = [];
 
@@ -138,10 +141,10 @@ export function analyse(now: Money, prev: Money | null): Analysis {
     alerts.push({
       id: "over",
       level: "high",
-      title: "You spent more than you earned",
-      text: `Expenses are ${formatAmd(-available)} above income this period.`,
-      action: flexLine ? `Closing the gap takes ${formatAmd(-available)}. Your most flexible spending is ${flexLine}: start there.` : `Closing the gap takes ${formatAmd(-available)}. Start with your largest expense.`,
-      why: `Rule: expenses (${formatAmd(now.spent)}) are greater than income (${formatAmd(income)}).`,
+      title: tg("pf.rules.over.title"),
+      text: tg("pf.rules.over.text", { gap: formatAmd(-available) }),
+      action: flexLine ? tg("pf.rules.over.action", { gap: formatAmd(-available), flex: flexLine }) : tg("pf.rules.over.actionNoFlex", { gap: formatAmd(-available) }),
+      why: tg("pf.rules.over.why", { spent: formatAmd(now.spent), income: formatAmd(income) }),
     });
   } else if (hasIncome && rate < RULES.thinRate) {
     const need = Math.round(income * RULES.thinRate - available);
@@ -149,12 +152,12 @@ export function analyse(now: Money, prev: Money | null): Analysis {
     alerts.push({
       id: "thin",
       level: "medium",
-      title: "Very little is left over",
-      text: `Only ${formatPercent(rate * 100, 0)} of income is left (${formatAmd(available)}). A surprise cost could tip the month negative.`,
+      title: tg("pf.rules.thin.title"),
+      text: tg("pf.rules.thin.text", { rate: formatPercent(rate * 100, 0), left: formatAmd(available) }),
       action: first
-        ? `Keeping 10% would take another ${formatAmd(need)}. Trimming ${first.label} by 10% frees about ${formatAmd(Math.round(first.amount * 0.1))}.`
-        : `Keeping 10% would take another ${formatAmd(need)}. Look at your largest expense first.`,
-      why: "Rule: money left over is under 10% of income.",
+        ? tg("pf.rules.thin.action", { need: formatAmd(need), label: first.label, freed: formatAmd(Math.round(first.amount * 0.1)) })
+        : tg("pf.rules.thin.actionNoFirst", { need: formatAmd(need) }),
+      why: tg("pf.rules.thin.why"),
     });
   }
 
@@ -164,10 +167,10 @@ export function analyse(now: Money, prev: Money | null): Analysis {
     alerts.push({
       id: "housing",
       level: housingShare > RULES.housingSevere ? "high" : "medium",
-      title: housingShare > RULES.housingSevere ? "Housing takes more than half of income" : "Housing is above the 30% guide",
-      text: `Housing is ${formatPercent(housingShare * 100, 0)} of income. Housing agencies call more than 30% a "cost burden" (and more than 50% "severe").`,
-      action: "Housing is usually the biggest lever: sharing, a smaller place or renegotiating the rent can save more than trimming small items.",
-      why: "Rule: housing / income is above 30%, the commonly used affordability line (for example US HUD). It is a guide, not a verdict: rents differ a lot between cities.",
+      title: housingShare > RULES.housingSevere ? tg("pf.rules.housing.titleSevere") : tg("pf.rules.housing.titleHigh"),
+      text: tg("pf.rules.housing.text", { share: formatPercent(housingShare * 100, 0) }),
+      action: tg("pf.rules.housing.action"),
+      why: tg("pf.rules.housing.why"),
     });
   }
 
@@ -188,10 +191,10 @@ export function analyse(now: Money, prev: Money | null): Analysis {
       alerts.push({
         id: `spike-${jump.key}`,
         level: "medium",
-        title: `${jump.label} jumped ${formatPercent(jump.pct * 100, 0)}`,
-        text: `${formatAmd(jump.now)} this period vs ${formatAmd(jump.before)} last period (+${formatAmd(jump.diff)}).`,
-        action: `Try bringing ${jump.label} back toward last period's ${formatAmd(jump.before)}: that would free ${formatAmd(jump.diff)}.`,
-        why: "Rule: a category rose by at least 25% AND at least 15,000 AMD compared with the previous month (both, so small amounts do not create noise).",
+        title: tg("pf.rules.spike.title", { label: jump.label, pct: formatPercent(jump.pct * 100, 0) }),
+        text: tg("pf.rules.spike.text", { now: formatAmd(jump.now), before: formatAmd(jump.before), diff: formatAmd(jump.diff) }),
+        action: tg("pf.rules.spike.action", { label: jump.label, before: formatAmd(jump.before), diff: formatAmd(jump.diff) }),
+        why: tg("pf.rules.spike.why"),
       });
     }
   }
@@ -201,10 +204,10 @@ export function analyse(now: Money, prev: Money | null): Analysis {
     alerts.push({
       id: "other",
       level: "low",
-      title: "A lot is filed under “Other”",
-      text: `${formatPercent((other / now.spent) * 100, 0)} of expenses are uncategorised, so the picture is less clear.`,
-      action: "Move the largest items into named categories (use “Add category” in the form below) and every message here gets more accurate.",
-      why: "Rule: “Other” is more than 20% of expenses.",
+      title: tg("pf.rules.other.title"),
+      text: tg("pf.rules.other.text", { pct: formatPercent((other / now.spent) * 100, 0) }),
+      action: tg("pf.rules.other.action"),
+      why: tg("pf.rules.other.why"),
     });
   }
 
@@ -215,10 +218,10 @@ export function analyse(now: Money, prev: Money | null): Analysis {
 
 /** one sentence for the top of the card */
 export function headline(a: Analysis): { text: string; tone: "pos" | "neg" | "neutral" } {
-  if (!a.hasIncome) return { text: "Add your income to see how much of it you keep.", tone: "neutral" };
-  if (a.spent === 0) return { text: "Add your expenses to see where your money goes.", tone: "neutral" };
-  if (a.available < 0) return { text: `You spent ${formatAmd(-a.available)} more than you earned.`, tone: "neg" };
-  return { text: `You kept ${formatPercent(a.rate * 100, 0)} of your income.`, tone: "pos" };
+  if (!a.hasIncome) return { text: tg("pf.rules.headline.noIncome"), tone: "neutral" };
+  if (a.spent === 0) return { text: tg("pf.rules.headline.noExpenses"), tone: "neutral" };
+  if (a.available < 0) return { text: tg("pf.rules.headline.over", { amount: formatAmd(-a.available) }), tone: "neg" };
+  return { text: tg("pf.rules.headline.kept", { pct: formatPercent(a.rate * 100, 0) }), tone: "pos" };
 }
 
 /** the "what if I trim" maths (savings only: no investment return is assumed) */

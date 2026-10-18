@@ -78,8 +78,11 @@ describe("the history page and the Investment page are wired to it", () => {
 
   it("the history page offers 'Back to my recommendation' (only when there is one) next to the existing button", () => {
     const h = src("src/ui/invest/HistoryPage.tsx");
-    expect(h).toContain("Back to my recommendation");
-    expect(h).toContain("Back to Investment Recommendation");
+    // the wording lives in the English dictionary; the page reads it through the translator
+    expect(h).toContain("invest.history.backToRecommendation");
+    expect(h).toContain("invest.history.backToInvest");
+    expect(src("src/ui/i18n/dict/invest.en.ts")).toContain('backToRecommendation: "Back to my recommendation"');
+    expect(src("src/ui/i18n/dict/invest.en.ts")).toContain('backToInvest: "Back to Investment Recommendation"');
     expect(h).toMatch(/canReturn \? \(/);
     expect(h).toContain("requestResume(user.id)");
     expect(h).toContain("hasRecSession(user.id)");

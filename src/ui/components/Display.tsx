@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useT } from "../i18n/LocaleProvider";
 import { cx } from "../lib/cx";
 import { figureParts, formatNumber, formatPercent, formatSigned } from "../lib/format";
 import { Button } from "./Button";
@@ -59,10 +60,11 @@ export function Chip({ tone = "neutral", children, title }: { tone?: "neutral" |
 
 /** Up / down / flat change chip: colour + arrow + explicit sign + word for screen readers. */
 export function ChangeChip({ change, pct, decimals = 2, unit = "" }: { change?: string | number | null; pct?: number | null; decimals?: number; unit?: string }) {
+  const t = useT();
   const n = change === null || change === undefined || change === "" ? (pct ?? null) : Number(change);
-  if (n === null || Number.isNaN(n)) return <Chip>No change data</Chip>;
+  if (n === null || Number.isNaN(n)) return <Chip>{t("shell.ui.noChangeData")}</Chip>;
   const tone = n > 0 ? "pos" : n < 0 ? "neg" : "neutral";
-  const word = n > 0 ? "up" : n < 0 ? "down" : "unchanged";
+  const word = n > 0 ? t("shell.ui.up") : n < 0 ? t("shell.ui.down") : t("shell.ui.unchanged");
   return (
     <Chip tone={tone}>
       <span className="sr-only">{word} </span>

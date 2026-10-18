@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useRouter } from "next/navigation";
 import { getSession, signOut as apiSignOut } from "../api/auth";
 import { ErrorState } from "../components/Feedback";
+import { useT } from "../i18n/LocaleProvider";
 import { isApiError, redirectToLogin } from "../api/client";
 import type { User } from "../api/types";
 import { Splash } from "./Splash";
@@ -29,6 +30,7 @@ export function useSession(): SessionCtx {
  */
 export function SessionGate({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const t = useT();
   const [state, setState] = useState<{ status: "loading" | "ready" | "error"; user: User | null; error?: unknown }>({ status: "loading", user: null });
   const [nonce, setNonce] = useState(0);
 
@@ -63,11 +65,11 @@ export function SessionGate({ children }: { children: ReactNode }) {
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <div style={{ maxWidth: 480, width: "100%" }}>
-          <ErrorState title="We couldn't load your session" message="Check your connection and try again." onRetry={() => { setState({ status: "loading", user: null }); setNonce((n) => n + 1); }} />
+          <ErrorState title={t("shell.session.errorTitle")} message={t("shell.session.errorMessage")} onRetry={() => { setState({ status: "loading", user: null }); setNonce((n) => n + 1); }} />
         </div>
       </div>
     );
   }
-  if (state.status !== "ready" || !value) return <Splash text="Preparing your workspace" />;
+  if (state.status !== "ready" || !value) return <Splash text={t("shell.splash.preparing")} />;
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -3,6 +3,7 @@
 import { Button } from "../components/Button";
 import { IconArrowUp } from "../components/Icons";
 import { useReducedMotion } from "../hooks/useReducedMotion";
+import { useT } from "../i18n";
 import s from "./market-facts.module.css";
 
 /**
@@ -10,6 +11,7 @@ import s from "./market-facts.module.css";
  * the cursor in its first field. It only scrolls and focuses; it does not touch the form or its state.
  */
 export function GetStarted() {
+  const t = useT();
   const reduced = useReducedMotion();
 
   function goToForm() {
@@ -22,13 +24,13 @@ export function GetStarted() {
     <section className={s.cta} aria-labelledby="get-started-title">
       <div className={s.ctaInner}>
         <h2 id="get-started-title" className={s.ctaTitle}>
-          Ready to start?
+          {t("auth.getStarted.title")}
         </h2>
-        <p className={s.lead}>Create your account and start tracking your money and the markets in one calm place.</p>
+        <p className={s.lead}>{t("auth.getStarted.lead")}</p>
         <Button variant="primary" className={s.ctaButton} onClick={goToForm}>
-          Get started
+          {t("auth.getStarted.button")}
           <IconArrowUp size={18} />
-          <span className="sr-only"> (goes to the sign-up form)</span>
+          <span className="sr-only">{t("auth.getStarted.buttonHint")}</span>
         </Button>
       </div>
     </section>

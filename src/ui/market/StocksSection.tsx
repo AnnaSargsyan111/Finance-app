@@ -11,28 +11,31 @@ import { ChangeChip, Figure } from "../components/Display";
 import { EmptyState, ErrorState, Skeleton } from "../components/Feedback";
 import { useResource } from "../hooks/useResource";
 import { useScrollReplay } from "../hooks/useScrollReplay";
+import { useT } from "../i18n";
 import { formatDate, formatNumber, formatPercent, formatUsd } from "../lib/format";
 import { CountFigure } from "./CountFigure";
 import { MetaLine } from "./MetaLine";
-import { STOCK_METRIC_INFO, type StockMetricKey } from "./stock-metric-info";
+import type { StockMetricKey } from "./stock-metric-info";
 import s from "./market.module.css";
 
-/** the label of a metric plus its "i": one short sentence saying what the number is */
+/** the label of a metric plus its "i": one short sentence saying what the number is (texts: market.stockMetric.<key>, same English as STOCK_METRIC_INFO) */
 function Label({ k }: { k: StockMetricKey }) {
-  const info = STOCK_METRIC_INFO[k];
+  const t = useT();
+  const title = t(`market.stockMetric.${k}.title`);
   return (
     <dt>
-      {info.title}
-      <InfoTip title={info.title} sections={[{ label: "", text: info.text }]} />
+      {title}
+      <InfoTip title={title} sections={[{ label: "", text: t(`market.stockMetric.${k}.text`) }]} />
     </dt>
   );
 }
 
-function bigUsd(v: string | null): string {
+/** "$1.23T" / "$456.7B" / "$12,345": the unit letters are texts */
+function bigUsd(v: string | null, t: ReturnType<typeof useT>): string {
   const n = v === null ? NaN : Number(v);
   if (!Number.isFinite(n)) return "-";
-  if (Math.abs(n) >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
-  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (Math.abs(n) >= 1e12) return `$${t("market.stocks.usdTrillion", { v: (n / 1e12).toFixed(2) })}`;
+  if (Math.abs(n) >= 1e9) return `$${t("market.stocks.usdBillion", { v: (n / 1e9).toFixed(1) })}`;
   return formatUsd(n, 0);
 }
 
@@ -62,29 +65,38 @@ function Spark({ data, up }: { data: { date: string; close: number }[]; up: bool
 }
 
 function Trend({ item }: { item: StockItem }) {
+  const t = useT();
   const h = item.history1m ?? [];
-  if (h.length < 2) return <p className={s.company}>Trend data isn&apos;t available right now.</p>;
+  if (h.length < 2) return <p className={s.company}>{t("market.stocks.noTrend")}</p>;
   const data = h.map((p) => ({ date: p.date, close: Number(p.close) }));
   const up = data[data.length - 1].close >= data[0].close;
   const pct = ((data[data.length - 1].close - data[0].close) / data[0].close) * 100;
+  const pctText = formatPercent(Math.abs(pct), 1);
   return (
     <ChartFigure
-      summary={`${item.symbol} closing price over the last month: from ${formatUsd(data[0].close, 2)} on ${formatDate(data[0].date)} to ${formatUsd(data[data.length - 1].close, 2)} on ${formatDate(data[data.length - 1].date)}, ${up ? "up" : "down"} ${formatPercent(Math.abs(pct), 1)}.`}
+      summary={t(up ? "market.stocks.trendSummaryUp" : "market.stocks.trendSummaryDown", {
+        symbol: item.symbol,
+        firstPrice: formatUsd(data[0].close, 2),
+        firstDate: formatDate(data[0].date),
+        lastPrice: formatUsd(data[data.length - 1].close, 2),
+        lastDate: formatDate(data[data.length - 1].date),
+        pct: pctText,
+      })}
       table={
         <DataTable
-          caption={`${item.symbol} closing prices`}
+          caption={t("market.stocks.trendCaption", { symbol: item.symbol })}
           columns={[
-            { key: "d", label: "Date" },
-            { key: "c", label: "Close (USD)", numeric: true },
+            { key: "d", label: t("market.stocks.colDate") },
+            { key: "c", label: t("market.stocks.colClose"), numeric: true },
           ]}
           rows={[...data].reverse().map((p) => ({ d: formatDate(p.date), c: formatUsd(p.close, 2) }))}
         />
       }
-      tableLabel="Show 1-month prices"
+      tableLabel={t("market.stocks.showPrices")}
     >
       <Spark data={data} up={up} />
       <p className={s.company} style={{ marginTop: 4 }}>
-        1 month: {up ? "up" : "down"} {formatPercent(Math.abs(pct), 1)}
+        {t(up ? "market.stocks.monthUp" : "market.stocks.monthDown", { pct: pctText })}
       </p>
     </ChartFigure>
   );
@@ -95,13 +107,14 @@ function Trend({ item }: { item: StockItem }) {
  * is drawn again whenever the card is scrolled to, down or up (Spark). Everything else is static.
  */
 function StockCard({ item }: { item: StockItem }) {
+  const t = useT();
   const dash = "-";
   return (
     <article className={s.stock} aria-label={`${item.name ?? item.symbol} (${item.symbol})`}>
       <div className={s.stockHead}>
         <div style={{ minWidth: 0 }}>
           <div className={s.symbol}>{item.symbol}</div>
-          <div className={s.company}>{item.name ?? "Name unavailable"}</div>
+          <div className={s.company}>{item.name ?? t("market.stocks.nameUnavailable")}</div>
         </div>
         <ChangeChip change={item.change} pct={item.changePct} decimals={2} />
       </div>
@@ -118,7 +131,7 @@ function StockCard({ item }: { item: StockItem }) {
         </div>
         <div>
           <Label k="marketCap" />
-          <dd>{bigUsd(item.marketCap)}</dd>
+          <dd>{bigUsd(item.marketCap, t)}</dd>
         </div>
         <div>
           <Label k="pe" />
@@ -134,20 +147,21 @@ function StockCard({ item }: { item: StockItem }) {
         </div>
       </dl>
       <p className={s.company}>
-        {item.asOf ? `Price as of ${formatDate(item.asOf)}` : "Price time unavailable"}
-        {item.isFixture ? " · test fixture data" : item.isDelayed ? " · delayed" : ""}
+        {item.asOf ? t("market.stocks.priceAsOf", { date: formatDate(item.asOf) }) : t("market.stocks.priceTimeUnavailable")}
+        {item.isFixture ? ` · ${t("market.stocks.fixtureData")}` : item.isDelayed ? ` · ${t("market.stocks.delayed")}` : ""}
       </p>
     </article>
   );
 }
 
 export function StocksSection() {
+  const t = useT();
   const res = useResource((signal) => getStocks(signal), []);
-  if (res.status === "error" && !res.data) return <ErrorState title="We couldn't load stocks" message={errorMessage(res.error)} onRetry={res.reload} />;
+  if (res.status === "error" && !res.data) return <ErrorState title={t("market.stocks.errorTitle")} message={errorMessage(res.error)} onRetry={res.reload} />;
   if (!res.data)
     return (
       <div className={s.stocks} role="status" aria-busy="true">
-        <span className="sr-only">Loading stocks</span>
+        <span className="sr-only">{t("market.stocks.loading")}</span>
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <div key={i} className={s.stock}>
             <Skeleton width={90} height={16} />
@@ -164,7 +178,7 @@ export function StocksSection() {
     <div className={s.panel}>
       <MetaLine meta={res.data.meta} />
       {items.length === 0 ? (
-        <EmptyState title="No stock data available" message="Stock cards will appear here once the data source responds." />
+        <EmptyState title={t("market.stocks.emptyTitle")} message={t("market.stocks.emptyMessage")} />
       ) : (
         <div className={s.stocks}>
           {items.map((i) => (
@@ -172,7 +186,7 @@ export function StocksSection() {
           ))}
         </div>
       )}
-      {missingFundamentals ? <p className={s.company}>A dash means the value isn&apos;t available from the current free data source (fundamentals need a keyed provider).</p> : null}
+      {missingFundamentals ? <p className={s.company}>{t("market.stocks.dashNote")}</p> : null}
     </div>
   );
 }

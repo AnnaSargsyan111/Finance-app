@@ -3,10 +3,21 @@
  * clickable; a click runs these pure checks first. Any blocking issue is shown inline (never a disabled button) and
  * the API is never called while `canSubmit` is false. Pure and DOM-free so it's testable without a browser.
  */
+import { auth } from "../i18n/dict/auth.en";
+import { tg } from "../i18n/translate";
 import { checkPassword, EMAIL_RE } from "./password-rules";
 
-export const REQUIRED_MESSAGE = "This field is required.";
-export const INVALID_EMAIL_MESSAGE = "Enter a valid email address";
+/**
+ * The messages are read from the dictionary at the moment a check runs (so they come out in the chosen language). The constants are
+ * the English texts, kept as a stable reference (tests, and code that has no language to follow); use the functions to show a message.
+ */
+export const REQUIRED_MESSAGE: string = auth.validation.required;
+export const INVALID_EMAIL_MESSAGE: string = auth.validation.invalidEmail;
+export const PASSWORD_MISMATCH_MESSAGE: string = auth.validation.passwordMismatch;
+
+export const requiredMessage = (): string => tg("auth.validation.required");
+export const invalidEmailMessage = (): string => tg("auth.validation.invalidEmail");
+export const passwordMismatchMessage = (): string => tg("auth.validation.passwordMismatch");
 
 type Rules = { id: string; label: string }[];
 
@@ -31,16 +42,16 @@ export function validateSignUpFields(
   const lastName = values.lastName.trim();
   const email = values.email.trim();
 
-  if (!firstName) fields.firstName = REQUIRED_MESSAGE;
-  if (!lastName) fields.lastName = REQUIRED_MESSAGE;
+  if (!firstName) fields.firstName = requiredMessage();
+  if (!lastName) fields.lastName = requiredMessage();
 
   let emailOk = false;
-  if (!email) fields.email = REQUIRED_MESSAGE;
-  else if (!EMAIL_RE.test(email)) fields.email = INVALID_EMAIL_MESSAGE;
+  if (!email) fields.email = requiredMessage();
+  else if (!EMAIL_RE.test(email)) fields.email = invalidEmailMessage();
   else emailOk = true;
 
   let passwordOk = false;
-  if (!values.password) fields.password = REQUIRED_MESSAGE;
+  if (!values.password) fields.password = requiredMessage();
   else passwordOk = checkPassword(values.password, rules).valid;
 
   return { fields, canSubmit: !!firstName && !!lastName && emailOk && passwordOk };
@@ -54,8 +65,8 @@ export interface LoginFields {
 /** Login only checks emptiness on click; a non-empty, wrongly-shaped email still submits (the server/401 handles it). */
 export function validateLoginFields(email: string, password: string): { fields: LoginFields; canSubmit: boolean } {
   const fields: LoginFields = {};
-  if (!email.trim()) fields.email = REQUIRED_MESSAGE;
-  if (!password) fields.password = REQUIRED_MESSAGE;
+  if (!email.trim()) fields.email = requiredMessage();
+  if (!password) fields.password = requiredMessage();
   return { fields, canSubmit: Object.keys(fields).length === 0 };
 }
 
@@ -64,7 +75,7 @@ export interface ForgotFields {
 }
 
 export function validateForgotFields(email: string): { fields: ForgotFields; canSubmit: boolean } {
-  const fields: ForgotFields = !email.trim() ? { email: REQUIRED_MESSAGE } : {};
+  const fields: ForgotFields = !email.trim() ? { email: requiredMessage() } : {};
   return { fields, canSubmit: Object.keys(fields).length === 0 };
 }
 
@@ -74,11 +85,9 @@ export function validateForgotFields(email: string): { fields: ForgotFields; can
  * for both cases). Non-empty but failing the checklist blocks submission with no extra message.
  */
 export function validateResetPassword(password: string, rules: Rules): { fields: { newPassword?: string }; canSubmit: boolean } {
-  if (!password) return { fields: { newPassword: REQUIRED_MESSAGE }, canSubmit: false };
+  if (!password) return { fields: { newPassword: requiredMessage() }, canSubmit: false };
   return { fields: {}, canSubmit: checkPassword(password, rules).valid };
 }
-
-export const PASSWORD_MISMATCH_MESSAGE = "Passwords don't match.";
 
 export interface ChangePasswordFields {
   newPassword?: string;
@@ -94,8 +103,8 @@ export interface ChangePasswordFields {
  */
 export function validateChangePasswordFields(newPassword: string, confirmPassword: string, rules: Rules): { fields: ChangePasswordFields; canSubmit: boolean } {
   const fields: ChangePasswordFields = {};
-  if (!newPassword) fields.newPassword = REQUIRED_MESSAGE;
-  if (!confirmPassword) fields.confirmPassword = REQUIRED_MESSAGE;
+  if (!newPassword) fields.newPassword = requiredMessage();
+  if (!confirmPassword) fields.confirmPassword = requiredMessage();
   if (Object.keys(fields).length) return { fields, canSubmit: false };
 
   const passwordOk = checkPassword(newPassword, rules).valid;

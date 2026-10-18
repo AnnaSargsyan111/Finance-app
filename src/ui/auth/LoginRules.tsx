@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { cx } from "../lib/cx";
 import { Logo } from "../components/Icons";
+import { useT } from "../i18n";
 import { RULE_GROUPS } from "./login-rules-data";
 import s from "./auth.module.css";
 import r from "./login-rules.module.css";
@@ -39,6 +40,7 @@ function TrendBackground() {
  * (so every figure can be traced) but are not shown here: links under every rule made the text feel heavy.
  */
 export function LoginRules() {
+  const t = useT();
   let step = 0; // position in the reveal sequence: heading, its three rules, next heading, its three rules
   const at = (): CSSProperties => ({ "--i": step++ }) as CSSProperties;
 
@@ -53,13 +55,13 @@ export function LoginRules() {
 
       <div className={r.body}>
         <h2 id="login-rules-title" className="sr-only">
-          Money rules of thumb
+          {t("auth.loginRules.title")}
         </h2>
         {RULE_GROUPS.map((group) => (
           <section key={group.id} className={r.group} aria-labelledby={`rules-${group.id}`}>
             <h3 id={`rules-${group.id}`} className={cx(r.groupTitle, r.reveal)} style={at()}>
               {group.lead}
-              <span className={r.groupMuted}>then…</span>
+              <span className={r.groupMuted}>{t("auth.loginRules.then")}</span>
             </h3>
             <ol className={r.rules}>
               {group.rules.map((rule, i) => (
@@ -78,7 +80,7 @@ export function LoginRules() {
         ))}
       </div>
 
-      <p className={cx(s.foot, r.layer)}>Informational tool. Not investment advice.</p>
+      <p className={cx(s.foot, r.layer)}>{t("auth.aside.disclaimer")}</p>
     </aside>
   );
 }

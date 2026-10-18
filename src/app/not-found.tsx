@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { EmptyState } from "@/ui/components/Feedback";
+import { getLocale } from "@/ui/i18n/server";
+import { translate } from "@/ui/i18n/translate";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const locale = await getLocale();
   return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
       <div style={{ maxWidth: 480, width: "100%" }}>
         <EmptyState
-          title="This page doesn't exist"
-          message="The link may be broken or the page may have moved."
+          title={translate(locale, "shell.notFound.title")}
+          message={translate(locale, "shell.notFound.message")}
           action={
             <Link href="/" style={{ color: "var(--accent)", fontWeight: 600 }}>
-              Go to Finova
+              {translate(locale, "shell.notFound.action")}
             </Link>
           }
         />

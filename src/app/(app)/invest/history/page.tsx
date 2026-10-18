@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/ui/i18n/server";
 import { HistoryPage } from "@/ui/invest/HistoryPage";
 
-export const metadata: Metadata = { title: "Recommendation History" };
+export const generateMetadata = () => pageMetadata("common.meta.history");
 
 export default function Page() {
   return <HistoryPage />;

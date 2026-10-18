@@ -98,7 +98,7 @@ Please read once more. Anything marked PENDING I wrote and you have not read yet
 ### Which banks are there? (links to Market & News)
 *PENDING: not yet reviewed*
 
-> Finova-ն «Շուկա և նորություններ» էջում ցույց է տալիս երեք բանկի փոխարժեքները՝ Ameriabank, ACBA Bank և IDBank (Rate.am-ից)։ Հայաստանի բանկերի ամբողջական ցանկը գտնվում է Հայաստանի կենտրոնական բանկի կայքում (cba.am)։
+> Finova-ն «Շուկա և նորություններ» էջում ցույց է տալիս երեք բանկի փոխարժեքները՝ Ameriabank, ACBA Bank և IDBank (Rate.am-ից)։ Հայաստանի բանկերի ամբողջական ցանկը գտնվում է Հայաստանի Կենտրոնական բանկի կայքում (cba.am)։
 
 - [ ] OK   - [ ] fix:
 

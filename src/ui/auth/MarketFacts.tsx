@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cx } from "../lib/cx";
 import { useReducedMotion } from "../hooks/useReducedMotion";
+import { useT } from "../i18n";
 import { PLAY_AT_RATIO, nextCountAction } from "./count-up";
 import { FACTS, STATS, type Source, type Stat } from "./market-facts-data";
 import s from "./market-facts.module.css";
@@ -68,25 +69,27 @@ function CountUp({ stat }: { stat: Stat }) {
 }
 
 export function SourceLink({ source }: { source: Source }) {
+  const t = useT();
   return (
     <a className={s.source} href={source.url} target="_blank" rel="noopener noreferrer">
-      Source: {source.name}
-      <span className="sr-only"> (opens in a new tab)</span>
+      {t("auth.source.label", { name: source.name })}
+      <span className="sr-only">{t("auth.source.newTab")}</span>
     </a>
   );
 }
 
 /** "The stock market in numbers": a row of record statistics and a few facts, shown under the sign-up form only. */
 export function MarketFacts() {
+  const t = useT();
   return (
     <section className={s.section} aria-labelledby="market-facts-title">
       <div className={s.inner}>
         <header className={s.head}>
-          <span className={s.eyebrow}>Before you start</span>
+          <span className={s.eyebrow}>{t("auth.marketFacts.eyebrow")}</span>
           <h2 id="market-facts-title" className={s.title}>
-            The stock market in numbers
+            {t("auth.marketFacts.title")}
           </h2>
-          <p className={s.lead}>A few things worth knowing about the markets Finova helps you follow.</p>
+          <p className={s.lead}>{t("auth.marketFacts.lead")}</p>
         </header>
 
         <ul className={s.stats}>
@@ -111,7 +114,7 @@ export function MarketFacts() {
           ))}
         </ul>
 
-        <p className={s.note}>Figures are historical and sourced as noted. For general information only, not investment advice.</p>
+        <p className={s.note}>{t("auth.marketFacts.note")}</p>
       </div>
     </section>
   );

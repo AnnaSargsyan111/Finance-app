@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { getPasswordRules, updateProfile } from "../api/auth";
-import { errorMessage, isApiError } from "../api/client";
+import { errorMessage, isApiError, translateFields } from "../api/client";
 import { DEFAULT_RULES } from "../auth/password-rules";
 import { Button } from "../components/Button";
 import { Card } from "../components/Display";
 import { Note } from "../components/Feedback";
 import { TextField } from "../components/Fields";
 import { IconLogout } from "../components/Icons";
+import { useT } from "../i18n/LocaleProvider";
 import { ToastViewport, useToasts } from "../components/Toast";
 import { PageHeader } from "../shell/AppShell";
 import { useSession } from "../shell/Session";
@@ -17,6 +18,7 @@ import s from "./settings.module.css";
 
 /** Profile: First Name and Last Name are editable; Email is fixed (shown with a tooltip explaining why). */
 export function SettingsPage() {
+  const t = useT();
   const { user, signOut, updateUser } = useSession();
   const [signingOut, setSigningOut] = useState(false);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
@@ -57,10 +59,10 @@ export function SettingsPage() {
       setLastName(updated.lastName);
       setSavedFirstName(updated.firstName);
       setSavedLastName(updated.lastName);
-      pushToast("Your changes have been saved.");
+      pushToast(t("settings.profile.saved"));
     } catch (err) {
-      if (isApiError(err) && err.fields) setFieldErrors(err.fields);
-      else setSaveError(errorMessage(err, "We couldn't save your changes. Please try again."));
+      if (isApiError(err) && err.fields) setFieldErrors(translateFields(err.fields));
+      else setSaveError(errorMessage(err, t("settings.profile.saveFailed")));
     } finally {
       setSaving(false);
     }
@@ -76,9 +78,9 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings / Profile" subtitle="The details you gave when you created your account." greet={false} />
+      <PageHeader title={t("settings.title")} subtitle={t("settings.subtitle")} greet={false} />
       <div className={s.grid}>
-        <Card title="Profile" eyebrow="Account details">
+        <Card title={t("settings.profile.title")} eyebrow={t("settings.profile.eyebrow")}>
           <div className={s.identity}>
             <span className={s.avatar} aria-hidden="true">
               {initials}
@@ -95,7 +97,7 @@ export function SettingsPage() {
             {saveError ? <Note tone="error">{saveError}</Note> : null}
             <div className={s.editGrid}>
               <TextField
-                label="First Name"
+                label={t("settings.profile.firstName")}
                 name="firstName"
                 autoComplete="given-name"
                 maxLength={60}
@@ -105,7 +107,7 @@ export function SettingsPage() {
                 required
               />
               <TextField
-                label="Last Name"
+                label={t("settings.profile.lastName")}
                 name="lastName"
                 autoComplete="family-name"
                 maxLength={60}
@@ -116,26 +118,26 @@ export function SettingsPage() {
               />
             </div>
             <TextField
-              label="Email"
+              label={t("settings.profile.email")}
               name="email"
               type="email"
               value={user.email}
               readOnly
-              title="Email address cannot be changed."
-              hint="Email address cannot be changed."
+              title={t("settings.profile.emailFixed")}
+              hint={t("settings.profile.emailFixed")}
             />
             <div className={s.saveRow}>
               <Button type="submit" variant="primary" loading={saving} disabled={!dirty}>
-                Save changes
+                {t("settings.profile.save")}
               </Button>
             </div>
           </form>
         </Card>
 
-        <Card title="Security" eyebrow="Password & session">
+        <Card title={t("settings.security.title")} eyebrow={t("settings.security.eyebrow")}>
           <div className={s.securityActions}>
             <div>
-              <p className={s.sessionText}>Change the password you use to log in. This won&apos;t sign you out of this device.</p>
+              <p className={s.sessionText}>{t("settings.security.changeText")}</p>
               <Button
                 variant="secondary"
                 onClick={(e) => {
@@ -143,14 +145,14 @@ export function SettingsPage() {
                   setPwOpen(true);
                 }}
               >
-                Change Password
+                {t("settings.security.changeButton")}
               </Button>
             </div>
 
             <hr className={s.divider} style={{ width: "100%" }} />
 
             <div>
-              <p className={s.sessionText}>Signing out ends your session on this device. You&apos;ll need to log in again to see your data.</p>
+              <p className={s.sessionText}>{t("settings.security.signOutText")}</p>
               <Button
                 variant="secondary"
                 loading={signingOut}
@@ -160,7 +162,7 @@ export function SettingsPage() {
                 }}
               >
                 <IconLogout size={16} />
-                Sign out
+                {t("settings.security.signOut")}
               </Button>
             </div>
           </div>
@@ -173,7 +175,7 @@ export function SettingsPage() {
         onClose={() => setPwOpen(false)}
         onSuccess={() => {
           setPwOpen(false);
-          pushToast("Password changed. Your other sessions have been signed out.");
+          pushToast(t("settings.security.changed"));
         }}
         triggerRef={pwTriggerRef}
       />

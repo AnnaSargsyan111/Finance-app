@@ -2,30 +2,32 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabPanel } from "../components/Display";
+import { useT, type Key } from "../i18n";
 import { PageHeader } from "../shell/AppShell";
 import { FxSection } from "./FxSection";
 import { NewsSection } from "./NewsSection";
 import { StocksSection } from "./StocksSection";
 import s from "./market.module.css";
 
-const TABS = [
-  { value: "rates", label: "Exchange Rates" },
-  { value: "stocks", label: "Stocks" },
-  { value: "news", label: "News" },
-] as const;
+const TABS: readonly { value: "rates" | "stocks" | "news"; label: Key }[] = [
+  { value: "rates", label: "market.page.tabRates" },
+  { value: "stocks", label: "market.page.tabStocks" },
+  { value: "news", label: "market.page.tabNews" },
+];
 type Tab = (typeof TABS)[number]["value"];
 
 export function MarketPage() {
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const raw = params.get("tab");
-  const tab: Tab = TABS.some((t) => t.value === raw) ? (raw as Tab) : "rates";
-  const setTab = (t: Tab) => router.replace(`/market?tab=${t}`, { scroll: false });
+  const tab: Tab = TABS.some((x) => x.value === raw) ? (raw as Tab) : "rates";
+  const setTab = (v: Tab) => router.replace(`/market?tab=${v}`, { scroll: false });
   return (
     <>
-      <PageHeader title="Market & News" subtitle="Official exchange rates, delayed stock prices and headlines from trusted sources. Information only." />
+      <PageHeader title={t("market.page.title")} subtitle={t("market.page.subtitle")} />
       <div className={s.tabsWrap}>
-        <Tabs label="Market sections" value={tab} tabs={TABS} onChange={setTab} idPrefix="market" />
+        <Tabs label={t("market.page.tabsLabel")} value={tab} tabs={TABS.map((x) => ({ value: x.value, label: t(x.label) }))} onChange={setTab} idPrefix="market" />
       </div>
       <TabPanel idPrefix="market" value={tab}>
         {tab === "rates" ? <FxSection /> : null}

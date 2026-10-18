@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { changePassword } from "../api/auth";
-import { isApiError } from "../api/client";
+import { errorMessage, isApiError, translateFields } from "../api/client";
 import { PasswordChecklist } from "../auth/PasswordChecklist";
 import { PASSWORD_MISMATCH_MESSAGE, passwordsMismatch, validateChangePasswordFields } from "../auth/validate";
 import { Button } from "../components/Button";
 import { Note } from "../components/Feedback";
 import { PasswordField } from "../components/Fields";
 import { Modal } from "../components/Modal";
+import { useT } from "../i18n/LocaleProvider";
 import s from "./settings.module.css";
 
 interface Props {
@@ -20,12 +21,6 @@ interface Props {
   triggerRef?: RefObject<HTMLElement | null>;
 }
 
-function errorText(e: unknown): string {
-  if (!isApiError(e)) return "Something went wrong. Please try again.";
-  if (e.code === "NETWORK") return "Can't reach Finova. Check your connection and try again.";
-  return e.message;
-}
-
 /**
  * Change Password modal (Settings only): New Password (with the live checklist) + Confirm Password, no Current
  * Password field (owner decision). Save is always clickable; a click only ever adds "This field is required." for
@@ -34,6 +29,7 @@ function errorText(e: unknown): string {
  * keeps the current session valid; it never signs the user out or redirects.
  */
 export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRef }: Props) {
+  const t = useT();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -81,24 +77,24 @@ export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRe
       setNewPassword("");
       setConfirmPassword("");
       if (isApiError(err) && err.code === "RATE_LIMITED") {
-        setError(err.message || "Too many attempts. Please wait a few minutes and try again.");
+        setError(errorMessage(err, t("settings.password.tooManyAttempts")));
       } else if (isApiError(err) && err.fields) {
-        setFields(err.fields); // server is authoritative, e.g. a confirmPassword mismatch it caught
+        setFields(translateFields(err.fields)); // server is authoritative, e.g. a confirmPassword mismatch it caught
       } else {
-        setError(errorText(err));
+        setError(errorMessage(err));
       }
       setBusy(false);
     }
   }
 
   return (
-    <Modal open={open} title="Change password" onClose={close} initialFocusRef={firstRef} restoreFocusRef={triggerRef}>
+    <Modal open={open} title={t("settings.password.title")} onClose={close} initialFocusRef={firstRef} restoreFocusRef={triggerRef}>
       <form className={s.modalForm} onSubmit={submit} noValidate>
         {error ? <Note tone="error">{error}</Note> : null}
         <div>
           <PasswordField
             ref={firstRef}
-            label="New Password"
+            label={t("settings.password.newPassword")}
             name="newPassword"
             autoComplete="new-password"
             value={newPassword}
@@ -114,7 +110,7 @@ export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRe
           <PasswordChecklist password={newPassword} rules={rules} />
         </div>
         <PasswordField
-          label="Confirm Password"
+          label={t("settings.password.confirmPassword")}
           name="confirmPassword"
           autoComplete="new-password"
           value={confirmPassword}
@@ -127,10 +123,10 @@ export function ChangePasswordModal({ open, rules, onClose, onSuccess, triggerRe
         />
         <div className={s.modalActions}>
           <Button type="button" variant="ghost" onClick={close} disabled={busy}>
-            Cancel
+            {t("settings.password.cancel")}
           </Button>
           <Button type="submit" variant="primary" loading={busy}>
-            Save
+            {t("settings.password.save")}
           </Button>
         </div>
       </form>

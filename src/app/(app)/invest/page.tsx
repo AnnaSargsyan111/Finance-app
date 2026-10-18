@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/ui/i18n/server";
 import { InvestPage } from "@/ui/invest/InvestPage";
 
-export const metadata: Metadata = { title: "Investment Recommendation" };
+export const generateMetadata = () => pageMetadata("common.meta.invest");
 
 export default function Page() {
   return <InvestPage />;

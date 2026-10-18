@@ -5,11 +5,12 @@ import { askAssistant } from "../api/assistant";
 import { Button, LinkButton } from "../components/Button";
 import { Note } from "../components/Feedback";
 import { IconArrowRight, IconArrowUp, IconInfo, IconRefresh } from "../components/Icons";
+import { useLocale, useT } from "../i18n/LocaleProvider";
 import { cx } from "../lib/cx";
 import { Disclaimer, PageHeader } from "../shell/AppShell";
 import { AiSources, ConfidenceLabel } from "./AiParts";
 import { PlanCardView } from "./PlanCardView";
-import { STARTER_CHIPS, initialConversation, respond } from "./script";
+import { initialConversation, respond, starterChips } from "./script";
 import type { BotMessage, ChatMessage, Chip, ConvState } from "./types";
 import s from "./assistant.module.css";
 
@@ -39,12 +40,13 @@ function Avatar() {
 }
 
 function BotRow({ m }: { m: BotMessage }) {
+  const t = useT();
   const notice = m.tone === "notice";
   return (
     <div className={s.row}>
       <Avatar />
       <div className={cx(s.bubble, s.bot, notice && s.notice, m.plan && s.bubblePlan)}>
-        <span className="sr-only">{notice ? "Finova Assistant, note: " : "Finova Assistant: "}</span>
+        <span className="sr-only">{notice ? t("assistant.srBotNote") : t("assistant.srBot")} </span>
         {m.confidence ? <ConfidenceLabel confidence={m.confidence} lang={m.lang ?? "en"} /> : null}
         {notice ? (
           <div className={s.noticeBody}>
@@ -74,10 +76,11 @@ function BotRow({ m }: { m: BotMessage }) {
 }
 
 function UserRow({ text }: { text: string }) {
+  const t = useT();
   return (
     <div className={cx(s.row, s.rowUser)}>
       <div className={cx(s.bubble, s.mine)}>
-        <span className="sr-only">You: </span>
+        <span className="sr-only">{t("assistant.srYou")} </span>
         <p className={s.text}>{text}</p>
       </div>
     </div>
@@ -85,7 +88,9 @@ function UserRow({ text }: { text: string }) {
 }
 
 export function AssistantPage() {
-  const [init] = useState(initialConversation);
+  const t = useT();
+  const { locale } = useLocale();
+  const [init] = useState(() => initialConversation(locale));
   const [messages, setMessages] = useState<ChatMessage[]>(init.messages);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
@@ -97,6 +102,19 @@ export function AssistantPage() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // before the first question, the welcome message and the suggestions follow the language of the screen
+  const shownLocale = useRef(locale);
+  useEffect(() => {
+    if (shownLocale.current === locale) return;
+    shownLocale.current = locale;
+    setMessages((m) => {
+      if (m.some((x) => x.role === "user")) return m;
+      const fresh = initialConversation(locale);
+      conv.current = fresh.state;
+      return fresh.messages;
+    });
+  }, [locale]);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((t) => window.clearTimeout(t));
@@ -171,7 +189,7 @@ export function AssistantPage() {
 
   const newChat = () => {
     clearTimers();
-    const fresh = initialConversation();
+    const fresh = initialConversation(locale);
     conv.current = fresh.state;
     setMessages(fresh.messages);
     setTyping(false);
@@ -198,51 +216,52 @@ export function AssistantPage() {
 
   const last = messages[messages.length - 1];
   const started = messages.some((m) => m.role === "user");
-  const lastChips = last && last.role === "bot" ? (last.chips ?? (!started ? STARTER_CHIPS : undefined)) : undefined;
+  const lastChips = last && last.role === "bot" ? (last.chips ?? (!started ? starterChips(locale) : undefined)) : undefined;
   const chips = typing ? undefined : lastChips;
   const canSend = draft.trim().length > 0 && !typing;
   const left = MAX_LEN - draft.length;
 
   return (
     <>
-      <PageHeader title="AI Assistant" subtitle="Ask about money, markets and how Finova works, or plan a savings goal. Information only: no personal investment advice." />
+      <PageHeader title={t("assistant.title")} subtitle={t("assistant.subtitle")} />
       <div className={s.stage}>
-        <Note>Prototype: answers are scripted for now, no AI is connected yet.</Note>
+        <Note>{t("assistant.prototype")}</Note>
 
-        <section className={s.chat} aria-label="Chat with Finova Assistant">
+        <section className={s.chat} aria-label={t("assistant.chatLabel")}>
           <header className={s.head}>
             <div className={s.headId}>
               <span className={cx(s.avatar, s.avatarLg)} aria-hidden="true">
                 <Sparkle size={18} />
               </span>
-              <h2 className={s.headName}>Finova Assistant</h2>
+              <h2 className={s.headName}>{t("assistant.name")}</h2>
             </div>
             <Button variant="ghost" size="sm" onClick={newChat}>
               <IconRefresh size={14} />
-              New chat
+              {t("assistant.newChat")}
             </Button>
           </header>
 
-          <div ref={scrollerRef} className={s.scroller} role="region" aria-label="Conversation" tabIndex={0}>
-            <div ref={logRef} className={s.log} role="log" aria-live="polite" aria-relevant="additions" aria-label="Messages">
+          <div ref={scrollerRef} className={s.scroller} role="region" aria-label={t("assistant.conversation")} tabIndex={0}>
+            <div ref={logRef} className={s.log} role="log" aria-live="polite" aria-relevant="additions" aria-label={t("assistant.messages")}>
               {messages.map((m) => (m.role === "bot" ? <BotRow key={m.id} m={m} /> : <UserRow key={m.id} text={m.text} />))}
             </div>
 
             {typing ? (
-              <div className={s.row} aria-hidden="true">
+              <div className={s.row}>
                 <Avatar />
                 <div className={cx(s.bubble, s.bot, s.typing)}>
-                  <span className={s.dot} />
-                  <span className={s.dot} />
-                  <span className={s.dot} />
+                  <span className={s.dot} aria-hidden="true" />
+                  <span className={s.dot} aria-hidden="true" />
+                  <span className={s.dot} aria-hidden="true" />
+                  <span className="sr-only">{t("assistant.typing")}</span>
                 </div>
               </div>
             ) : null}
 
             {chips && chips.length > 0 ? (
               <div className={s.chips}>
-                {!started ? <p className={s.chipsHint}>Try one of these</p> : null}
-                <div className={cx(s.chipList, !started && s.chipGrid)} role="group" aria-label="Quick replies">
+                {!started ? <p className={s.chipsHint}>{t("assistant.tryOne")}</p> : null}
+                <div className={cx(s.chipList, !started && s.chipGrid)} role="group" aria-label={t("assistant.quickReplies")}>
                   {chips.map((c) => (
                     <button key={c.label + c.value} type="button" className={cx(s.chipBtn, !started && s.chipCard)} onClick={() => pickChip(c)}>
                       <span>{c.label}</span>
@@ -256,7 +275,7 @@ export function AssistantPage() {
 
           <form className={s.composer} onSubmit={submit}>
             <label htmlFor="assistant-input" className="sr-only">
-              Your message
+              {t("assistant.composerLabel")}
             </label>
             <div className={s.pill}>
               <input
@@ -266,24 +285,24 @@ export function AssistantPage() {
                 type="text"
                 value={draft}
                 maxLength={MAX_LEN}
-                placeholder="Type your question"
+                placeholder={t("assistant.placeholder")}
                 autoComplete="off"
                 enterKeyHint="send"
                 onChange={(e) => setDraft(e.target.value)}
               />
-              <Button type="submit" variant="primary" icon disabled={!canSend} aria-label="Send message">
+              <Button type="submit" variant="primary" icon disabled={!canSend} aria-label={t("assistant.send")}>
                 <IconArrowUp size={18} />
               </Button>
             </div>
             {left <= 80 ? (
               <p className={s.counter}>
-                <span className="num">{left}</span> characters left
+                <span className="num">{t("assistant.charsLeft", { n: left })}</span>
               </p>
             ) : null}
           </form>
         </section>
       </div>
-      <Disclaimer>The AI Assistant is an informational guide and does not give personal investment advice. Nothing you type here is saved: closing or leaving this page clears the conversation.</Disclaimer>
+      <Disclaimer>{t("assistant.footer")}</Disclaimer>
     </>
   );
 }
