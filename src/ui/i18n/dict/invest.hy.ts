@@ -22,7 +22,7 @@ export const invest: DeepPartial<typeof En> = {
     long: { label: "Երկարաժամկետ", help: "5 տարուց ավելի" },
   },
   horizonName: { short: "Կարճ", medium: "Միջին", long: "Երկար" },
-  factor: { quality: "Որակ", value: "Արժեք", growth: "Աճ", momentum: "Մոմենտում", lowRisk: "Ցածր ռիսկ", income: "Եկամուտ" },
+  factor: { quality: "Որակ", value: "Արժեք", growth: "Աճ", momentum: "Գնի փոփոխություն", lowRisk: "Ցածր ռիսկ", income: "Եկամուտ" },
 
   driver: {
     roe: "Սեփական կապիտալի եկամտաբերություն",
