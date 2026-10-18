@@ -55,6 +55,7 @@ beforeEach(async () => {
   await resetCache();
   await clearRateEvents();
   process.env.GEMINI_API_KEY = "test-key-not-real";
+  process.env.ASSISTANT_WEB_SEARCH = "false"; // the web lookup has its own tests (assistant-web.test.ts)
   modelJson = { found: false, answer: "", citations: [] };
   modelStatus = 200;
   pagesStatus = 200;
@@ -63,6 +64,7 @@ beforeEach(async () => {
 afterEach(() => {
   mock?.restore();
   delete process.env.GEMINI_API_KEY;
+  delete process.env.ASSISTANT_WEB_SEARCH;
 });
 
 describe("the allowed official pages", () => {
@@ -102,10 +104,10 @@ describe("how sure an answer is: decided by the server from the quotes, not by t
   });
 
   it("none: not found, no citations, broken JSON, empty text", () => {
-    expect(verify({ found: false, answer: "", citations: [] }, docs, "en")).toEqual({ status: "none", text: NOT_FOUND_TEXT.en, sources: [], lang: "en" });
+    expect(verify({ found: false, answer: "", citations: [] }, docs, "en")).toEqual({ status: "none", text: NOT_FOUND_TEXT.en, sources: [], lang: "en", origin: "official" });
     expect(verify({ ...good, citations: [] }, docs, "en").status).toBe("none");
     expect(verify(null, docs, "en").status).toBe("none");
-    expect(verify("not json", docs, "hy")).toEqual({ status: "none", text: NOT_FOUND_TEXT.hy, sources: [], lang: "hy" });
+    expect(verify("not json", docs, "hy")).toEqual({ status: "none", text: NOT_FOUND_TEXT.hy, sources: [], lang: "hy", origin: "official" });
     expect(verify({ ...good, answer: "   " }, docs, "en").status).toBe("none");
   });
 
@@ -146,6 +148,7 @@ describe("POST /api/assistant", () => {
       text: "Dram deposits are guaranteed up to AMD 16 million and foreign-currency deposits up to AMD 7 million.",
       sources: [{ title: "Armenian Deposit Guarantee Fund: frequently asked questions", url: "https://adgf.am/en/faq", date: TODAY }],
       lang: "en",
+      origin: "official",
     });
     // what the model was sent: the question and ONLY the allowed pages, with the key in the header and never in the body
     const sent = modelCalls()[0];
@@ -164,9 +167,9 @@ describe("POST /api/assistant", () => {
     expect(partial.body.sources).toHaveLength(1);
     modelJson = { found: false, answer: "", citations: [] };
     const none = await ask("What is the capital of France?");
-    expect(none.body).toEqual({ status: "none", text: NOT_FOUND_TEXT.en, sources: [], lang: "en" });
+    expect(none.body).toEqual({ status: "none", text: NOT_FOUND_TEXT.en, sources: [], lang: "en", origin: "official" });
     const hy = await ask("Ինչ է ֆրանսիայի մայրաքաղաքը");
-    expect(hy.body).toEqual({ status: "none", text: NOT_FOUND_TEXT.hy, sources: [], lang: "hy" });
+    expect(hy.body).toEqual({ status: "none", text: NOT_FOUND_TEXT.hy, sources: [], lang: "hy", origin: "official" });
   });
 
   it("a page that tries to give the model orders cannot make it give advice", async () => {

@@ -7,6 +7,10 @@ export interface AssistantAnswer {
   text: string;
   sources: SourceRef[];
   lang: "en" | "hy";
+  /** "official": the allowed official pages (quotes checked); "web": a web lookup (Google Search) */
+  origin: "official" | "web";
+  /** Google's Search Suggestions (HTML), shown with a web answer as Google's terms require */
+  suggestionsHtml?: string;
 }
 
 /** Rejects with an ApiError: 429 (too many questions, wait), 503 (the AI layer is not configured or unavailable), 401, 400. */

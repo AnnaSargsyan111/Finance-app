@@ -321,3 +321,18 @@ Numbers are what the calculator must return; the assistant has to ask for anythi
 5. Frontend: chat page and menu item (frontend agent).
 6. Golden-set evaluation and red-team round (qa agent).
 7. Deploy with the spending cap and the health check; pilot with a few users; read the refusals and failures; extend the question bank.
+
+## 7. Web lookup (added 2026-10-18, Anna's decision)
+
+Anna asked that the assistant can answer any question, looking it up online when needed, and that it still answers when unsure, with a note. Decisions: **Gemini + Google Search grounding**, **any question** (not only finance), **personal investment advice is still declined**.
+
+- Order: written answers (script) -> official pages with checked quotes (`src/assistant/ask.ts`) -> **web lookup** (`src/assistant/web.ts`). The official path is unchanged and stays first; the web is used only when the official pages do not have the answer.
+- The web answer is always given. The SERVER sets the label: `confirmed` ("Based on sources found online") when search results support >= 60% of the text and there is at least one source; otherwise `partial` ("Not fully sure: please check the source"). The model is told to say plainly when it is not sure.
+- Advice: the system prompt forbids it and the server drops the WHOLE answer if advice wording appears (the scripted engine also catches "what should I buy" before the AI layer).
+- **Google's terms for Grounding with Google Search** (ai.google.dev/gemini-api/terms): show the Search Suggestions with the answer, unchanged (shown in a sandboxed frame); do not edit, cache or store grounded results; no click tracking; use the links as returned. The code follows these (no cache, no answer logging, no rewriting). Google keeps prompts and outputs for 30 days; the page footer says so and asks people not to type personal details.
+- **Needs a PAID Gemini key.** Grounding is not available on the free tier (checked 2026-10-18: a free key gets 429 on the search call). Price: 5,000 search requests a month free, then $14 per 1,000 (Gemini 3 and newer) plus tokens. Rate limits are unchanged: 15 questions per user per hour, 40 per day, 300 per day in total.
+- Switches: `ASSISTANT_WEB_SEARCH` (default true), `ASSISTANT_NATIVE_BASE`. Any failure of the lookup falls back to the "could not find a reliable answer" text.
+
+### 7.1 The free route (added 2026-10-18, after Anna asked for a no-cost option)
+
+With `TAVILY_API_KEY` set, step 3 uses **Tavily** (free plan: about 1,000 searches a month, no card) to search, and the same chat model as the official path (a free Gemini key works) writes the answer from the results (`src/assistant/websearch.ts`). The search results are checked like the official pages: the model must copy a quote from each result it cites, and the SERVER sets the label (confirmed only when every quote is really in its result and the model did not say it was unsure; otherwise "not fully sure, please verify"). The answer is always given; with no results it is "not fully sure" with no sources. Google's paid grounding (7) is tried only when this route gives nothing. Free-tier caveats: Tavily's monthly limit, and a free Gemini key may be used by Google to improve its products (local tests only; use a paid key for real customers). The question is sent to Tavily and to the model provider; the page footer says so.

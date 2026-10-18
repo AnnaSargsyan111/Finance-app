@@ -550,3 +550,11 @@
   font-size: 12px;
   line-height: 1.45;
 }
+.suggestions {
+  width: 100%;
+  height: 64px;
+  border: 0;
+  border-radius: var(--r-md, 12px);
+  background: transparent;
+  color-scheme: normal;
+}

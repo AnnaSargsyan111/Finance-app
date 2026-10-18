@@ -49,9 +49,12 @@ function finish(state: ConvState, drafts: Draft[]): { state: ConvState; messages
   return { state: { ...state, n: state.n + drafts.length }, messages };
 }
 
-export function initialConversation(locale: Locale = "en"): { state: ConvState; messages: ChatMessage[] } {
-  const r = finish(INITIAL, [{ text: locale === "hy" ? HY.welcome : WELCOME, chips: starterChips(locale) }]);
-  return { state: r.state, messages: r.messages };
+/**
+ * A new chat starts EMPTY: the screen shows only a prompt and the suggestions (starterChips). The welcome message is the answer to a greeting.
+ * `locale` is kept so that callers do not change; the first screen does not depend on it.
+ */
+export function initialConversation(_locale: Locale = "en"): { state: ConvState; messages: ChatMessage[] } {
+  return { state: INITIAL, messages: [] };
 }
 
 /* ------------------------------------------------------------------ reading numbers out of free text */

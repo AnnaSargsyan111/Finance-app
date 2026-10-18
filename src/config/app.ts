@@ -52,6 +52,10 @@ export const APP = {
     perUserPerDay: 40,
     globalPerDay: 300,
     modelTimeoutMs: 25_000,
+    /** the web lookup (Gemini + Google Search) is slower than a plain model call */
+    webTimeoutMs: 40_000,
+    /** an answer counts as backed by online sources when search results support at least this share of its text */
+    webMinCoverage: 0.6,
     maxAnswerChars: 1200,
     maxSourceChars: 12_000,
   },

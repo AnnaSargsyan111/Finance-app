@@ -3,12 +3,17 @@ import { APP } from "@/config/app";
 import { getEnv } from "@/lib/env";
 import { ApiError, upstreamUnavailable } from "@/lib/errors";
 import { log } from "@/lib/log";
-import { politeFetch } from "@/market/http";
 import { loadCorpus, type CorpusDoc } from "./corpus";
 import { NOT_FOUND_TEXT } from "./texts";
+import { askWeb, webStatus } from "./web";
+import { askWebSearch } from "./websearch";
+import { ADVICE, chatJson, clean, normalise } from "./util";
 
 /**
- * The AI layer: answers a question the written answers could not, ONLY from the allowed official pages (research/ai-assistant-plan.md, 3.0).
+ * The AI layer: answers a question the written answers could not.
+ *  1. FIRST from the allowed official pages only (research/ai-assistant-plan.md, 3.0), with the quote checking described below;
+ *  2. when the official pages do not have the answer, from the web (src/assistant/web.ts: Gemini + Google Search). That answer is always
+ *     given, labelled "confirmed" (search results support it: "based on online sources") or "partial" ("not fully sure, please verify").
  *
  *  - the model gets the question and the page texts (untrusted), and must return JSON: found, answer, and citations (a source id plus words
  *    copied from that source);
@@ -27,6 +32,10 @@ export interface Answer {
   text: string;
   sources: SourceRef[];
   lang: "en" | "hy";
+  /** where the answer comes from: the allowed official pages (quotes checked) or the web (Google Search grounding) */
+  origin: "official" | "web";
+  /** Google's Search Suggestions (HTML) that must be shown with a web answer */
+  suggestionsHtml?: string;
 }
 
 export const detectLang = (q: string): "en" | "hy" => {
@@ -62,20 +71,7 @@ const modelReply = z.object({
   citations: z.array(z.object({ source: z.string(), quote: z.string() })).default([]),
 });
 
-/** the same words, ignoring case, spacing, dashes and quote styles */
-const normalise = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[‐-―−]/g, "-")
-    .replace(/[‘’“”"'`]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const ADVICE = /\b(you should|you must|i recommend|i suggest|i advise|you ought to|buy now|sell now|guaranteed return)\b/i;
-
-const clean = (s: string) => s.replace(/https?:\/\/\S+/gi, "").replace(/[*_`#>]+/g, "").replace(/\s+/g, " ").trim().slice(0, APP.assistant.maxAnswerChars);
-
-const none = (lang: "en" | "hy"): Answer => ({ status: "none", text: NOT_FOUND_TEXT[lang], sources: [], lang });
+const none = (lang: "en" | "hy"): Answer => ({ status: "none", text: NOT_FOUND_TEXT[lang], sources: [], lang, origin: "official" });
 
 /** turn the model's JSON into an answer, with the confidence decided here, from the facts */
 export function verify(raw: unknown, docs: CorpusDoc[], lang: "en" | "hy"): Answer {
@@ -101,54 +97,40 @@ export function verify(raw: unknown, docs: CorpusDoc[], lang: "en" | "hy"): Answ
   }
   if (cited.size === 0) return none(lang);
   const sources = [...cited.values()].map((d) => ({ title: d.title, url: d.url, date: d.date }));
-  return { status: verified > 0 && unverified === 0 ? "confirmed" : "partial", text, sources, lang };
+  return { status: verified > 0 && unverified === 0 ? "confirmed" : "partial", text, sources, lang, origin: "official" };
 }
 
-function parseJson(content: string): unknown {
-  const t = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  try {
-    return JSON.parse(t);
-  } catch {
-    const m = /\{[\s\S]*\}/.exec(t);
-    if (m) {
-      try {
-        return JSON.parse(m[0]);
-      } catch {
-        /* fall through */
-      }
-    }
-    return null;
-  }
-}
-
-async function callModel(question: string, docs: CorpusDoc[]): Promise<unknown> {
-  const env = getEnv();
-  if (!env.GEMINI_API_KEY) throw new ApiError("NOT_CONFIGURED", 503, "The AI assistant is not available right now.");
-  const base = env.ASSISTANT_API_BASE.replace(/\/$/, "");
-  const res = await politeFetch(`${base}/chat/completions`, {
-    provider: "assistant-model",
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.GEMINI_API_KEY}` },
-    body: JSON.stringify({ model: env.ASSISTANT_MODEL, temperature: 0, max_tokens: 2000, response_format: { type: "json_object" }, messages: buildMessages(question, docs) }),
-    timeoutMs: APP.assistant.modelTimeoutMs,
-    retries: 0,
-  });
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return parseJson(data.choices?.[0]?.message?.content ?? "");
-}
+const callModel = (question: string, docs: CorpusDoc[]) => chatJson(buildMessages(question, docs));
 
 export async function answerQuestion(question: string, opts: { docs?: CorpusDoc[] } = {}): Promise<Answer> {
   const lang = detectLang(question);
   const docs = opts.docs ?? (await loadCorpus());
-  if (docs.length === 0) return none(lang); // no official page could be read: say so instead of guessing
-  let raw: unknown;
-  try {
-    raw = await callModel(question, docs);
-  } catch (e) {
-    if (e instanceof ApiError) throw e;
-    // the message is logged, the question never is
-    log.warn("assistant model failed", { message: e instanceof Error ? e.message : String(e) });
-    throw upstreamUnavailable("The AI assistant is not available right now.");
+
+  // 1. the official pages, with checked quotes
+  let official: Answer | null = null;
+  let modelFailed = false;
+  if (docs.length > 0) {
+    try {
+      official = verify(await callModel(question, docs), docs, lang);
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      // the message is logged, the question never is
+      log.warn("assistant model failed", { message: e instanceof Error ? e.message : String(e) });
+      modelFailed = true;
+    }
   }
-  return verify(raw, docs, lang);
+  if (official && official.status !== "none") return official;
+
+  // 2. the web: the answer is always given, and the label says how sure it is
+  // free route first when a Tavily key is set (search + the same model); otherwise Google's own grounding (needs a paid Gemini key)
+  const today = new Date().toISOString().slice(0, 10);
+  const found = await askWebSearch(question);
+  if (found) return { status: found.status, text: found.text, sources: found.sources.map((s) => ({ ...s, date: today })), lang, origin: "web" };
+  const web = await askWeb(question);
+  if (web) {
+    return { status: webStatus(web), text: web.text, sources: web.sources.map((s) => ({ ...s, date: new Date().toISOString().slice(0, 10) })), lang, origin: "web", ...(web.suggestionsHtml ? { suggestionsHtml: web.suggestionsHtml } : {}) };
+  }
+
+  if (modelFailed) throw upstreamUnavailable("The AI assistant is not available right now.");
+  return official ?? none(lang); // nothing could be read or found: say so instead of guessing
 }

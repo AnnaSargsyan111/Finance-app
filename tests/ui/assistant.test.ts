@@ -269,7 +269,7 @@ describe("rules of the assistant", () => {
     expect(live.text).toBe(HY.live);
     expect(live.link).toEqual({ href: "/market", label: "Շուկա և նորություններ" });
     expect(hy("Անպայման կհասնե՞մ նպատակին")[0].text).toBe(HY.noGuarantee);
-    expect(hy("Բարև")[0].text).toBe(HY.welcome);
+    expect(hy("Բարև")[0].text).toBe(HY.welcome); // a greeting is answered with the welcome
     expect(hy("Ուզում եմ խնայել 3,000,000 դրամ")[0].text).toBe(HY.askAmountAndTime);
     expect(hy("Ի՞նչ է P/E-ն")[0].text).toBe(HY_TERMS.pe.text); // a term: its (pending-review) Armenian explanation
     expect(hy("Ի՞նչ է քվանտային հաշվարկը")[0].text).toBe(HY.notSure); // something it does not know: the reviewed "I'm not sure"

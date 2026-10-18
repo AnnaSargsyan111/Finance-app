@@ -18,7 +18,7 @@ const MAX_LEN = 400;
 const TYPING_MS = 450;
 const GAP_MS = 250;
 // after this long the written answer is shown instead of waiting for the AI layer
-const AI_TIMEOUT_MS = 25_000;
+const AI_TIMEOUT_MS = 50_000;
 
 const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -47,7 +47,7 @@ function BotRow({ m }: { m: BotMessage }) {
       <Avatar />
       <div className={cx(s.bubble, s.bot, notice && s.notice, m.plan && s.bubblePlan)}>
         <span className="sr-only">{notice ? t("assistant.srBotNote") : t("assistant.srBot")} </span>
-        {m.confidence ? <ConfidenceLabel confidence={m.confidence} lang={m.lang ?? "en"} /> : null}
+        {m.confidence ? <ConfidenceLabel confidence={m.confidence} lang={m.lang ?? "en"} origin={m.origin} /> : null}
         {notice ? (
           <div className={s.noticeBody}>
             <span className={s.noticeIcon}>
@@ -60,7 +60,7 @@ function BotRow({ m }: { m: BotMessage }) {
             {m.text}
           </p>
         ) : null}
-        {m.confidence ? <AiSources sources={m.sources ?? []} lang={m.lang ?? "en"} /> : null}
+        {m.confidence ? <AiSources sources={m.sources ?? []} lang={m.lang ?? "en"} origin={m.origin} suggestionsHtml={m.suggestionsHtml} /> : null}
         {m.plan ? <PlanCardView plan={m.plan} /> : null}
         {m.link ? (
           <div className={s.linkRow}>
@@ -102,19 +102,6 @@ export function AssistantPage() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // before the first question, the welcome message and the suggestions follow the language of the screen
-  const shownLocale = useRef(locale);
-  useEffect(() => {
-    if (shownLocale.current === locale) return;
-    shownLocale.current = locale;
-    setMessages((m) => {
-      if (m.some((x) => x.role === "user")) return m;
-      const fresh = initialConversation(locale);
-      conv.current = fresh.state;
-      return fresh.messages;
-    });
-  }, [locale]);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((t) => window.clearTimeout(t));
@@ -162,7 +149,7 @@ export function AssistantPage() {
           window.clearTimeout(timeout);
           if (!ans.text.trim()) throw new Error("empty answer");
           uid.current += 1;
-          const reply: BotMessage = { id: `ai-${uid.current}`, role: "bot", text: ans.text, confidence: ans.status, sources: ans.sources, lang: ans.lang };
+          const reply: BotMessage = { id: `ai-${uid.current}`, role: "bot", text: ans.text, confidence: ans.status, sources: ans.sources, lang: ans.lang, origin: ans.origin, suggestionsHtml: ans.suggestionsHtml };
           setMessages((m) => [...m, reply]);
           setTyping(false);
         })
@@ -216,7 +203,8 @@ export function AssistantPage() {
 
   const last = messages[messages.length - 1];
   const started = messages.some((m) => m.role === "user");
-  const lastChips = last && last.role === "bot" ? (last.chips ?? (!started ? starterChips(locale) : undefined)) : undefined;
+  // an empty chat shows the suggestions in the language of the screen; later, the chips of the last answer
+  const lastChips = !started ? starterChips(locale) : last && last.role === "bot" ? last.chips : undefined;
   const chips = typing ? undefined : lastChips;
   const canSend = draft.trim().length > 0 && !typing;
   const left = MAX_LEN - draft.length;
@@ -225,7 +213,7 @@ export function AssistantPage() {
     <>
       <PageHeader title={t("assistant.title")} subtitle={t("assistant.subtitle")} />
       <div className={s.stage}>
-        <Note>{t("assistant.prototype")}</Note>
+        <Note>{t("assistant.aiNotice")}</Note>
 
         <section className={s.chat} aria-label={t("assistant.chatLabel")}>
           <header className={s.head}>
@@ -260,7 +248,7 @@ export function AssistantPage() {
 
             {chips && chips.length > 0 ? (
               <div className={s.chips}>
-                {!started ? <p className={s.chipsHint}>{t("assistant.tryOne")}</p> : null}
+                {!started ? <p className={s.chipsHint}>{t("assistant.emptyPrompt")}</p> : null}
                 <div className={cx(s.chipList, !started && s.chipGrid)} role="group" aria-label={t("assistant.quickReplies")}>
                   {chips.map((c) => (
                     <button key={c.label + c.value} type="button" className={cx(s.chipBtn, !started && s.chipCard)} onClick={() => pickChip(c)}>

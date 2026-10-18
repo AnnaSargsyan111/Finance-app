@@ -86,7 +86,7 @@ describe("dates and times follow the language, numbers do not", () => {
 
 /** Latin words that may stay in an Armenian text: brand and product names, codes, units, source names */
 const LATIN_OK = new Set([
-  "Finova", "English", "fawazahmed", "Frankfurter", "AMD", "USD", "EUR", "GEL", "RUB", "EN", "AI", "EPS", "ROE", "P", "E", "S", "B", "TTM", "ETF", "S&P", "CBA", "SEC", "EDGAR", "Rate", "am", "cba", "adgf", "Ameriabank", "ACBA", "Bank", "IDBank", "Finnhub", "Twelve", "Data", "Yahoo", "FCF", "CAGR", "US", "GOOGL", "NVDA", "AAPL", "MSFT", "AMZN", "TSLA", "ID", "OK", "X", "a", "id", "Schwab", "Berkshire", "Hathaway", "Dow", "Jones", "VOC", "Nvidia", "HUD", "JSON", "ESG", "A", "benchmark",
+  "Finova", "English", "fawazahmed", "Frankfurter", "AMD", "USD", "EUR", "GEL", "RUB", "EN", "AI", "EPS", "ROE", "P", "E", "S", "B", "TTM", "ETF", "S&P", "CBA", "SEC", "EDGAR", "Rate", "am", "cba", "adgf", "Ameriabank", "ACBA", "Bank", "IDBank", "Finnhub", "Twelve", "Data", "Yahoo", "FCF", "CAGR", "US", "GOOGL", "NVDA", "AAPL", "MSFT", "AMZN", "TSLA", "ID", "OK", "X", "a", "id", "Schwab", "Berkshire", "Hathaway", "Dow", "Jones", "VOC", "Nvidia", "HUD", "JSON", "ESG", "A", "benchmark", "Google",
 ]);
 
 describe("the Armenian dictionary is complete and clean", () => {

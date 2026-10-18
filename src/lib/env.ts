@@ -36,6 +36,12 @@ const schema = z.object({
   ASSISTANT_MODEL: z.preprocess(blankToUndefined, z.string().default("gemini-3.5-flash-lite")),
   /** OpenAI-compatible base URL (default: Gemini). Another provider can be used by changing this and the key. */
   ASSISTANT_API_BASE: z.preprocess(blankToUndefined, z.string().url().default("https://generativelanguage.googleapis.com/v1beta/openai")),
+  /** Web lookup for questions the official pages cannot answer (src/assistant/web.ts): Gemini's native API with Google Search grounding. It needs a PAID-tier key; with a free key the call fails and the assistant simply keeps its written/official answer. */
+  ASSISTANT_WEB_SEARCH: bool(true),
+  /** Free web search for the assistant (src/assistant/websearch.ts): a Tavily key (free plan, about 1,000 searches a month). Used before Google's paid grounding when set. */
+  TAVILY_API_KEY: optStr,
+  TAVILY_API_BASE: z.preprocess(blankToUndefined, z.string().url().default("https://api.tavily.com")),
+  ASSISTANT_NATIVE_BASE: z.preprocess(blankToUndefined, z.string().url().default("https://generativelanguage.googleapis.com/v1beta")),
   RESEND_API_KEY: optStr,
   EMAIL_FROM: optStr,
   /** auto = use keyed providers when a key exists, else report notConfigured. fixture = serve recorded fixtures (isFixture:true). */

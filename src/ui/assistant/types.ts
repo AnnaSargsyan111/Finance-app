@@ -46,6 +46,9 @@ export interface BotMessage {
   sources?: SourceRef[];
   /** the language of an AI answer, so that the labels can be shown in the same language */
   lang?: "en" | "hy";
+  /** where an AI answer comes from; a web answer has its own wording and shows Google's Search Suggestions */
+  origin?: "official" | "web";
+  suggestionsHtml?: string;
 }
 
 export interface UserMessage {
