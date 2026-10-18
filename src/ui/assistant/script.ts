@@ -178,7 +178,7 @@ const REPLIES = {
   timing: "Nobody can reliably say when a currency will be cheaper or dearer, so I can't say whether now is a good time. I can explain what moves exchange rates in general, or how the buy and sell rates differ.",
   predict: "I can't predict future prices, exchange rates or interest rates, and nobody can do it reliably. I can explain what usually influences them, or you can look at today's figures on the Market & News page.",
   live: "This prototype can't look up live numbers yet. The latest Central Bank rates, bank buy and sell rates, stock cards and news are on the Market & News page.",
-  fallback: "I'm not sure how to answer that in this prototype. I can explain terms like P/E or inflation, tell you how bank deposits and taxes work in Armenia, show where to find live rates, or plan a savings goal. For anything about a specific law, tax or product, please check the official source.",
+  fallback: "I'm not sure how to answer that right now. I can explain terms like P/E or inflation, tell you how bank deposits and taxes work in Armenia, show where to find live rates, or plan a savings goal. For anything about a specific law, tax or product, please check the official source.",
 };
 
 const TAX_INTEREST = "In Armenia an individual pays income tax of 10% on interest from bank deposits (Tax Code).";
