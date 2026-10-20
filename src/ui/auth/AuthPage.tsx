@@ -361,8 +361,9 @@ export function AuthPage() {
   const onAuthed = useCallback(
     (kind: "signup" | "login") => {
       setTransition(kind);
-      // normal loading transition before the main application (sign-up auto-logs the user in)
-      window.setTimeout(() => router.replace(next ?? "/personal-finance"), kind === "signup" ? 1100 : 500);
+      // sign-up auto-logs the user in and opens Personal Finance at once (no waiting screen); log-in keeps a short loading transition
+      if (kind === "signup") router.replace("/personal-finance");
+      else window.setTimeout(() => router.replace(next ?? "/personal-finance"), 500);
     },
     [router, next],
   );
