@@ -3,11 +3,9 @@
  * Armenian texts that are written in advance (hy.ts: reviewed by Anna; hy-terms.ts: explanations of terms, PENDING her review).
  * It does not translate anything on the fly and it never invents a fact: a question it does not recognise gets the reviewed
  * "I'm not sure" text. It remembers the last term, so "օրինակ" (example) refers to it.
- * Unlike the English side it has no interview: a goal and a time in one sentence give the plan, otherwise it asks for both.
+ * The savings-goal conversation is not here: script.ts runs it for both languages (the Armenian questions and texts are in interview-hy.ts).
  */
-import { formatAmd } from "../lib/format";
-import { checkPlanInput, planFor } from "./goal-plan";
-import { durationHy, HY } from "./hy";
+import { HY } from "./hy";
 import { HY_METRIC_MATCHERS, HY_METRICS } from "./hy-metrics";
 import { HY_TERMS } from "./hy-terms";
 import type { BotMessage } from "./types";
@@ -28,9 +26,7 @@ const RX = {
   now: /(այսօր|հիմա|ընթացիկ|ներկայումս|ինչքան է|քանի՞ է)/,
   sure: /(երաշխավոր|անպայման|հաստատ)/,
   reach: /(հասն|կարողան|հաջող|կստանամ)/,
-  saving: /(խնայ|կուտակ|առանձնաց|ունենալ|ունենամ)/,
   example: /օրինակ/,
-  planStart: /խնայողության նպատակ/,
   banks: /(ինչ|որ|քանի).{0,10}բանկեր|բանկերի (ցանկ|ցուցակ)|banks/,
 };
 
@@ -60,16 +56,35 @@ const TERMS: { id: string; test: RegExp }[] = [
 /** every explained term and metric, by id */
 const ALL = { ...HY_TERMS, ...HY_METRICS };
 
-const DURATION = /(\d+(?:[.,]\d+)?)\s*(տար\S*|ամ\S*)/g;
-const MONEY = /(\d{1,3}(?:[ ,]\d{3})+|\d+(?:[.,]\d+)?)\s*(միլիոն|հազար)?/g;
+// "տար..." = years, "ամ..." = months; a lone "տ" is read as "years" ("2 տ")
+const DURATION = /(\d+(?:[.,]\d+)?)\s*(տար\S*|ամ\S*|տ(?![Ա-֏]))/g;
+const MONEY = /(\d{1,3}(?:[ ,]\d{3})+|\d+(?:[.,]\d+)?)\s*(միլիոն|մլն|հազար|հզ)?/g;
 
-/** "2 տարում", "18 ամսում", "1.5 տարի" -> months; the rest of the text without those parts */
-function durationOf(text: string): { months: number; rest: string } | null {
+/** small number words before "տարի" / "ամիս" ("երկու տարի" = 2 years) */
+const NUMBER_WORDS: Record<string, number> = { մեկ: 1, մի: 1, երկու: 2, երեք: 3, չորս: 4, հինգ: 5, վեց: 6, յոթ: 7, ութ: 8, ինը: 9, տասը: 10, տասնմեկ: 11, տասներկու: 12, տասնհինգ: 15, տասնութ: 18, քսան: 20, երեսուն: 30 };
+
+/** "3 միլիոն" -> 3000000 ("մլն" = million, "հզ" = thousand) */
+export function moneyValueHy(num: string, unit?: string): number {
+  const grouped = /^\d{1,3}(?:[ ,]\d{3})+$/.test(num);
+  const base = grouped ? Number(num.replace(/[ ,]/g, "")) : Number(num.replace(",", "."));
+  return unit === "միլիոն" || unit === "մլն" ? base * 1e6 : unit === "հազար" || unit === "հզ" ? base * 1e3 : base;
+}
+
+/** "2 տարում", "18 ամսում", "1.5 տարի", "երկու տարի", "կես տարի" -> months; the rest of the text without those parts */
+export function durationOf(raw: string): { months: number; rest: string } | null {
   let months = 0;
   let found = false;
+  const words = Object.keys(NUMBER_WORDS).join("|");
+  const text = raw
+    .replace(/կես\s+տար\S*/g, () => {
+      months += 6;
+      found = true;
+      return " ";
+    })
+    .replace(new RegExp(`(?<![Ա-֏])(${words})(?=\\s*(?:տար|ամ))`, "g"), (w) => String(NUMBER_WORDS[w]));
   const rest = text.replace(DURATION, (_m, n: string, unit: string) => {
     const v = Number(n.replace(",", "."));
-    months += unit.startsWith("տար") ? Math.round(v * 12) : Math.round(v);
+    months += unit.startsWith("տ") ? Math.round(v * 12) : Math.round(v);
     found = true;
     return " ";
   });
@@ -77,12 +92,8 @@ function durationOf(text: string): { months: number; rest: string } | null {
 }
 
 /** the largest number in the text: "3,000,000", "3 000 000", "3 միլիոն", "500 հազար" */
-function amountOf(text: string): number | null {
-  const nums = [...text.matchAll(MONEY)].map((m) => {
-    const grouped = /^\d{1,3}(?:[ ,]\d{3})+$/.test(m[1]);
-    const base = grouped ? Number(m[1].replace(/[ ,]/g, "")) : Number(m[1].replace(",", "."));
-    return m[2] === "միլիոն" ? base * 1e6 : m[2] === "հազար" ? base * 1e3 : base;
-  });
+export function amountOf(text: string): number | null {
+  const nums = [...text.matchAll(MONEY)].map((m) => moneyValueHy(m[1], m[2]));
   return nums.length ? Math.max(...nums) : null;
 }
 
@@ -94,6 +105,10 @@ export interface HyAnswer {
   ai?: boolean;
 }
 
+/**
+ * One Armenian message that is not part of the savings-goal conversation. The savings-goal conversation itself (questions, plan card,
+ * refinements) is run by script.ts together with interview-hy.ts, exactly like the English one.
+ */
 export function respondHy(raw: string, topic: string | null = null): HyAnswer {
   const text = raw.trim().toLowerCase();
   const say = (t: string, link?: { href: string; label: string }): HyAnswer => ({ drafts: [{ text: t, ...(link ? { link } : {}) }], topic: null });
@@ -102,20 +117,6 @@ export function respondHy(raw: string, topic: string | null = null): HyAnswer {
 
   if (RX.card.test(text)) return { drafts: [{ text: HY.cardWarning, tone: "notice" }], topic: null };
   if (RX.advice.test(text) && !durationOf(text)) return say(HY.advice, investLink);
-
-  // a savings goal: an amount and a time in the sentence
-  const d = durationOf(text);
-  if (d && RX.saving.test(text)) {
-    const amount = amountOf(d.rest);
-    if (amount !== null) {
-      if (checkPlanInput({ goal: amount, months: d.months })) return say(HY.askAmountAndTime);
-      const r = planFor({ goal: amount, months: d.months });
-      return say(HY.plan(formatAmd(r.goal), durationHy(r.months), formatAmd(r.monthly)));
-    }
-    return say(HY.askAmountAndTime);
-  }
-  if (RX.saving.test(text) && amountOf(text) !== null) return say(HY.askAmountAndTime);
-  if (RX.planStart.test(text)) return say(HY.askAmountAndTime);
 
   if (RX.dividend.test(text) && RX.tax.test(text)) return say(HY.dividendTax);
   if ((RX.interest.test(text) || RX.deposit.test(text)) && RX.tax.test(text)) return say(HY.interestTax);
@@ -130,7 +131,8 @@ export function respondHy(raw: string, topic: string | null = null): HyAnswer {
     const t = ALL[term.id];
     return { drafts: RX.example.test(text) ? [{ text: t.text }, { text: t.example }] : [{ text: t.text }], topic: term.id };
   }
-  // "օրինակ" on its own: the example of the term we were just talking about
+  // "օրինակ" on its own: the example of the term (or the savings plan) we were just talking about
+  if (RX.example.test(text) && topic === "plan") return { drafts: [{ text: HY.planExample }], topic };
   if (RX.example.test(text) && topic && ALL[topic]) return { drafts: [{ text: ALL[topic].example }], topic };
 
   if (RX.banks.test(text)) return say(HY.banks, marketLink);

@@ -7,6 +7,10 @@ import path from "node:path";
 import { durationHy, HY } from "../src/ui/assistant/hy";
 import { HY_METRICS } from "../src/ui/assistant/hy-metrics";
 import { HY_TERMS } from "../src/ui/assistant/hy-terms";
+import { askForHy } from "../src/ui/assistant/interview-hy";
+import type { ConvState } from "../src/ui/assistant/types";
+
+const ask = (mode: ConvState["mode"], goalName: string | null = null) => askForHy({ n: 0, lang: "hy", mode, goalName, amount: null, months: null, saved: 0, income: null, ratePct: null, topic: null })!.text;
 
 const rows: [string, string, string][] = [
   ["Welcome (your own final wording)", HY.welcome, "reviewed"],
@@ -20,7 +24,13 @@ const rows: [string, string, string][] = [
   ["I'm not sure", HY.notSure, "reviewed"],
   ["Savings plan (example: 3,000,000 AMD in 2 years)", HY.plan("3,000,000 AMD", durationHy(24), "125,000 AMD"), "reviewed"],
   ["Savings plan (example: 1,800,000 AMD in 18 months)", HY.plan("1,800,000 AMD", durationHy(18), "100,000 AMD"), "reviewed template; the time words are mine"],
-  ["Asking for the amount and the time", HY.askAmountAndTime, "PENDING: not yet reviewed"],
+  ["Savings goal question 1: what are you saving for?", ask("ask-goal"), "PENDING: not yet reviewed"],
+  ["Savings goal question 2: how much will it cost?", ask("ask-amount"), "PENDING: not yet reviewed"],
+  ["Savings goal question 3: by when?", ask("ask-months"), "PENDING: not yet reviewed"],
+  ["Savings goal question: monthly income", ask("ask-income"), "PENDING: not yet reviewed"],
+  ["Savings goal question: already saved", ask("ask-saved"), "PENDING: not yet reviewed"],
+  ["Savings goal question: interest rate", ask("ask-rate"), "PENDING: not yet reviewed"],
+  ["Savings plan: example for \"can you give an example?\"", HY.planExample, "PENDING: not yet reviewed"],
   ["Card number warning", HY.cardWarning, "PENDING: not yet reviewed"],
   ["Which banks are there? (links to Market & News)", HY.banks, "PENDING: not yet reviewed"],
   ["AI answer label: confirmed", HY.labels.confirmed, "PENDING: not yet reviewed"],

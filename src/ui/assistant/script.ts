@@ -10,7 +10,8 @@ import { formatAmd } from "../lib/format";
 import { STOCK_METRIC_INFO } from "../market/stock-metric-info";
 import type { Locale } from "../i18n/locale";
 import { HY } from "./hy";
-import { respondHy } from "./script-hy";
+import { askForHy, bareMonthsIntroHy, extractSlotsHy, goalNameAnswerHy, monthlyBadHy, monthlyIntroHy, monthlyTooLongHy, moreHy, planTextHy, problemHy, rereadHy, resetHy, RESET_HY, wantsPlanHy } from "./interview-hy";
+import { amountOf, durationOf, respondHy } from "./script-hy";
 import { LIMITS, checkPlanInput, durationLabel, monthsNeeded, netRatePct, planFor } from "./goal-plan";
 import type { BotMessage, ChatMessage, Chip, ConvState } from "./types";
 
@@ -42,7 +43,7 @@ export const starterChips = (locale: Locale): Chip[] => (locale === "hy" ? START
 
 const WELCOME = "Hi, I'm the Finova Assistant. I can explain money and market terms, show how Finova works, and help you plan a savings goal. I can't give personal investment advice. What would you like to do?";
 
-const INITIAL: ConvState = { n: 0, mode: "free", goalName: null, amount: null, months: null, saved: 0, income: null, ratePct: null, topic: null };
+const INITIAL: ConvState = { n: 0, lang: "en", mode: "free", goalName: null, amount: null, months: null, saved: 0, income: null, ratePct: null, topic: null };
 
 function finish(state: ConvState, drafts: Draft[]): { state: ConvState; messages: BotMessage[] } {
   const messages = drafts.map((d, i): BotMessage => ({ id: `b${state.n + i + 1}`, role: "bot", ...d }));
@@ -300,6 +301,7 @@ const REFINE_CHIPS: Chip[] = [
 ];
 
 function askFor(state: ConvState): Draft {
+  if (state.lang === "hy") return askForHy(state) ?? { text: HY.welcome, chips: STARTER_CHIPS_HY };
   switch (state.mode) {
     case "ask-goal":
       return { text: "Great, let's plan it together. What are you saving for?", chips: GOAL_CHIPS };
@@ -339,11 +341,13 @@ function planMessages(state: ConvState, intro?: string): { state: ConvState; dra
   if (problem) {
     const mode = problem.field === "goal" ? "ask-amount" : problem.field === "months" ? "ask-months" : problem.field === "income" ? "ask-income" : problem.field === "saved" ? "ask-saved" : "ask-rate";
     const fix = { ...state, mode, ...(problem.field === "goal" ? { amount: null } : problem.field === "months" ? { months: null } : problem.field === "income" ? { income: null } : problem.field === "saved" ? { saved: 0 } : { ratePct: null }) } as ConvState;
-    return { state: fix, drafts: [{ text: problem.message }, askFor(fix)] };
+    return { state: fix, drafts: [{ text: state.lang === "hy" ? problemHy(problem) : problem.message }, askFor(fix)] };
   }
   const result = planFor(input);
   const next: ConvState = { ...state, mode: "free", topic: "plan" };
-  const first: Draft = { text: `${intro ? `${intro} ` : ""}${planText(state.goalName, result)}`, plan: { goalName: state.goalName, result } };
+  const hy = state.lang === "hy";
+  const first: Draft = { text: `${intro ? `${intro} ` : ""}${hy ? planTextHy(state.goalName, result) : planText(state.goalName, result)}`, plan: { goalName: state.goalName, result } };
+  if (hy) return { state: next, drafts: [first, moreHy(state)] };
   const assumed = [state.saved > 0 ? "" : "nothing is saved yet", state.ratePct ? "" : "no interest"].filter(Boolean);
   const notes = [assumed.length ? `I assumed ${assumed.join(" and ")}` : "", state.income ? "" : "I don't know your income"].filter(Boolean);
   const more: Draft = { text: notes.length ? `${notes.join(", and ")}. Want to make it more precise?` : "Want to change anything?", chips: REFINE_CHIPS };
@@ -368,10 +372,11 @@ function startPlan(state: ConvState, text: string, slots: Slots): { state: ConvS
   if (slots.monthly !== undefined && s.amount !== null && s.months === null) {
     const net = netRatePct(s.ratePct ?? 0);
     const n = monthsNeeded(s.amount, slots.monthly, s.saved, net);
-    if (n === null || n < LIMITS.minMonths) return { state: s, drafts: [{ text: "Please check the monthly amount: it has to be more than 0." }] };
-    if (n > LIMITS.maxMonths) return { state: s, drafts: [{ text: `Putting aside ${formatAmd(slots.monthly)} a month, it would take more than 50 years. A larger monthly amount or a smaller goal would help.` }] };
+    const hy = s.lang === "hy";
+    if (n === null || n < LIMITS.minMonths) return { state: s, drafts: [{ text: hy ? monthlyBadHy : "Please check the monthly amount: it has to be more than 0." }] };
+    if (n > LIMITS.maxMonths) return { state: s, drafts: [{ text: hy ? monthlyTooLongHy(slots.monthly) : `Putting aside ${formatAmd(slots.monthly)} a month, it would take more than 50 years. A larger monthly amount or a smaller goal would help.` }] };
     s = { ...s, months: n };
-    return planMessages(s, `Putting aside ${formatAmd(slots.monthly)} a month, you would reach it in about ${durationLabel(n)}.`);
+    return planMessages(s, hy ? monthlyIntroHy(slots.monthly, n) : `Putting aside ${formatAmd(slots.monthly)} a month, you would reach it in about ${durationLabel(n)}.`);
   }
   const mode = nextMode(s);
   if (mode) {
@@ -383,38 +388,39 @@ function startPlan(state: ConvState, text: string, slots: Slots): { state: ConvS
 
 function interviewStep(state: ConvState, text: string): { state: ConvState; drafts: Draft[] } | null {
   const reask = (s: ConvState, hint: string) => ({ state: s, drafts: [{ text: hint }, askFor(s)] as Draft[] });
+  const hy = state.lang === "hy";
   switch (state.mode) {
     case "ask-goal": {
-      const name = /^(something else|other|not sure|don't know)$/i.test(text.trim()) ? null : text.trim().replace(/^(for|to buy|to get|to save for)\s+/i, "").replace(/[.!?]+$/, "").slice(0, 40).toLowerCase();
+      const name = hy ? goalNameAnswerHy(text) : /^(something else|other|not sure|don't know)$/i.test(text.trim()) ? null : text.trim().replace(/^(for|to buy|to get|to save for)\s+/i, "").replace(/[.!?]+$/, "").slice(0, 40).toLowerCase();
       const s: ConvState = { ...state, goalName: name, mode: "ask-amount" };
       return { state: s, drafts: [askFor(s)] };
     }
     case "ask-amount": {
-      const n = parseAmountOnly(text);
+      const n = hy ? amountOf(text) : parseAmountOnly(text);
       if (n === null) return null;
       const s = { ...state, amount: n };
       const m = nextMode(s);
       return m ? { state: { ...s, mode: m }, drafts: [askFor({ ...s, mode: m })] } : planMessages(s);
     }
     case "ask-months": {
-      const d = parseDuration(text);
+      const d = hy ? durationOf(text.toLowerCase()) : parseDuration(text);
       const bare = /^\s*(\d+)\s*$/.exec(text);
       const months = d ? d.months : bare ? Number(bare[1]) : null;
       if (months === null) return null;
       const s = { ...state, months };
-      return planMessages(s, bare && !d ? `I took that as ${durationLabel(months)}.` : undefined);
+      return planMessages(s, bare && !d ? (hy ? bareMonthsIntroHy(months) : `I took that as ${durationLabel(months)}.`) : undefined);
     }
     case "ask-income": {
-      const n = parseAmountOnly(text);
+      const n = hy ? amountOf(text) : parseAmountOnly(text);
       return n === null ? null : planMessages({ ...state, income: n });
     }
     case "ask-saved": {
-      const n = parseAmountOnly(text);
+      const n = hy ? amountOf(text) : parseAmountOnly(text);
       return n === null ? null : planMessages({ ...state, saved: n });
     }
     case "ask-rate": {
       const m = /(\d+(?:[.,]\d+)?)/.exec(text);
-      return m ? planMessages({ ...state, ratePct: Number(m[1].replace(",", ".")) }) : reask(state, "I didn't catch a number. Please type a yearly rate in percent, for example 8.");
+      return m ? planMessages({ ...state, ratePct: Number(m[1].replace(",", ".")) }) : reask(state, hy ? rereadHy("ask-rate") : "I didn't catch a number. Please type a yearly rate in percent, for example 8.");
     }
     default:
       return null;
@@ -422,9 +428,10 @@ function interviewStep(state: ConvState, text: string): { state: ConvState; draf
 }
 
 function action(state: ConvState, cmd: string): { state: ConvState; drafts: Draft[] } {
-  if (cmd === "reset") return { state: { ...INITIAL, n: state.n }, drafts: [{ text: "No problem, starting fresh. What would you like to do?", chips: STARTER_CHIPS }] };
+  const hy = state.lang === "hy";
+  if (cmd === "reset") return { state: { ...INITIAL, n: state.n, lang: state.lang }, drafts: [{ text: hy ? resetHy : "No problem, starting fresh. What would you like to do?", chips: hy ? STARTER_CHIPS_HY : STARTER_CHIPS }] };
   const mode = ({ income: "ask-income", saved: "ask-saved", rate: "ask-rate", amount: "ask-amount", months: "ask-months" } as const)[cmd as "income"];
-  if (!mode) return { state, drafts: [{ text: REPLIES.fallback, chips: STARTER_CHIPS }] };
+  if (!mode) return { state, drafts: [{ text: hy ? HY.notSure : REPLIES.fallback, chips: hy ? STARTER_CHIPS_HY : STARTER_CHIPS }] };
   const s = { ...state, mode };
   return { state: s, drafts: [askFor(s)] };
 }
@@ -479,32 +486,46 @@ export function respond(state: ConvState, raw: string): Reply {
     const r = action(state, "reset");
     return finish(r.state, r.drafts);
   }
+  // the conversation follows the language of the message; a message without letters (a bare number) stays in the language it is in
   const letters = text.match(/\p{L}/gu) ?? [];
-  if (letters.length > 0 && (text.match(RX.armenian) ?? []).length / letters.length > 0.15) {
-    const hy = respondHy(text, state.topic);
-    return { ...finish({ ...state, topic: hy.topic }, hy.drafts), ...(hy.ai ? { ai: { question: text } } : {}) };
+  const isHy = letters.length > 0 && (text.match(RX.armenian) ?? []).length / letters.length > 0.15;
+  if (letters.length > 0 && state.lang !== (isHy ? "hy" : "en")) state = { ...state, lang: isHy ? "hy" : "en" };
+  const hy = state.lang === "hy";
+  if (hy && RESET_HY.test(text)) {
+    const r = action(state, "reset");
+    return finish(r.state, r.drafts);
   }
 
   // in the middle of the interview: take the answer, or answer a side question and ask again
   if (state.mode !== "free") {
     const step = interviewStep(state, text);
     if (step) return finish(step.state, step.drafts);
+    if (hy) {
+      const side = respondHy(text, state.topic);
+      if (side.ai) return finish(state, [{ text: rereadHy(state.mode) }, askFor(state)]);
+      return finish(state, [...side.drafts.map((d) => ({ ...d, chips: undefined })), askFor(state)]);
+    }
     const side = general(text);
     if (side) return finish(state, [...side.drafts.map((d) => ({ ...d, chips: undefined })), askFor(state)]);
     return finish(state, [{ text: state.mode === "ask-months" ? "I didn't catch the time. Please write it like \"2 years\" or \"18 months\"." : "I didn't catch a number. Please type an amount, for example 3,000,000." }, askFor(state)]);
   }
 
-  const slots = extractSlots(text);
+  const slots = hy ? extractSlotsHy(text) : extractSlots(text);
   const planExists = state.amount !== null && state.months !== null;
+  const startsPlan = hy ? !RX.card.test(text) && wantsPlanHy(text, slots) : !RX.card.test(text) && !RX.injection.test(text) && !RX.advice.test(text) && wantsPlan(text, slots);
   // a plan is on screen and the person adds a detail ("my income is 400,000", "with 8% interest")
-  if (planExists && !RX.plan.test(text) && (slots.income !== undefined || slots.saved !== undefined || slots.ratePct !== undefined)) {
+  if (planExists && !(hy ? wantsPlanHy(text, slots) : RX.plan.test(text)) && (slots.income !== undefined || slots.saved !== undefined || slots.ratePct !== undefined)) {
     const r = startPlan(state, "", { income: slots.income, saved: slots.saved, ratePct: slots.ratePct });
     return finish(r.state, r.drafts);
   }
-  if (!RX.card.test(text) && !RX.injection.test(text) && !RX.advice.test(text) && wantsPlan(text, slots)) {
+  if (startsPlan) {
     const fresh: ConvState = { ...state, goalName: null, amount: null, months: null, saved: 0, income: null, ratePct: null };
     const r = startPlan(fresh, text, slots);
     return finish(r.state, r.drafts);
+  }
+  if (hy) {
+    const h = respondHy(text, state.topic);
+    return { ...finish({ ...state, topic: h.topic }, h.drafts), ...(h.ai ? { ai: { question: text } } : {}) };
   }
   const g = general(text);
   if (g) return finish({ ...state, topic: g.topic }, g.drafts);

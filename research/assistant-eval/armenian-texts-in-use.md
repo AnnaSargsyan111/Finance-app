@@ -81,10 +81,52 @@ Please read once more. Anything marked PENDING I wrote and you have not read yet
 
 - [ ] OK   - [ ] fix:
 
-### Asking for the amount and the time
+### Savings goal question 1: what are you saving for?
 *PENDING: not yet reviewed*
 
-> Խնդրում եմ նշեք գումարը և ժամկետը, օրինակ՝ «3,000,000 AMD 2 տարում»։
+> Հիանալի է, պլանավորենք միասին։ Ինչի՞ համար եք խնայում։
+
+- [ ] OK   - [ ] fix:
+
+### Savings goal question 2: how much will it cost?
+*PENDING: not yet reviewed*
+
+> Մոտավորապես որքա՞ն կարժենա այն (դրամով)։ Ընթացիկ գները չգիտեմ, ուստի նշեք ձեր սեփական գնահատականը, օրինակ՝ 3,000,000։
+
+- [ ] OK   - [ ] fix:
+
+### Savings goal question 3: by when?
+*PENDING: not yet reviewed*
+
+> Մինչև ե՞րբ եք ցանկանում այն ունենալ։ Օրինակ՝ «2 տարի» կամ «18 ամիս»։
+
+- [ ] OK   - [ ] fix:
+
+### Savings goal question: monthly income
+*PENDING: not yet reviewed*
+
+> Ի՞նչ է ձեր ամսական եկամուտը (դրամով)։ Այն օգտագործում եմ միայն այս զրույցում՝ ցույց տալու, թե պլանը դրա որ մասն է կազմում։ Ոչինչ չի պահպանվում։
+
+- [ ] OK   - [ ] fix:
+
+### Savings goal question: already saved
+*PENDING: not yet reviewed*
+
+> Որքա՞ն եք արդեն խնայել այս նպատակի համար (դրամով)։ Եթե դեռ ոչինչ, գրեք 0։
+
+- [ ] OK   - [ ] fix:
+
+### Savings goal question: interest rate
+*PENDING: not yet reviewed*
+
+> Ի՞նչ տարեկան տոկոսադրույք եք սպասում (տոկոսով)։ Օրինակ՝ 8։ Սա ձեր սեփական ենթադրությունն է, և ես դրանից հանում եմ ավանդի տոկոսի 10% հարկը։
+
+- [ ] OK   - [ ] fix:
+
+### Savings plan: example for "can you give an example?"
+*PENDING: not yet reviewed*
+
+> Օրինակ՝ 12 ամսում 1,200,000 AMD ունենալու համար ամսական առանձնացնում եք 1,200,000 ÷ 12 = 100,000 AMD։ Նույն գումարը 24 ամսում՝ ամսական 50,000 AMD։ Տոկոսի դեպքում պետք կլինի մի փոքր պակաս, քանի որ տոկոսը աշխատանքի մի մասը կատարում է։
 
 - [ ] OK   - [ ] fix:
 

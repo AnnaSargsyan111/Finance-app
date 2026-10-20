@@ -8,6 +8,7 @@ import { EXAMPLES, extractSlots, initialConversation, moneyValue, parseDuration,
 import { durationHy, HY } from "@/ui/assistant/hy";
 import { HY_FOR_INFO_KEY, HY_METRICS } from "@/ui/assistant/hy-metrics";
 import { HY_TERMS } from "@/ui/assistant/hy-terms";
+import { askForHy, moreHy, planTextHy } from "@/ui/assistant/interview-hy";
 import { INFO_KEYS } from "@/ui/invest/metric-info";
 import type { BotMessage, ConvState } from "@/ui/assistant/types";
 
@@ -245,9 +246,9 @@ describe("rules of the assistant", () => {
   it("answers in Armenian, with the reviewed texts, when the person writes in Armenian", () => {
     const hy = (q: string) => chat(q).last;
     // the savings plan: 3,000,000 AMD in 2 years
-    expect(hy("Ես ուզում եմ 2 տարում խնայել 3,000,000 դրամ։ Ամսական որքա՞ն պետք է խնայեմ։")[0].text).toBe(HY.plan("3,000,000 AMD", "2 տարում", "125,000 AMD"));
-    expect(hy("Ուզում եմ 18 ամսում կուտակել 1 800 000")[0].text).toBe(HY.plan("1,800,000 AMD", "1 տարի 6 ամսում", "100,000 AMD"));
-    expect(hy("Ուզում եմ 2 տարում խնայել 3 միլիոն")[0].text).toBe(HY.plan("3,000,000 AMD", "2 տարում", "125,000 AMD"));
+    expect(hy("Ես ուզում եմ 2 տարում խնայել 3,000,000 դրամ։ Ամսական որքա՞ն պետք է խնայեմ։")[0].text).toBe(HY.planCore("3,000,000 AMD", "2 տարում", "125,000 AMD"));
+    expect(hy("Ուզում եմ 18 ամսում կուտակել 1 800 000")[0].text).toBe(HY.planCore("1,800,000 AMD", "1 տարի 6 ամսում", "100,000 AMD"));
+    expect(hy("Ուզում եմ 2 տարում խնայել 3 միլիոն")[0].text).toBe(HY.planCore("3,000,000 AMD", "2 տարում", "125,000 AMD"));
     // facts
     const g = hy("Հայաստանում բանկային ավանդները պաշտպանվա՞ծ են։ Մինչև որքա՞ն գումար։")[0];
     expect(g.text).toBe(HY.depositGuarantee);
@@ -270,14 +271,14 @@ describe("rules of the assistant", () => {
     expect(live.link).toEqual({ href: "/market", label: "Շուկա և նորություններ" });
     expect(hy("Անպայման կհասնե՞մ նպատակին")[0].text).toBe(HY.noGuarantee);
     expect(hy("Բարև")[0].text).toBe(HY.welcome); // a greeting is answered with the welcome
-    expect(hy("Ուզում եմ խնայել 3,000,000 դրամ")[0].text).toBe(HY.askAmountAndTime);
+    expect(hy("Ուզում եմ խնայել 3,000,000 դրամ")[0].text).toMatch(/Մինչև ե՞րբ/); // the amount is known, so it asks for the time
     expect(hy("Ի՞նչ է P/E-ն")[0].text).toBe(HY_TERMS.pe.text); // a term: its (pending-review) Armenian explanation
     expect(hy("Ի՞նչ է քվանտային հաշվարկը")[0].text).toBe(HY.notSure); // something it does not know: the reviewed "I'm not sure"
     expect(hy("Իմ քարտի համարը 4111 1111 1111 1111 է")[0].tone).toBe("notice");
   });
 
   it("the Armenian texts have no English words in them except names and the currency", () => {
-    const texts = [HY.welcome, HY.depositGuarantee, HY.interestTax, HY.dividendTax, HY.advice, HY.predict, HY.live, HY.noGuarantee, HY.notSure, HY.askAmountAndTime, HY.cardWarning, HY.banks, HY.plan("3,000,000 AMD", "2 տարում", "125,000 AMD")];
+    const texts = [HY.welcome, HY.depositGuarantee, HY.interestTax, HY.dividendTax, HY.advice, HY.predict, HY.live, HY.noGuarantee, HY.notSure, HY.cardWarning, HY.planExample, HY.banks, HY.plan("3,000,000 AMD", "2 տարում", "125,000 AMD")];
     for (const t of texts) {
       const latin = (t.match(/[A-Za-z]+/g) ?? []).filter((w) => !["Finova", "AMD", "adgf", "am", "Ameriabank", "ACBA", "Bank", "IDBank", "Rate", "cba"].includes(w));
       expect(latin, t).toEqual([]);
@@ -508,4 +509,97 @@ describe("the same 35-question set the AI model had to pass", () => {
       expect(check(q, answer), answer).toEqual([]);
     });
   }
+});
+
+describe("the savings-goal conversation in Armenian: the same steps, maths and card as in English", () => {
+  const PLAN = "Ուզում եմ պլանավորել խնայողության նպատակ";
+  const planOf = (ms: BotMessage[]) => ms.find((m) => m.plan)?.plan?.result;
+
+  it("asks one question at a time (what for, how much, by when) and then shows the plan card", () => {
+    const c1 = chat(PLAN);
+    expect(c1.last[0].text).toMatch(/Ինչի՞ համար եք խնայում/);
+    expect(c1.last[0].chips?.map((x) => x.label)).toContain("Մեքենա");
+    const c2 = chat(PLAN, "մեքենա");
+    expect(c2.last[0].text).toMatch(/«մեքենա»/);
+    expect(c2.last[0].text).toMatch(/ապահովագրությունը/); // the hint for a car or a home
+    const c3 = chat(PLAN, "մեքենա", "8,000,000");
+    expect(c3.last[0].text).toMatch(/Մինչև ե՞րբ/);
+    const c4 = chat(PLAN, "մեքենա", "8,000,000", "3 տարի");
+    const r = planOf(c4.last)!;
+    expect(r.monthly).toBe(222_223); // 8,000,000 / 36 months, rounded up to a whole dram
+    expect(c4.last[0].text).toBe(`«մեքենա» նպատակի համար՝ ${HY.planCore("8,000,000 AMD", "3 տարում", "222,223 AMD")}`);
+    expect(c4.last[1].chips?.map((x) => x.value)).toContain("action:income"); // "Want to make it more precise?" with the quick answers
+    expect(c4.state.mode).toBe("free");
+    expect(c4.state.lang).toBe("hy");
+  });
+
+  it("a plain number alone keeps the conversation in Armenian, and a bare number for the time means months", () => {
+    const c = chat(PLAN, "ճանապարհորդություն", "1500000", "18");
+    expect(c.state.lang).toBe("hy");
+    expect(c.last[0].text).toMatch(/^Ընդունեցի որպես 1 տարի 6 ամսում։/);
+    expect(planOf(c.last)!.months).toBe(18);
+  });
+
+  it("income, savings and interest refine the plan, as quick answers and as sentences", () => {
+    const base = ["Ուզում եմ 2 տարում խնայել 3 միլիոն"];
+    const withIncome = chat(...base, "action:income", "600,000");
+    expect(planOf(withIncome.last)!.share).toBeCloseTo(125_000 / 600_000, 5);
+    expect(withIncome.last[0].plan?.result.realism).toBe("comfortable");
+    const sentence = chat(...base, "Իմ եկամուտը 200000 է");
+    expect(planOf(sentence.last)!.share).toBeCloseTo(0.625, 3);
+    expect(sentence.last[0].text).toMatch(/հավանաբար իրատեսական չէ/); // more than half of the income
+    const saved = chat(...base, "action:saved", "1,000,000");
+    expect(planOf(saved.last)!.monthly).toBe(Math.ceil(2_000_000 / 24));
+    const rate = chat(...base, "Ենթադրենք 8% տոկոս");
+    expect(planOf(rate.last)!.rate?.grossPct).toBe(8);
+    expect(rate.last[0].text).toMatch(/8%/);
+    // the same conversation in English gives the same numbers
+    expect(planOf(chat("I want to save 3,000,000 in 2 years", "action:rate", "8").last)!.monthly).toBe(planOf(rate.last)!.monthly);
+  });
+
+  it("how much can be put aside a month: the time it takes", () => {
+    const c = chat("Ուզում եմ խնայել 3,000,000 դրամ, ամսական 100,000 դրամ կարող եմ խնայել");
+    expect(c.last[0].text).toMatch(/^Ամսական 100,000 AMD առանձնացնելով/);
+    expect(planOf(c.last)!.months).toBe(30);
+  });
+
+  it("numbers that do not work get an Armenian explanation and the question again", () => {
+    const zero = chat(PLAN, "մեքենա", "0", "3 տարի"); // the check happens once the time is known, as in English
+    expect(zero.last[0].text).toMatch(/0-ից մեծ/);
+    expect(zero.last[1].text).toMatch(/Մոտավորապես որքա՞ն կարժենա/);
+    const lost = chat(PLAN, "մեքենա", "8,000,000", "երբևէ");
+    expect(lost.last[0].text).toMatch(/Ժամկետը չհասկացա/);
+    expect(lost.last[1].text).toMatch(/Մինչև ե՞րբ/);
+    const long = chat(PLAN, "մեքենա", "8,000,000", "70 տարի");
+    expect(long.last[0].text).toMatch(/ոչ ավելի, քան 50 տարի/);
+  });
+
+  it("a side question in the middle is answered, and the question is asked again", () => {
+    const c = chat(PLAN, "մեքենա", "Ի՞նչ է գնաճը");
+    expect(c.last[0].text).toBe(HY_TERMS.inflation.text);
+    expect(c.last[c.last.length - 1].text).toMatch(/Մոտավորապես որքա՞ն կարժենա/);
+    expect(c.state.mode).toBe("ask-amount");
+  });
+
+  it("the conversation follows the language of each message, and 'start over' resets it", () => {
+    const en = chat(PLAN, "What is inflation?");
+    expect(en.state.lang).toBe("en");
+    const back = chat(PLAN, "մեքենա", "Սկսել նորից");
+    expect(back.state.mode).toBe("free");
+    expect(back.last[0].text).toMatch(/սկսենք նորից/);
+    expect(back.last[0].chips?.[0].label).toBe("Պլանավորել խնայողության համար");
+  });
+
+  it("'can you give an example?' after a plan gives the plan example, never the web", () => {
+    const c = chat("Ուզում եմ 2 տարում խնայել 3 միլիոն", "Օրինակ");
+    expect(c.last[0].text).toBe(HY.planExample);
+    expect(respond(c.state, "Օրինակ").ai).toBeUndefined();
+  });
+
+  it("every Armenian text of the conversation is Armenian: no English words except names and the currency", () => {
+    const state = (mode: ConvState["mode"]): ConvState => ({ n: 0, lang: "hy", mode, goalName: "մեքենա", amount: null, months: null, saved: 0, income: null, ratePct: null, topic: null });
+    const texts = (["ask-goal", "ask-amount", "ask-months", "ask-income", "ask-saved", "ask-rate"] as const).map((m) => askForHy(state(m))!.text);
+    texts.push(HY.planExample, planTextHy("մեքենա", planFor({ goal: 8_000_000, months: 36, income: 300_000, ratePct: 8 })), moreHy(state("free")).text);
+    for (const t of texts) expect((t.match(/[A-Za-z]+/g) ?? []).filter((w) => w !== "AMD"), t).toEqual([]);
+  });
 });

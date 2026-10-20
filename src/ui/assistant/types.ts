@@ -63,6 +63,8 @@ export type ChatMessage = BotMessage | UserMessage;
 export interface ConvState {
   readonly n: number;
   readonly mode: "free" | "ask-goal" | "ask-amount" | "ask-months" | "ask-income" | "ask-saved" | "ask-rate";
+  /** the language of the conversation: the savings-goal questions and plan texts follow it (set from the language of each message) */
+  readonly lang: "en" | "hy";
   readonly goalName: string | null;
   readonly amount: number | null;
   readonly months: number | null;

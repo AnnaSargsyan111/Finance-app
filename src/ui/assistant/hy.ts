@@ -6,7 +6,7 @@
  * «Պայմանները»), dividend tax, "what should I buy", no predictions (version A), no live numbers, savings plan sentence, no
  * guarantee, "I'm not sure". Page names are her choices.
  *
- * NOT YET REVIEWED (marked PENDING; listed in research/assistant-eval/armenian-review.md, part 5): askAmountAndTime, cardWarning.
+ * NOT YET REVIEWED (marked PENDING; listed in research/assistant-eval/armenian-review.md, part 5): cardWarning, planExample, and every text of the savings-goal conversation (interview-hy.ts).
  * The facts in these texts are the verified ones from research/ai-assistant-plan.md (6.C.1). Do not edit a reviewed text without asking.
  */
 export const HY = {
@@ -37,9 +37,13 @@ export const HY = {
 
   notSure: "Այս հարցում վստահ չեմ։ Խնդրում եմ ստուգել պաշտոնական աղբյուրը։",
 
-  /** the savings plan sentence: the goal, the time ("2 տարում"), the monthly amount, all as written by the engine from exact numbers */
+  /** the reviewed core of the savings plan sentence: the goal, the time ("2 տարում"), the monthly amount, all written by the engine from exact numbers */
+  planCore: (goal: string, when: string, monthly: string) => `${goal} ${when} ունենալու համար պետք է ամսական մոտ ${monthly} առանձնացնեք։`,
+  /** the same with the reviewed assumptions sentence (for a plan with no interest, income or savings given) */
   plan: (goal: string, when: string, monthly: string) =>
     `${goal} ${when} ունենալու համար պետք է ամսական մոտ ${monthly} առանձնացնեք։ Ենթադրություններ՝ առանց տոկոսի, կայուն եկամուտ, առանց գնաճի։ Սա գնահատական է, ոչ թե խորհուրդ։`,
+  /** PENDING review: the worked example for "can you give an example?" after a plan */
+  planExample: "Օրինակ՝ 12 ամսում 1,200,000 AMD ունենալու համար ամսական առանձնացնում եք 1,200,000 ÷ 12 = 100,000 AMD։ Նույն գումարը 24 ամսում՝ ամսական 50,000 AMD։ Տոկոսի դեպքում պետք կլինի մի փոքր պակաս, քանի որ տոկոսը աշխատանքի մի մասը կատարում է։",
 
   // PENDING review (written by the assistant, not yet read by Anna):
   /** labels of the AI layer's answers (confidence, sources): PENDING review */
@@ -53,7 +57,6 @@ export const HY = {
     footnoteWeb: "Պատասխանը պատրաստված է արհեստական բանականության օգնությամբ՝ համացանցային որոնման հիման վրա։ Այն կարող է սխալվել. խնդրում եմ ստուգել աղբյուրները։ Անձնական խորհուրդ չէ։",
   },
   banks: "Finova-ն «Շուկա և նորություններ» էջում ցույց է տալիս երեք բանկի փոխարժեքները՝ Ameriabank, ACBA Bank և IDBank (Rate.am-ից)։ Հայաստանի բանկերի ամբողջական ցանկը գտնվում է Հայաստանի Կենտրոնական բանկի կայքում (cba.am)։",
-  askAmountAndTime: "Խնդրում եմ նշեք գումարը և ժամկետը, օրինակ՝ «3,000,000 AMD 2 տարում»։",
   cardWarning: "Խնդրում եմ այստեղ մի կիսվեք քարտի համարով, գաղտնաբառով կամ անձը հաստատող փաստաթղթի տվյալներով։ Ես չեմ կարող տեսնել հաշիվները, և դրանք ինձ պետք չեն։",
 } as const;
 
