@@ -15,9 +15,11 @@ export const APP = {
     fxHistoryMs: 6 * HOUR,
     /** commercial-bank cash buy/sell boards (they move through the day) */
     fxBanksMs: 30 * MIN,
-    stockQuoteMs: 60_000,
+    /** quotes are delayed and indicative anyway; 5 minutes keeps the Stocks tab fast (every refresh of 6 symbols waits for the provider's rate limit) */
+    stockQuoteMs: 5 * MIN,
     stockFundamentalsMs: 24 * HOUR,
-    stockHistoryMs: 6 * HOUR,
+    /** one month of daily closes: the daily cron job keeps it warm (Twelve Data's free plan allows 8 calls a minute, so 6 symbols take about 48 s cold) */
+    stockHistoryMs: 24 * HOUR,
     newsMs: 15 * MIN,
     /** the official pages the AI assistant may quote (src/assistant/sources.ts) */
     assistantSourcesMs: 24 * HOUR,

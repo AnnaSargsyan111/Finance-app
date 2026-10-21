@@ -63,19 +63,19 @@ async function fetchQuote(symbol: string): Promise<QuoteBlob> {
   const failures: QuoteBlob["failures"] = [];
   const fixture = isFixtureMode();
   try {
+    // ONE Finnhub call per symbol: the name, currency and 52-week range come from the metrics block (cached for a day), so a refresh
+    // of the six cards does not repeat the profile and metrics calls (each Finnhub call waits for the provider's rate limit)
     const q = await finnhub.quote(symbol);
-    const profile = await finnhub.profile(symbol).catch(() => null);
-    const m = await finnhub.metrics(symbol).catch(() => null);
     return {
       source: fixture ? "fixture:finnhub (SYNTHETIC test data)" : "Finnhub",
       isFixture: fixture,
-      name: profile?.name ?? null,
+      name: null,
       price: q.price,
       previousClose: q.previousClose,
-      currency: profile?.currency ?? "USD",
+      currency: null,
       time: q.time,
-      high52w: m?.high52w ?? null,
-      low52w: m?.low52w ?? null,
+      high52w: null,
+      low52w: null,
       failures,
     };
   } catch (e) {
@@ -353,7 +353,8 @@ async function buildItem(symbol: string, acc: { asOf: Date[]; stale: boolean; no
 export async function getStocks(): Promise<{ data: { items: StockItem[] }; meta: StocksMeta }> {
   const acc = { asOf: [] as Date[], stale: false, notConfigured: new Set<string>(), sources: new Set<string>(), fixture: false };
   const items: StockItem[] = [];
-  for (const symbol of DISPLAY_SYMBOLS) items.push(await buildItem(symbol, acc));
+  // all six at once: the per-host rate limiter queues the calls, but Finnhub, Twelve Data and SEC work side by side
+  items.push(...(await Promise.all(DISPLAY_SYMBOLS.map((symbol) => buildItem(symbol, acc)))));
   if (items.every((i) => i.price === null)) {
     throw upstreamUnavailable("No stock quote provider is available right now.", { notConfigured: [...acc.notConfigured] });
   }
