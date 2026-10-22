@@ -29,14 +29,15 @@ export function monthGrid(ym: string): (string | null)[][] {
 /** the IPOs of each day */
 export function byDate(items: readonly IpoItem[]): Map<string, IpoItem[]> {
   const map = new Map<string, IpoItem[]>();
-  for (const i of items) map.set(i.date, [...(map.get(i.date) ?? []), i]);
+  // a company that has only filed has no IPO day: it is not on the calendar
+  for (const i of items) if (i.date) map.set(i.date, [...(map.get(i.date) ?? []), i]);
   return map;
 }
 
 /** the month to open on: the one with the next upcoming IPO, otherwise the current month */
 export function startMonth(items: readonly IpoItem[], today: string): string {
   const next = items
-    .filter((i) => (i.status === "expected" || i.status === "filed" || i.status === "other") && i.date >= today)
+    .filter((i): i is IpoItem & { date: string } => (i.status === "expected" || i.status === "other") && i.date !== null && i.date >= today)
     .map((i) => i.date)
     .sort()[0];
   return monthOf(next ?? today);

@@ -1,5 +1,5 @@
 import { getEnveloped, sendEnveloped } from "./client";
-import type { Enveloped, FxBanks, FxHistory, FxRate, IpoItem, NewsDetail, NewsItem, StockHistory, StockItem, StockRange } from "./types";
+import type { Enveloped, FxBanks, FxHistory, FxRate, IpoItem, IpoNewsItem, NewsDetail, NewsItem, StockHistory, StockItem, StockRange } from "./types";
 
 /** Market endpoints answer `{data, meta}`. All LIVE (see mock-registry). */
 
@@ -71,4 +71,4 @@ export async function getNewsDetail(id: string, signal?: AbortSignal): Promise<E
 
 /* ------------------------------------------------------------------ IPO calendar */
 
-export const getIpoCalendar = (signal?: AbortSignal): Promise<Enveloped<{ items: IpoItem[] }>> => getEnveloped("/api/market/ipo", { signal });
+export const getIpoCalendar = (signal?: AbortSignal): Promise<Enveloped<{ items: IpoItem[]; news: IpoNewsItem[] }>> => getEnveloped("/api/market/ipo", { signal });

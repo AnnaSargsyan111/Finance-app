@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { byDate, monthGrid, shiftMonth, startMonth } from "@/ui/market/ipo-calendar";
 import type { IpoItem } from "@/ui/api/types";
 
-const item = (date: string, status: IpoItem["status"] = "expected", name = "Acme"): IpoItem => ({ date, name, symbol: null, exchange: null, status, priceLow: null, priceHigh: null, shares: null, dealSizeUsd: null, filingsUrl: "" });
+const item = (date: string | null, status: IpoItem["status"] = "expected", name = "Acme"): IpoItem => ({ date, filedDate: null, name, symbol: null, exchange: null, status, priceLow: null, priceHigh: null, shares: null, dealSizeUsd: null, filingsUrl: "" });
 
 describe("IPO month calendar", () => {
   it("builds Monday-first weeks with blanks outside the month", () => {
@@ -27,5 +27,11 @@ describe("IPO month calendar", () => {
     expect(startMonth(items, "2026-10-22")).toBe("2026-11");
     // nothing upcoming: today's month; a past "expected" date does not count
     expect(startMonth([item("2026-10-16", "priced"), item("2026-09-01")], "2026-10-22")).toBe("2026-10");
+  });
+
+  it("a company that has only filed has no IPO day: it is not on the calendar", () => {
+    const filed = { ...item(null, "filed", "Filed Co"), filedDate: "2026-11-02" };
+    expect(byDate([filed]).size).toBe(0);
+    expect(startMonth([filed], "2026-10-22")).toBe("2026-10");
   });
 });

@@ -1,9 +1,8 @@
 {
   "ipoCalendar": [
     { "date": "2026-11-05", "exchange": "NASDAQ Global", "name": "SYNTHETIC AERO HOLDINGS INC.", "numberOfShares": 12500000, "price": "18.00-21.00", "status": "expected", "symbol": "SAER", "totalSharesValue": 243750000 },
-    { "date": "2026-11-12", "exchange": "NYSE", "name": "SYNTHETIC BIOLABS CORP.", "numberOfShares": 8000000, "price": "14.00-16.00", "status": "expected", "symbol": "SBIO", "totalSharesValue": 120000000 },
-    { "date": "2026-11-19", "exchange": "NASDAQ Capital", "name": "SYNTHETIC PAYMENTS LTD.", "numberOfShares": 5000000, "price": "9.00", "status": "filed", "symbol": "SPAY", "totalSharesValue": 45000000 },
-    { "date": "2026-12-03", "exchange": "NYSE", "name": "SYNTHETIC GRID ENERGY INC.", "numberOfShares": null, "price": "", "status": "filed", "symbol": "SGRD", "totalSharesValue": null },
+    { "date": "2026-11-19", "exchange": "NASDAQ Capital", "name": "SYNTHETIC PAYMENTS LTD.", "numberOfShares": 5000000, "price": "9.00", "status": "expected", "symbol": "SPAY", "totalSharesValue": 45000000 },
+    { "date": "2026-10-09", "exchange": "", "name": "SYNTHETIC GRID ENERGY INC.", "numberOfShares": null, "price": "", "status": "filed", "symbol": "SGRD", "totalSharesValue": 60000000 },
     { "date": "2026-10-16", "exchange": "NASDAQ Global", "name": "SYNTHETIC CLOUD SYSTEMS INC.", "numberOfShares": 15000000, "price": "25.00", "status": "priced", "symbol": "SCLD", "totalSharesValue": 375000000 },
     { "date": "2026-10-09", "exchange": "NYSE", "name": "SYNTHETIC FOODS GROUP", "numberOfShares": 6000000, "price": "12.00", "status": "priced", "symbol": "SFDS", "totalSharesValue": 72000000 },
     { "date": "2026-10-20", "exchange": "NASDAQ Global", "name": "SYNTHETIC ROBOTICS PLC", "numberOfShares": 7000000, "price": "16.00-18.00", "status": "withdrawn", "symbol": "SROB", "totalSharesValue": 119000000 },

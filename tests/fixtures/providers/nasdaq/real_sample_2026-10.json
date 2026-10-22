@@ -1,0 +1,12 @@
+{"data":{"priced":{"asOf":null,"headers":{"proposedTickerSymbol":"Symbol"},"rows":[
+{"dealID":"1403574-119467","proposedTickerSymbol":"CTY","companyName":"CITY THERAPEUTICS, INC.","proposedExchange":"NASDAQ Global","proposedSharePrice":"18.00","sharesOffered":"11,111,111","pricedDate":"10/16/2026","dollarValueOfSharesOffered":"$199,999,998","dealStatus":"Priced"},
+{"dealID":"1397449-118968","proposedTickerSymbol":"PORTU","companyName":"Southport Acquisition Corp. II","proposedExchange":"NYSE","proposedSharePrice":"10.00","sharesOffered":"20,000,000","pricedDate":"10/01/2026","dollarValueOfSharesOffered":"$200,000,000","dealStatus":"Priced"}]},
+"upcoming":{"upcomingTable":{"asOf":null,"headers":{},"rows":[
+{"dealID":"1112626-119575","proposedTickerSymbol":"LYCA","companyName":"Lycia Therapeutics, Inc.","proposedExchange":"NASDAQ Global Select","proposedSharePrice":"16.00-18.00","sharesOffered":"14,700,000","expectedPriceDate":"10/23/2026","dollarValueOfSharesOffered":"$304,290,000"},
+{"dealID":"1344257-114782","proposedTickerSymbol":"DAVI","companyName":"DAVION HEALTHCARE PLC","proposedExchange":"NASDAQ Global","proposedSharePrice":null,"sharesOffered":"25,000,000","expectedPriceDate":"10/22/2026","dollarValueOfSharesOffered":""}]},"lastUpdatedTime":"LAST UPDATED: 10/22/2026* - Source: EDGAR® Online"},
+"filed":{"asOf":null,"headers":{},"rows":[
+{"dealID":"1407089-119692","proposedTickerSymbol":"RZRA","companyName":"NODTHERA INC.","filedDate":"10/21/2026","dollarValueOfSharesOffered":"$100,000,000"},
+{"dealID":"1406974-119688","proposedTickerSymbol":null,"companyName":"Sensing4D AI Ltd","filedDate":"10/21/2026","dollarValueOfSharesOffered":"$34,500,000"}]},
+"withdrawn":{"asOf":null,"headers":{},"rows":[
+{"dealID":"1355802-115971","proposedTickerSymbol":null,"companyName":"Klook Technology Ltd","proposedExchange":null,"sharesOffered":"","filedDate":"11/10/2025","dollarValueOfSharesOffered":"$100,000,000","withdrawDate":"10/16/2026"}]},
+"month":10,"year":2026,"totalResults":7},"message":null,"status":{"rCode":200,"bCodeMessage":null}}

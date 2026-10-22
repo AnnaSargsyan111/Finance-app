@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { getIpoCalendar } from "../api/market";
 import { errorMessage } from "../api/client";
-import type { IpoItem, IpoStatus } from "../api/types";
+import type { IpoItem, IpoNewsItem, IpoStatus } from "../api/types";
 import { Button } from "../components/Button";
 import { Card, Chip, Segmented } from "../components/Display";
 import { EmptyState, ErrorState, Note, Skeleton } from "../components/Feedback";
@@ -11,19 +11,21 @@ import { IconArrowLeft } from "../components/Icons";
 import { useResource } from "../hooks/useResource";
 import { useT } from "../i18n";
 import { cx } from "../lib/cx";
-import { formatDate, formatDateLong, formatMonth, formatNumber, formatUsd } from "../lib/format";
+import { formatDate, formatDateLong, formatMonth, formatNumber, formatUsd, todayYerevan } from "../lib/format";
 import { byDate, monthGrid, monthOf, shiftMonth, startMonth } from "./ipo-calendar";
 import { MetaLine } from "./MetaLine";
 import s from "./market.module.css";
 
-type Group = "upcoming" | "priced" | "withdrawn";
+type Group = "upcoming" | "filed" | "priced" | "withdrawn";
 type View = "list" | "calendar";
-const GROUP_OF: Record<IpoStatus, Group> = { expected: "upcoming", filed: "upcoming", other: "upcoming", priced: "priced", withdrawn: "withdrawn" };
+const GROUP_OF: Record<IpoStatus, Group> = { expected: "upcoming", other: "upcoming", filed: "filed", priced: "priced", withdrawn: "withdrawn" };
 const TONE: Record<IpoStatus, "neutral" | "pos" | "neg" | "warn"> = { expected: "neutral", filed: "warn", other: "neutral", priced: "pos", withdrawn: "neg" };
 const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => todayYerevan();
 const daysFromToday = (iso: string) => Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${todayIso()}T00:00:00Z`)) / 86_400_000);
+/** the date the list sorts and shows: the pricing date, or the filing date for a company that has only filed */
+const shownDate = (i: IpoItem) => i.date ?? i.filedDate ?? "";
 
 type T = ReturnType<typeof useT>;
 const priceText = (t: T, i: IpoItem) =>
@@ -33,13 +35,24 @@ const sizeText = (t: T, i: IpoItem) =>
 
 function Row({ item }: { item: IpoItem }) {
   const t = useT();
-  const d = daysFromToday(item.date);
-  const rel = GROUP_OF[item.status] !== "upcoming" ? null : d === 0 ? t("market.ipo.today") : d === 1 ? t("market.ipo.tomorrow") : d > 1 ? t("market.ipo.inDays", { n: d }) : null;
+  const d = item.date ? daysFromToday(item.date) : null;
+  const sub =
+    item.status === "filed"
+      ? t("market.ipo.filedOn")
+      : item.status !== "expected" || d === null
+        ? null
+        : d === 0
+          ? t("market.ipo.today")
+          : d === 1
+            ? t("market.ipo.tomorrow")
+            : d > 1
+              ? t("market.ipo.inDays", { n: d })
+              : null;
   return (
     <tr>
       <td>
-        <span className="num">{formatDate(item.date)}</span>
-        {rel ? <span className={s.ipoRel}>{rel}</span> : null}
+        <span className="num">{formatDate(shownDate(item))}</span>
+        {sub ? <span className={s.ipoRel}>{sub}</span> : null}
       </td>
       <td>
         <span className={s.ipoName}>{item.name}</span>
@@ -76,7 +89,7 @@ function IpoTable({ rows }: { rows: IpoItem[] }) {
         </thead>
         <tbody>
           {rows.map((i) => (
-            <Row key={`${i.symbol ?? i.name}-${i.date}`} item={i} />
+            <Row key={`${i.symbol ?? i.name}-${shownDate(i)}`} item={i} />
           ))}
         </tbody>
       </table>
@@ -129,6 +142,7 @@ function MonthCalendar({ items }: { items: IpoItem[] }) {
   const today = todayIso();
   const chosen = selected && monthOf(selected) === month ? (days.get(selected) ?? []) : null;
   const full = formatMonth(month);
+  const monthHasIpos = [...days.keys()].some((d) => monthOf(d) === month);
 
   return (
     <div className={s.cal}>
@@ -179,7 +193,9 @@ function MonthCalendar({ items }: { items: IpoItem[] }) {
           </div>
         ))}
       </div>
-      {chosen === null ? (
+      {!monthHasIpos ? (
+        <Note>{t("market.ipo.monthEmpty")}</Note>
+      ) : chosen === null ? (
         <p className={s.ipoIntro}>{t("market.ipo.selectDay")}</p>
       ) : chosen.length === 0 ? (
         <p className={s.ipoIntro}>{t("market.ipo.dayEmpty")}</p>
@@ -215,7 +231,37 @@ function MonthCalendar({ items }: { items: IpoItem[] }) {
   );
 }
 
-/** Companies that plan to go public (and those that recently did): a month calendar or a list with date, price range, size and status. */
+/** recent headlines about companies' IPO plans, including the ones that have no date yet */
+function IpoNews({ items }: { items: IpoNewsItem[] }) {
+  const t = useT();
+  return (
+    <section className={s.ipoNews} aria-label={t("market.ipo.newsTitle")}>
+      <h3 className={s.ipoNewsTitle}>{t("market.ipo.newsTitle")}</h3>
+      <p className={s.ipoIntro}>{t("market.ipo.newsSub")}</p>
+      {items.length === 0 ? (
+        <p className={s.ipoIntro}>{t("market.ipo.newsEmpty")}</p>
+      ) : (
+        <ul className={s.ipoNewsList}>
+          {items.map((n) => (
+            <li key={n.url}>
+              <a href={n.url} target="_blank" rel="noopener noreferrer" className={s.ipoNewsLink}>
+                {n.title}
+                <span className="sr-only"> {t("market.ipo.opensNewTab")}</span>
+              </a>
+              <span className={s.ipoNewsMeta}>
+                {n.outlet ? `${n.outlet} · ` : ""}
+                {formatDate(n.publishedAt)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className={s.ipoNewsNote}>{t("market.ipo.newsNote")}</p>
+    </section>
+  );
+}
+
+/** Companies that plan to go public (and those that recently did): a month calendar or a list, plus headlines about the big names. */
 export function IpoSection() {
   const t = useT();
   const res = useResource((signal) => getIpoCalendar(signal), []);
@@ -225,8 +271,7 @@ export function IpoSection() {
   const all = res.data?.data.items ?? [];
   const rows = all
     .filter((i) => GROUP_OF[i.status] === group)
-    .sort((a, b) => (group === "upcoming" ? (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) : a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-  const notConfigured = Array.isArray(res.data?.meta.notConfigured) && (res.data!.meta.notConfigured as unknown[]).length > 0;
+    .sort((a, b) => (group === "upcoming" ? (shownDate(a) < shownDate(b) ? -1 : shownDate(a) > shownDate(b) ? 1 : 0) : shownDate(a) < shownDate(b) ? 1 : shownDate(a) > shownDate(b) ? -1 : 0));
 
   return (
     <Card
@@ -249,6 +294,7 @@ export function IpoSection() {
               onChange={setGroup}
               options={[
                 { value: "upcoming", label: t("market.ipo.upcoming") },
+                { value: "filed", label: t("market.ipo.filedGroup") },
                 { value: "priced", label: t("market.ipo.priced") },
                 { value: "withdrawn", label: t("market.ipo.withdrawn") },
               ]}
@@ -266,18 +312,17 @@ export function IpoSection() {
             <span className="sr-only">{t("market.ipo.loading")}</span>
             <Skeleton height={240} />
           </div>
-        ) : notConfigured ? (
-          <EmptyState title={t("market.ipo.notConfiguredTitle")} message={t("market.ipo.notConfiguredMessage")} compact />
         ) : view === "calendar" ? (
           <MonthCalendar items={all} />
         ) : rows.length === 0 ? (
-          <EmptyState title={t("market.ipo.emptyTitle")} message={t("market.ipo.emptyMessage")} compact />
+          <EmptyState title={t("market.ipo.emptyTitle")} message={group === "upcoming" ? t("market.ipo.emptyUpcoming") : t("market.ipo.emptyMessage")} compact />
         ) : (
           <>
             <p className={s.metaLine}>{t("market.ipo.count", { n: rows.length })}</p>
             <IpoTable rows={rows} />
           </>
         )}
+        {res.data ? <IpoNews items={res.data.data.news ?? []} /> : null}
         {res.data ? <MetaLine meta={res.data.meta} /> : null}
         <Note>{t("market.ipo.note")}</Note>
       </div>

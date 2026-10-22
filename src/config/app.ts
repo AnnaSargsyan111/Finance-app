@@ -22,6 +22,8 @@ export const APP = {
     stockHistoryMs: 24 * HOUR,
     /** the IPO calendar: dates and price ranges move through the day, but the list is small and one call serves everyone */
     ipoCalendarMs: 6 * HOUR,
+    /** headlines about IPO plans */
+    ipoNewsMs: 30 * MIN,
     newsMs: 15 * MIN,
     /** a saved news list younger than this is shown at once while it refreshes in the background (nobody waits for the 10 feeds) */
     newsSwrMs: 12 * HOUR,

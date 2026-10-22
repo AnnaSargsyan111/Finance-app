@@ -1,0 +1,7 @@
+{"data":{"priced":{"asOf":null,"headers":null,"rows":null},"upcoming":{"upcomingTable":{"asOf":null,"headers":{},"rows":[
+{"dealID":"s1","proposedTickerSymbol":"SAER","companyName":"SYNTHETIC AERO HOLDINGS INC.","proposedExchange":"NASDAQ Global Select","proposedSharePrice":"18.00-21.00","sharesOffered":"12,500,000","expectedPriceDate":"11/05/2026","dollarValueOfSharesOffered":"$243,750,000"},
+{"dealID":"s2","proposedTickerSymbol":"SQNT","companyName":"SYNTHETIC QUANTUM LABS INC.","proposedExchange":"NYSE","proposedSharePrice":"22.00-25.00","sharesOffered":"9,000,000","expectedPriceDate":"11/12/2026","dollarValueOfSharesOffered":"$211,500,000"}]},"lastUpdatedTime":"LAST UPDATED: 10/22/2026* - Source: SYNTHETIC"},
+"filed":{"asOf":null,"headers":{},"rows":[
+{"dealID":"s3","proposedTickerSymbol":"SMOB","companyName":"SYNTHETIC MOBILITY CORP.","filedDate":"11/02/2026","dollarValueOfSharesOffered":"$100,000,000"},
+{"dealID":"s4","proposedTickerSymbol":null,"companyName":"SYNTHETIC GREEN ACQUISITION CORP.","filedDate":"11/03/2026","dollarValueOfSharesOffered":"$143,750,000"}]},
+"withdrawn":{"asOf":null,"headers":null,"rows":null},"month":11,"year":2026,"totalResults":4},"message":null,"status":{"rCode":200,"bCodeMessage":null}}

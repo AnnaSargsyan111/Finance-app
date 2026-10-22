@@ -25,6 +25,7 @@ const HOST_INTERVAL_MS: Record<string, number> = {
   "generativelanguage.googleapis.com": 1500, // AI assistant (free plans allow only a few requests per minute)
   "adgf.am": 1500,
   "www.cba.am": 1500,
+  "api.nasdaq.com": 400, // public JSON of the Nasdaq IPO calendar: a few calls, kept gentle
   "src.am": 1500,
 };
 const DEFAULT_INTERVAL_MS = 700;
