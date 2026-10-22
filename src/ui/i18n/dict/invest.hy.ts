@@ -248,5 +248,6 @@ export const invest: DeepPartial<typeof En> = {
     unknownSector: "Անհայտ",
     yes: "այո",
     no: "ոչ",
+    times: "{n} անգամ",
   },
 };

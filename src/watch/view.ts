@@ -1,5 +1,6 @@
 import { usdCentsToAmdFloor } from "@/invest/money";
 import type { CurrentStock } from "@/invest/current";
+import { driverTextFor } from "@/invest/explain";
 
 /**
  * What a saved recommendation looked like (or looks like now), reduced to the parameters the email talks about: for each stock the
@@ -62,7 +63,7 @@ function driversOf(card: R): DriverView[] {
     const label = str(d.label);
     const rawValue = num(d.rawValue);
     const topPercent = num(d.topPercent);
-    return label && rawValue !== null && topPercent !== null ? [{ label, value: str(d.value), rawValue, topPercent }] : [];
+    return label && rawValue !== null && topPercent !== null ? [{ label, value: driverTextFor(label, rawValue, str(d.value)), rawValue, topPercent }] : [];
   });
 }
 

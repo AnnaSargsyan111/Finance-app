@@ -81,8 +81,16 @@ export const driverLabel = (t: T, label: string): string => (DRIVER_KEY_BY_ENGLI
 /** the display value of a driver: numbers stay as sent, the yes/no of the dividend drivers is translated */
 export const driverValue = (t: T, value: string): string => (value === "yes" ? t("invest.server.yes") : value === "no" ? t("invest.server.no") : value);
 
+/** growth figures from 1,000% up are shown as "42.7×" / "42.7 անգամ" (how many times larger): the backend sends that form, and older saved results are converted here from their number */
+const GROWTH_LABELS = new Set(["Revenue growth (year on year)", "Revenue growth (3-year annualised)", "EPS growth (year on year)"]);
+export function driverShown(t: T, d: Driver): string {
+  const fromRaw = GROWTH_LABELS.has(d.label) && typeof d.rawValue === "number" && d.rawValue >= 10 ? (1 + d.rawValue).toFixed(1) : null;
+  const n = fromRaw ?? /^(\d+(?:\.\d+)?)×$/.exec(d.value)?.[1];
+  return n ? t("invest.server.times", { n }) : driverValue(t, d.value);
+}
+
 /** "Return on equity 12.0%" for the Reasons column */
-export const driverText = (t: T, d: Driver): string => t("invest.result.driverValue", { label: driverLabel(t, d.label), value: driverValue(t, d.value) });
+export const driverText = (t: T, d: Driver): string => t("invest.result.driverValue", { label: driverLabel(t, d.label), value: driverShown(t, d) });
 
 /* ------------------------------------------------------------------ server-provided English sentences */
 
@@ -208,7 +216,7 @@ export function localizeExplanation(t: T, text: string | undefined, drivers: Dri
     weights.push(`${FACTOR_KEY_BY_ENGLISH[w[1]] ? t(FACTOR_KEY_BY_ENGLISH[w[1]]) : w[1]} ${w[2]}%`);
   }
   const lines = drivers.map((d) =>
-    d.value === "yes" ? driverLabel(t, d.label) : t("invest.server.explanationDriver", { label: driverLabel(t, d.label), value: driverValue(t, d.value), n: d.topPercent ?? 0 }),
+    d.value === "yes" ? driverLabel(t, d.label) : t("invest.server.explanationDriver", { label: driverLabel(t, d.label), value: driverShown(t, d), n: d.topPercent ?? 0 }),
   );
   return t("invest.server.explanation", { drivers: lines.join(" · "), risk: wordRisk(t, m[2]), horizon: wordHorizon(t, m[3]), weights: weights.join(", ") });
 }

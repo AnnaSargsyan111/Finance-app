@@ -6,7 +6,7 @@ import { Card } from "../components/Display";
 import { Note } from "../components/Feedback";
 import { useT } from "../i18n";
 import { formatAmd, formatDate, formatNumber, formatPercent, formatUsd } from "../lib/format";
-import { driverLabel, driverText, driverValue, localizeExplanation, localizeServer, localizeWarning, type T } from "./labels";
+import { driverLabel, driverShown, driverText, localizeExplanation, localizeServer, localizeWarning, type T } from "./labels";
 import { MetricTip } from "./MetricTip";
 import { driverInfoKey, driverNumber, type InfoCtx } from "./metric-info";
 import s from "./invest.module.css";
@@ -57,7 +57,7 @@ function Drivers({ drivers, name, cost }: { drivers?: Driver[]; name: string; co
             <MetricTip k={driverInfoKey(d.label)} ctx={{ name, value: driverNumber(d), top: d.topPercent, cost }} />
           </span>
           <span className={s.driverVal}>
-            {driverValue(t, d.value)}
+            {driverShown(t, d)}
             {d.topPercent != null ? <small>{t("invest.result.topPercent", { n: d.topPercent })}</small> : null}
           </span>
         </li>

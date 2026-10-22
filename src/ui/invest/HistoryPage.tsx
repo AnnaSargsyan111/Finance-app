@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { deleteHistoryItem, getHistoryItem, listHistory } from "../api/invest";
 import { errorMessage } from "../api/client";
-import { listWatched, sendTestEmail, setWatched } from "../api/watch";
+import { listWatched, setWatched } from "../api/watch";
 import type { PortfolioResult, SavedSummary, SingleResult } from "../api/types";
 import { Button, LinkButton } from "../components/Button";
 import { Chip, ConfirmDialog } from "../components/Display";
@@ -41,12 +41,11 @@ function SavedDetail({ id }: { id: string }) {
   );
 }
 
-/** "Notify me about changes": opt-in per saved recommendation, plus a button that sends a test email to the user's own address */
+/** "Notify me about changes": opt-in per saved recommendation */
 function NotifyRow({ id, initialOn }: { id: string; initialOn: boolean }) {
   const t = useT();
   const [on, setOn] = useState(initialOn);
   const [busy, setBusy] = useState(false);
-  const [testing, setTesting] = useState(false);
   const [msg, setMsg] = useState<{ tone: "info" | "error"; text: string } | null>(null);
 
   async function toggle() {
@@ -63,19 +62,6 @@ function NotifyRow({ id, initialOn }: { id: string; initialOn: boolean }) {
     }
   }
 
-  async function test() {
-    setTesting(true);
-    setMsg(null);
-    try {
-      const r = await sendTestEmail(id);
-      setMsg({ tone: "info", text: t("invest.history.testSent", { email: r.to }) });
-    } catch (e) {
-      setMsg({ tone: "error", text: localizeServer(t, errorMessage(e, t("invest.history.testFailed"))) });
-    } finally {
-      setTesting(false);
-    }
-  }
-
   const labelId = `notify-${id}`;
   return (
     <div className={s.notifyRow}>
@@ -86,11 +72,6 @@ function NotifyRow({ id, initialOn }: { id: string; initialOn: boolean }) {
         </p>
         <p className={s.notifyHint}>{on ? t("invest.history.testNote") : t("invest.history.notifyHint")}</p>
       </div>
-      {on ? (
-        <Button variant="ghost" size="sm" loading={testing} onClick={test}>
-          {t("invest.history.sendTest")}
-        </Button>
-      ) : null}
       {msg ? (
         <div style={{ flexBasis: "100%" }}>
           <Note tone={msg.tone}>{msg.text}</Note>

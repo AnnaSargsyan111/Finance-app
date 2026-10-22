@@ -37,6 +37,14 @@ const bench = (c: InfoCtx) => str(c.bench, tg("metrics.shared.theBenchmark"));
 /** adds "On this measure it ranks in the top 3% ..." as its own sentence (drivers carry this) */
 const ranked = (text: string, c: InfoCtx) => (n(c.top) !== null ? `${text} ${tg("metrics.shared.rank", { top: n(c.top)! })}` : text);
 
+/** the example of a growth measure; from 1,000% up it says how many times larger instead of a four-digit percentage */
+const growth: Example = (c, say) => {
+  const v = n(c.value);
+  if (v === null) return null;
+  if (v >= 10) return ranked(say("exampleBig", { name: who(c), times: num(1 + v, 1) }), c);
+  return ranked(say(v >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(v)) }), c);
+};
+
 /* ------------------------------------------------------------------ the examples (which sentence, with which numbers) */
 const EXAMPLES: Record<string, Example> = {
   /* ---- the single-stock card ---- */
@@ -78,9 +86,9 @@ const EXAMPLES: Record<string, Example> = {
   ps: (c, say) => (n(c.value) !== null ? ranked(say("example", { name: who(c), amount: usd(n(c.value)!) }), c) : null),
   pb: (c, say) => (n(c.value) !== null ? ranked(say("example", { name: who(c), amount: usd(n(c.value)!) }), c) : null),
   fcfYield: (c, say) => (n(c.value) !== null ? ranked(say("example", { name: who(c), amount: usd(n(c.value)! * 100, 2) }), c) : null),
-  revGrowth: (c, say) => (n(c.value) !== null ? ranked(say(n(c.value)! >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(n(c.value)!)) }), c) : null),
-  rev3yCAGR: (c, say) => (n(c.value) !== null ? ranked(say(n(c.value)! >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(n(c.value)!)) }), c) : null),
-  epsGrowth: (c, say) => (n(c.value) !== null ? ranked(say(n(c.value)! >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(n(c.value)!)) }), c) : null),
+  revGrowth: (c, say) => growth(c, say),
+  rev3yCAGR: (c, say) => growth(c, say),
+  epsGrowth: (c, say) => growth(c, say),
   mom12_1: (c, say) => (n(c.value) !== null ? ranked(say(n(c.value)! >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(n(c.value)!)) }), c) : null),
   mom6: (c, say) => (n(c.value) !== null ? ranked(say(n(c.value)! >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(n(c.value)!)) }), c) : null),
   above200dma: (c, say) => (n(c.value) !== null ? ranked(say(n(c.value)! >= 0 ? "example" : "exampleDown", { name: who(c), change: pct(Math.abs(n(c.value)!)) }), c) : null),
@@ -183,6 +191,8 @@ const DRIVER_KEY_BY_LABEL: Record<string, string> = {
 export function driverNumber(d: { value: string; rawValue?: number | null }): number | null {
   if (typeof d.rawValue === "number" && Number.isFinite(d.rawValue)) return d.rawValue;
   const text = d.value.trim();
+  const times = /^(\d+(?:\.\d+)?)×$/.exec(text);
+  if (times) return Number(times[1]) - 1;
   const m = /^(-?\d+(?:\.\d+)?)(%?)$/.exec(text.replace(/,/g, ""));
   if (!m) return text === "yes" ? 1 : text === "no" ? 0 : null;
   return m[2] ? Number(m[1]) / 100 : Number(m[1]);

@@ -154,6 +154,7 @@ export const metrics = {
     read: "Higher is better, especially if profits grow too. A negative number means sales shrank.",
     example: "{name}'s sales grew by {change} compared with the year before.",
     exampleDown: "{name}'s sales fell by {change} compared with the year before.",
+    exampleBig: "{name}'s sales are now about {times} times what they were the year before.",
   },
   rev3yCAGR: {
     title: "Revenue growth (3-year annualised)",
@@ -161,6 +162,7 @@ export const metrics = {
     read: "Higher is better. Looking at three years smooths out a single unusual year.",
     example: "{name}'s sales grew by about {change} a year on average over three years.",
     exampleDown: "{name}'s sales fell by about {change} a year on average over three years.",
+    exampleBig: "{name}'s sales grew about {times} times a year on average over three years.",
   },
   epsGrowth: {
     title: "EPS growth (year on year)",
@@ -168,6 +170,7 @@ export const metrics = {
     read: "Higher is better. A very large jump often follows a weak year, so read it together with the other numbers.",
     example: "{name}'s profit per share rose by {change} compared with the year before.",
     exampleDown: "{name}'s profit per share fell by {change} compared with the year before.",
+    exampleBig: "{name}'s profit per share is now about {times} times what it was the year before.",
   },
   mom12_1: {
     title: "12-1 month price momentum",

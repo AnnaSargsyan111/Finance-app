@@ -54,10 +54,18 @@ export interface Driver {
 
 export const pct1 = (x: number) => `${(x * 100).toFixed(1)}%`;
 
+/** growth figures at or above this (10 = 1,000%) are shown as "42.7×" (how many times larger) instead of a four-digit percentage */
+export const GROWTH_AS_TIMES_FROM = 10;
+const GROWTH_LABELS = new Set(["Revenue growth (year on year)", "Revenue growth (3-year annualised)", "EPS growth (year on year)"]);
+
+/** the display text of a driver's number: "42.7×" for a very large growth, otherwise the text given */
+export const driverTextFor = (label: string, rawValue: number, text: string): string =>
+  GROWTH_LABELS.has(label) && rawValue >= GROWTH_AS_TIMES_FROM ? `${(1 + rawValue).toFixed(1)}×` : text;
+
 function display(name: string, value: number, rec: SnapshotRecord): { text: string; raw: number } {
   const f = LABELS[name].fmt;
   if (name === "maxDDAbs") return { text: pct1(rec.maxDD1y ?? -value), raw: rec.maxDD1y ?? -value };
-  if (f === "pct") return { text: pct1(value), raw: value };
+  if (f === "pct") return { text: driverTextFor(LABELS[name].label, value, pct1(value)), raw: value };
   if (f === "ratio") return { text: value.toFixed(2), raw: value };
   return { text: value ? "yes" : "no", raw: value };
 }

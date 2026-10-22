@@ -256,5 +256,6 @@ export const invest = {
     unknownSector: "Unknown",
     yes: "yes",
     no: "no",
+    times: "{n}×",
   },
 } as const;
