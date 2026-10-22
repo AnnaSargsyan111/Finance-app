@@ -70,7 +70,7 @@ function NotifyRow({ id, initialOn }: { id: string; initialOn: boolean }) {
         <p id={labelId} className={s.notifyLabel}>
           {t("invest.history.notify")}
         </p>
-        <p className={s.notifyHint}>{on ? t("invest.history.testNote") : t("invest.history.notifyHint")}</p>
+        {on ? null : <p className={s.notifyHint}>{t("invest.history.notifyHint")}</p>}
       </div>
       {msg ? (
         <div style={{ flexBasis: "100%" }}>
