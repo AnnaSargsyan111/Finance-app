@@ -94,3 +94,13 @@ export function explanationText(drivers: Driver[], weights: Weights, risk: Risk,
     .join(", ");
   return `${parts.join(" · ")}. Scoring weights for ${cap(risk)} risk and ${cap(horizon)} horizon: ${w}.`;
 }
+
+/** one input of a record by its display label (e.g. "EPS growth (year on year)"): its value text and "top X%" rank, or null when the record has no such input */
+export function driverByLabel(rec: SnapshotRecord, label: string): { value: string; rawValue: number; topPercent: number } | null {
+  for (const [name, inp] of Object.entries(rec.factorInputs)) {
+    if (LABELS[name]?.label !== label) continue;
+    const d = display(name, inp.value, rec);
+    return { value: d.text, rawValue: d.raw, topPercent: Math.max(1, Math.round(100 - inp.pct)) };
+  }
+  return null;
+}

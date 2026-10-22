@@ -55,6 +55,8 @@ const FORBIDDEN: Record<string, string[]> = {
   invest: ["pf", "auth", "app"],
   lib: ["pf", "market", "invest", "app"],
   auth: ["pf", "market", "invest", "app"],
+  // watch (email me when a saved recommendation changes) may use auth (email, accounts) and invest (the saved results and scoring), nothing else
+  watch: ["pf", "market", "app"],
   config: ["pf", "market", "invest", "auth", "app", "lib"],
 };
 
@@ -124,6 +126,23 @@ describe("module separation (AC-B9)", () => {
       }
       if (/\b(?:db|tx)\s*\.(insert|update|delete)\s*\(/.test(code) || /\b(insert\s+into|update\s+\w+\s+set|delete\s+from|truncate\s+table|drop\s+table)\b/i.test(code)) {
         bad.push(path.relative(SRC, f));
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("watch/ writes ONLY to watch.recommendation_watch, and only from watch/repo.ts", () => {
+    const bad: string[] = [];
+    for (const f of files) {
+      if (moduleOf(f) !== "watch") continue;
+      const rel = path.relative(SRC, f).replace(/\\/g, "/");
+      const code = stripComments(fs.readFileSync(f, "utf8"));
+      const writes = [...code.matchAll(/\b(?:db|tx)\s*\.(insert|update|delete)\s*\(\s*([A-Za-z_]+)/g)];
+      if (rel === "watch/repo.ts") {
+        for (const m of writes) if (m[2] !== "recommendationWatch") bad.push(`${rel}: writes to ${m[2]}`);
+        if (/\b(insert\s+into|update\s+\w+\s+set|delete\s+from|truncate|drop\s+table)\b/i.test(code)) bad.push(`${rel}: raw SQL write`);
+      } else if (writes.length || /from\s+["']@\/lib\/db["']/.test(code)) {
+        bad.push(rel);
       }
     }
     expect(bad).toEqual([]);

@@ -198,6 +198,13 @@ export const invest = {
     removeBody: "It will be deleted from your history. This can't be undone.",
     keep: "Keep it",
     removeFailed: "We couldn't remove this recommendation.",
+    notify: "Notify me about changes",
+    notifyHint: "We'll email you when the parameters of the stocks here change.",
+    sendTest: "Send a test email now",
+    testSent: "Test email sent to {email}.",
+    testNote: "Test phase: emails go only to your own address.",
+    notifyFailed: "We couldn't change this setting.",
+    testFailed: "We couldn't send the test email.",
     disclaimer: "Saved recommendations are informational snapshots, not investment advice. Prices and scores are as of the date each one was created.",
   },
 

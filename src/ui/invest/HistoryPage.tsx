@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { deleteHistoryItem, getHistoryItem, listHistory } from "../api/invest";
 import { errorMessage } from "../api/client";
+import { listWatched, sendTestEmail, setWatched } from "../api/watch";
 import type { PortfolioResult, SavedSummary, SingleResult } from "../api/types";
 import { Button, LinkButton } from "../components/Button";
 import { Chip, ConfirmDialog } from "../components/Display";
@@ -40,7 +41,66 @@ function SavedDetail({ id }: { id: string }) {
   );
 }
 
-function HistoryItem({ item, onDelete }: { item: SavedSummary; onDelete: (id: string) => void }) {
+/** "Notify me about changes": opt-in per saved recommendation, plus a button that sends a test email to the user's own address */
+function NotifyRow({ id, initialOn }: { id: string; initialOn: boolean }) {
+  const t = useT();
+  const [on, setOn] = useState(initialOn);
+  const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [msg, setMsg] = useState<{ tone: "info" | "error"; text: string } | null>(null);
+
+  async function toggle() {
+    const next = !on;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await setWatched(id, next);
+      setOn(next);
+    } catch (e) {
+      setMsg({ tone: "error", text: localizeServer(t, errorMessage(e, t("invest.history.notifyFailed"))) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function test() {
+    setTesting(true);
+    setMsg(null);
+    try {
+      const r = await sendTestEmail(id);
+      setMsg({ tone: "info", text: t("invest.history.testSent", { email: r.to }) });
+    } catch (e) {
+      setMsg({ tone: "error", text: localizeServer(t, errorMessage(e, t("invest.history.testFailed"))) });
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  const labelId = `notify-${id}`;
+  return (
+    <div className={s.notifyRow}>
+      <button type="button" role="switch" aria-checked={on} aria-labelledby={labelId} className={s.switch} disabled={busy} onClick={toggle} />
+      <div className={s.notifyText}>
+        <p id={labelId} className={s.notifyLabel}>
+          {t("invest.history.notify")}
+        </p>
+        <p className={s.notifyHint}>{on ? t("invest.history.testNote") : t("invest.history.notifyHint")}</p>
+      </div>
+      {on ? (
+        <Button variant="ghost" size="sm" loading={testing} onClick={test}>
+          {t("invest.history.sendTest")}
+        </Button>
+      ) : null}
+      {msg ? (
+        <div style={{ flexBasis: "100%" }}>
+          <Note tone={msg.tone}>{msg.text}</Note>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function HistoryItem({ item, watched, onDelete }: { item: SavedSummary; watched: boolean; onDelete: (id: string) => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   return (
@@ -78,6 +138,7 @@ function HistoryItem({ item, onDelete }: { item: SavedSummary; onDelete: (id: st
           {t("invest.history.remove")}
         </Button>
       </div>
+      <NotifyRow id={item.id} initialOn={watched} />
       {open ? (
         <div className={s.histDetail}>
           <SavedDetail id={item.id} />
@@ -93,6 +154,9 @@ export function HistoryPage() {
   // the latest recommendation of this visit, if there is one to go back to (see session-memory.ts)
   const [canReturn] = useState(() => hasRecSession(user.id));
   const res = useResource((signal) => listHistory(signal), []);
+  // a failure here only means every switch shows "off" until the page is reloaded; the history itself still works
+  const watch = useResource((signal) => listWatched(signal), []);
+  const watched = new Set(watch.data ?? []);
   const [removing, setRemoving] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -166,7 +230,7 @@ export function HistoryPage() {
               <h2 className={s.dayHead}>{formatDateLong(g.date)}</h2>
               <ul style={{ margin: 0, padding: 0, display: "grid", gap: 12 }}>
                 {g.items.map((it) => (
-                  <HistoryItem key={it.id} item={it} onDelete={setRemoving} />
+                  <HistoryItem key={`${it.id}-${watch.data ? "w" : "-"}`} item={it} watched={watched.has(it.id)} onDelete={setRemoving} />
                 ))}
               </ul>
             </section>

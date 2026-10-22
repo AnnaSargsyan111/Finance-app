@@ -7,6 +7,8 @@ export interface EmailMessage {
   to: string;
   subject: string;
   text: string;
+  /** optional HTML version; `text` stays as the plain-text fallback */
+  html?: string;
 }
 
 export interface EmailProvider {
@@ -42,7 +44,7 @@ function resendProvider(apiKey: string, from: string): EmailProvider {
         res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-          body: JSON.stringify({ from, to: [m.to], subject: m.subject, text: m.text }),
+          body: JSON.stringify({ from, to: [m.to], subject: m.subject, text: m.text, ...(m.html ? { html: m.html } : {}) }),
           signal: AbortSignal.timeout(10_000),
         });
       } catch (e) {
