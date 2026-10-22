@@ -55,16 +55,27 @@ export async function buildNewsBlob(): Promise<NewsBlob> {
   const cfg = newsConfig();
   const status: FeedStatus[] = [];
   const candidates: NewsCandidate[] = [];
-  // sequential on purpose: polite to publishers (per-host spacing in http.ts) and simple failure isolation
-  for (const feed of cfg.feeds.filter((f) => f.enabled)) {
-    try {
-      const xml = await fetchers.fetchFeed(feed);
-      const items = normaliseFeedItems(parseFeed(xml, feed.id), feed, cfg);
+  // all feeds at once (a refresh takes as long as the slowest feed, not the sum). Still polite: http.ts spaces the calls to one host,
+  // and one failing feed never stops the others. Results are read back in the configured order, so the selection is the same as before.
+  const results = await Promise.all(
+    cfg.feeds
+      .filter((f) => f.enabled)
+      .map(async (feed) => {
+        try {
+          const xml = await fetchers.fetchFeed(feed);
+          return { feed, items: normaliseFeedItems(parseFeed(xml, feed.id), feed, cfg), error: null as unknown };
+        } catch (e) {
+          return { feed, items: null, error: e };
+        }
+      }),
+  );
+  for (const { feed, items, error } of results) {
+    if (items) {
       candidates.push(...items);
       status.push({ id: feed.id, ok: true, count: items.length });
-    } catch (e) {
-      status.push({ id: feed.id, ok: false, count: 0, error: e instanceof Error ? e.message : String(e) });
-      log.warn("news feed failed (skipped)", { feed: feed.id, message: e instanceof Error ? e.message : String(e) });
+    } else {
+      status.push({ id: feed.id, ok: false, count: 0, error: error instanceof Error ? error.message : String(error) });
+      log.warn("news feed failed (skipped)", { feed: feed.id, message: error instanceof Error ? error.message : String(error) });
     }
   }
   if (!status.some((s) => s.ok)) {
@@ -96,6 +107,7 @@ export async function buildNewsBlob(): Promise<NewsBlob> {
 export async function getNews(opts: { forceRefresh?: boolean; minAgeMs?: number } = {}) {
   const r = await cached<NewsBlob>(CACHE_KEY, {
     ttlMs: APP.cacheTtl.newsMs,
+    swrMaxAgeMs: APP.cacheTtl.newsSwrMs,
     fetch: buildNewsBlob,
     forceRefresh: opts.forceRefresh,
     minAgeMs: opts.minAgeMs,

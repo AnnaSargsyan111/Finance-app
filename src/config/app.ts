@@ -23,6 +23,12 @@ export const APP = {
     /** the IPO calendar: dates and price ranges move through the day, but the list is small and one call serves everyone */
     ipoCalendarMs: 6 * HOUR,
     newsMs: 15 * MIN,
+    /** a saved news list younger than this is shown at once while it refreshes in the background (nobody waits for the 10 feeds) */
+    newsSwrMs: 12 * HOUR,
+    /** same for the six stock quotes (they are labelled delayed and show their age anyway) */
+    stockQuoteSwrMs: 30 * MIN,
+    /** fundamentals and the one-month history change slowly: a copy up to this old is shown while it refreshes */
+    stockSlowSwrMs: 3 * 24 * HOUR,
     /** the official pages the AI assistant may quote (src/assistant/sources.ts) */
     assistantSourcesMs: 24 * HOUR,
     /** manual news refresh only re-fetches upstream when the cache is older than this */

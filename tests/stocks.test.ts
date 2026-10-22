@@ -4,6 +4,7 @@ import { getDb, useTestDb } from "@/lib/db";
 import { call } from "./helpers/api";
 import { registerUser, type TestUser } from "./helpers/routes";
 import { resetCache } from "./helpers/db";
+import { settleBackground } from "@/lib/background";
 import { fixture, jsonRes, mockFetch, text, type FetchMock } from "./helpers/fetch-mock";
 import { parseYahooChart } from "@/market/providers/yahoo";
 import * as stocksRoute from "@/app/api/market/stocks/route";
@@ -99,6 +100,13 @@ describe("GET /api/market/stocks (auto mode, no keys: Yahoo prototype fallback, 
     const db = await getDb();
     await db.execute(sql`update market.cache_entry set expires_at = now() - interval '1 minute'`);
     mock = mockFetch(yahooHandler("500"));
+    // expired but young: the saved prices are shown at once and the refresh runs behind (it fails here)
+    const quick = await call(stocksRoute.GET, "GET", "/api/market/stocks", { jar: user.jar });
+    expect(quick.status).toBe(200);
+    expect(quick.body.meta.stale).toBe(false);
+    expect(quick.body.data.items[0].price).toBe(ok.body.data.items[0].price);
+    await settleBackground();
+    // the failed refresh is no longer hidden: the next visitor sees the saved prices flagged stale
     const stale = await call(stocksRoute.GET, "GET", "/api/market/stocks", { jar: user.jar });
     expect(stale.status).toBe(200);
     expect(stale.body.meta.stale).toBe(true);

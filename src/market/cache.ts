@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { APP } from "@/config/app";
 import { upstreamUnavailable } from "@/lib/errors";
+import { scheduleBackground } from "@/lib/background";
 import { log } from "@/lib/log";
 import { cacheEntry, cacheLock } from "./schema";
 
@@ -24,7 +25,7 @@ export interface CacheResult<T> {
   /** true = upstream refresh failed and this is the last good value */
   stale: boolean;
   /** what happened on this call */
-  source: "cache" | "refreshed" | "waited" | "stale-fallback";
+  source: "cache" | "refreshed" | "waited" | "stale-fallback" | "revalidating";
   refreshError?: string;
 }
 
@@ -37,6 +38,12 @@ export interface CachedOptions<T> {
   minAgeMs?: number;
   maxStaleMs?: number;
   failBackoffMs?: number;
+  /**
+   * Stale-while-revalidate: an expired entry that is younger than this is returned AT ONCE (stale:false, source "revalidating") and
+   * refreshed in the background, so no visitor waits for the upstream calls. Older entries are refreshed before answering, as without it.
+   * While the upstream is failing (the failure back-off is active) the saved copy is returned flagged stale instead.
+   */
+  swrMaxAgeMs?: number;
   /** tests: bypass the in-process single-flight to exercise the DB lock path */
   singleflight?: boolean;
   now?: () => Date;
@@ -105,6 +112,21 @@ export async function cached<T>(key: string, opts: CachedOptions<T>): Promise<Ca
   }
 
   const useSingleflight = opts.singleflight !== false;
+  if (first && !opts.forceRefresh && opts.swrMaxAgeMs !== undefined && now().getTime() - first.fetchedAt.getTime() <= opts.swrMaxAgeMs) {
+    const failed = await readEntry(`${key}#fail`);
+    if (failed && now() < failed.expiresAt) {
+      const reason = String((failed.value as { message?: string })?.message ?? "recent upstream failure");
+      return { value: first.value as T, fetchedAt: first.fetchedAt, expiresAt: first.expiresAt, stale: true, source: "stale-fallback", refreshError: reason };
+    }
+    if (!(useSingleflight && inflight.has(key))) {
+      const work = refresh<T>(key, opts, now, maxStaleMs, isFresh).finally(() => {
+        if (inflight.get(key) === work) inflight.delete(key);
+      });
+      if (useSingleflight) inflight.set(key, work as Promise<CacheResult<unknown>>);
+      scheduleBackground(work);
+    }
+    return { value: first.value as T, fetchedAt: first.fetchedAt, expiresAt: first.expiresAt, stale: false, source: "revalidating" };
+  }
   if (useSingleflight) {
     const existing = inflight.get(key);
     if (existing) return (await existing) as CacheResult<T>;

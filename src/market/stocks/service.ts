@@ -206,7 +206,7 @@ async function buildItem(symbol: string, acc: { asOf: Date[]; stale: boolean; no
   // --- quote
   let q: Awaited<ReturnType<typeof cached<QuoteBlob>>> | null = null;
   try {
-    q = await cached<QuoteBlob>(`stocks:quote:v1:${symbol}`, { ttlMs: APP.cacheTtl.stockQuoteMs, fetch: () => fetchQuote(symbol) });
+    q = await cached<QuoteBlob>(`stocks:quote:v1:${symbol}`, { ttlMs: APP.cacheTtl.stockQuoteMs, swrMaxAgeMs: APP.cacheTtl.stockQuoteSwrMs, fetch: () => fetchQuote(symbol) });
     noteFailures(q.value.failures);
     acc.asOf.push(q.fetchedAt);
     if (q.stale) acc.stale = true;
@@ -226,7 +226,7 @@ async function buildItem(symbol: string, acc: { asOf: Date[]; stale: boolean; no
   // --- metrics (Finnhub) + SEC-derived fill
   let m: MetricsBlob | null = null;
   try {
-    const r = await cached<MetricsBlob>(`stocks:metrics:v1:${symbol}`, { ttlMs: APP.cacheTtl.stockFundamentalsMs, fetch: () => fetchMetrics(symbol) });
+    const r = await cached<MetricsBlob>(`stocks:metrics:v1:${symbol}`, { ttlMs: APP.cacheTtl.stockFundamentalsMs, swrMaxAgeMs: APP.cacheTtl.stockSlowSwrMs, fetch: () => fetchMetrics(symbol) });
     m = r.value;
     noteFailures(m.failures);
     acc.asOf.push(r.fetchedAt);
@@ -242,7 +242,7 @@ async function buildItem(symbol: string, acc: { asOf: Date[]; stale: boolean; no
   // --- history
   let h: HistoryBlob | null = null;
   try {
-    const r = await cached<HistoryBlob>(`stocks:hist:v1:${symbol}:1m`, { ttlMs: APP.cacheTtl.stockHistoryMs, fetch: () => fetchHistory(symbol, "1m") });
+    const r = await cached<HistoryBlob>(`stocks:hist:v1:${symbol}:1m`, { ttlMs: APP.cacheTtl.stockHistoryMs, swrMaxAgeMs: APP.cacheTtl.stockSlowSwrMs, fetch: () => fetchHistory(symbol, "1m") });
     h = r.value;
     noteFailures(h.failures);
     acc.asOf.push(r.fetchedAt);

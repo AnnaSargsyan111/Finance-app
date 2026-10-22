@@ -103,7 +103,7 @@ export async function getIpoCalendar(): Promise<{ data: { items: IpoItem[] }; me
     return { data: { items: [] }, meta: { asOf: new Date().toISOString(), stale: false, isFixture: false, source: "Finnhub", notConfigured: ["finnhub"], note: "The IPO data source is not configured." } };
   }
   try {
-    const r = await cached<IpoBlob>("ipo:calendar:v1", { ttlMs: APP.cacheTtl.ipoCalendarMs, fetch: fetchIpos });
+    const r = await cached<IpoBlob>("ipo:calendar:v1", { ttlMs: APP.cacheTtl.ipoCalendarMs, swrMaxAgeMs: APP.cacheTtl.stockSlowSwrMs, fetch: fetchIpos });
     return {
       data: { items: r.value.items },
       meta: {

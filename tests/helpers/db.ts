@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
+import { settleBackground } from "@/lib/background";
 
 /** Empty the shared market cache/lock tables between tests. */
 export async function resetCache() {
+  await settleBackground(); // a refresh still running from the previous test must not write after the reset
   const db = await getDb();
   await db.execute(sql`delete from market.cache_entry`);
   await db.execute(sql`delete from market.cache_lock`);
