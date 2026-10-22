@@ -6,13 +6,15 @@ import { useT, type Key } from "../i18n";
 import { PageHeader } from "../shell/AppShell";
 import { FxSection } from "./FxSection";
 import { NewsSection } from "./NewsSection";
+import { IpoSection } from "./IpoSection";
 import { StocksSection } from "./StocksSection";
 import s from "./market.module.css";
 
-const TABS: readonly { value: "rates" | "stocks" | "news"; label: Key }[] = [
+const TABS: readonly { value: "rates" | "stocks" | "news" | "ipo"; label: Key }[] = [
   { value: "rates", label: "market.page.tabRates" },
   { value: "stocks", label: "market.page.tabStocks" },
   { value: "news", label: "market.page.tabNews" },
+  { value: "ipo", label: "market.page.tabIpo" },
 ];
 type Tab = (typeof TABS)[number]["value"];
 
@@ -33,6 +35,7 @@ export function MarketPage() {
         {tab === "rates" ? <FxSection /> : null}
         {tab === "stocks" ? <StocksSection /> : null}
         {tab === "news" ? <NewsSection /> : null}
+        {tab === "ipo" ? <IpoSection /> : null}
       </TabPanel>
     </>
   );

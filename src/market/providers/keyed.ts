@@ -102,7 +102,41 @@ export const finnhub = {
       profitMarginPct: n(m.netProfitMarginTTM),
     };
   },
+  /** recent and upcoming IPOs between two dates (YYYY-MM-DD); `price` is Finnhub's own text: a projected price or a range such as "16.00-18.00" */
+  async ipoCalendar(from: string, to: string): Promise<FinnhubIpo[]> {
+    const j = await finnhubGet<{ ipoCalendar?: unknown }>(`/calendar/ipo?from=${from}&to=${to}`, "ipo_calendar.json");
+    const list = Array.isArray(j.ipoCalendar) ? (j.ipoCalendar as Record<string, unknown>[]) : [];
+    return list.flatMap((r): FinnhubIpo[] => {
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      const date = typeof r.date === "string" ? r.date.slice(0, 10) : "";
+      if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+      return [
+        {
+          date,
+          name,
+          symbol: typeof r.symbol === "string" && r.symbol.trim() ? r.symbol.trim() : null,
+          exchange: typeof r.exchange === "string" && r.exchange.trim() ? r.exchange.trim() : null,
+          status: typeof r.status === "string" ? r.status.trim().toLowerCase() : "",
+          price: typeof r.price === "string" || typeof r.price === "number" ? String(r.price).trim() : "",
+          numberOfShares: n(r.numberOfShares),
+          totalSharesValue: n(r.totalSharesValue),
+        },
+      ];
+    });
+  },
 };
+
+export interface FinnhubIpo {
+  date: string;
+  name: string;
+  symbol: string | null;
+  exchange: string | null;
+  /** expected | filed | priced | withdrawn (anything else is kept as sent) */
+  status: string;
+  price: string;
+  numberOfShares: number | null;
+  totalSharesValue: number | null;
+}
 
 /* ------------------------------------------------------------------ Twelve Data */
 

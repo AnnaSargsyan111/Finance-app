@@ -533,3 +533,382 @@
   text-decoration-color: var(--accent);
   text-underline-offset: 3px;
 }
+
+/* ---------- IPO calendar ---------- */
+.ipoIntro {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 70ch;
+}
+.ipoWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-sm);
+}
+.ipoTable {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ipoTable th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-faint);
+  white-space: nowrap;
+}
+.ipoTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-faint);
+  vertical-align: top;
+}
+.ipoTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+.ipoName {
+  display: block;
+  font-weight: 500;
+}
+.ipoSym {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+.ipoRel {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+/* ---------- IPO month calendar ---------- */
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+  width: 100%;
+  max-width: 780px;
+  margin-inline: auto;
+}
+.calHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.calTitle {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 500;
+}
+/* the month: one framed surface, thin lines between days */
+.calGrid {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.calWeek {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.calWeekHead {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.calWd {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 0;
+}
+.calCell {
+  min-width: 0;
+  display: flex;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.calWeek > :last-child {
+  border-right: 0;
+}
+.calGrid > .calWeek:last-child > .calCell,
+.calGrid > .calWeek:last-child > .calBlank {
+  border-bottom: 0;
+}
+.calBlank {
+  background: var(--surface-2);
+  opacity: 0.55;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.calDay {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  min-height: 92px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  min-width: 0;
+  position: relative;
+  transition: background 0.15s var(--ease);
+}
+.calDay:hover {
+  background: var(--surface-3);
+}
+.calDay:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.calNum {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.calToday .calNum {
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text-2);
+}
+/* a day with IPOs: a soft green wash that fades down */
+.calHas,
+.calHas:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 17%, var(--surface)) 0%, color-mix(in srgb, var(--accent) 6%, var(--surface)) 100%);
+}
+.calHas:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, var(--surface)) 0%, color-mix(in srgb, var(--accent) 10%, var(--surface)) 100%);
+}
+.calHas .calNum {
+  color: var(--accent);
+  font-weight: 700;
+}
+/* the day you opened: solid green with a soft glow */
+.calSel,
+.calSel:hover {
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 12px 32px color-mix(in srgb, var(--accent) 30%, transparent);
+  z-index: 1;
+}
+.calSel .calNum {
+  color: var(--on-accent);
+  box-shadow: none;
+}
+.calSel .calEvt {
+  color: var(--on-accent);
+}
+.calSel .calEvt::before {
+  background: var(--on-accent);
+}
+.calSel .calMore {
+  color: color-mix(in srgb, var(--on-accent) 70%, transparent);
+}
+.calEvt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.calEvt::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--evt, var(--text-2));
+}
+.calEvt[data-tone="neutral"] {
+  --evt: var(--blue-text);
+}
+.calEvt[data-tone="warn"] {
+  --evt: var(--warn);
+}
+.calEvt[data-tone="pos"] {
+  --evt: var(--chart-7);
+}
+.calEvt[data-tone="neg"] {
+  --evt: var(--neg);
+}
+.calEvtText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calMore {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* what the statuses mean */
+.calLegendBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border-faint);
+}
+.calLegendTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.calLegend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4) var(--s-6);
+  margin: 0;
+}
+.calLegendItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.calLegendItem dt .calEvt {
+  font-size: 13px;
+}
+.calLegendItem dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* the opened day: one card per IPO */
+.calDetailHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+.calDetailCount {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.ipoCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.ipoCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto;
+  gap: var(--s-4) var(--s-5);
+  align-items: center;
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.ipoCardSym {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.ipoCardName {
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.ipoCardEx {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ipoStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+}
+.ipoStat dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ipoStat dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ipoCardSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-2);
+}
+@media (max-width: 720px) {
+  .cal {
+    gap: var(--s-4);
+  }
+  .ipoCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ipoCardSide {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .calLegend {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .calDay {
+    min-height: 62px;
+    padding: 4px;
+    gap: 3px;
+  }
+  .calNum {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+  .calEvt {
+    font-size: 10px;
+    gap: 4px;
+  }
+  .ipoStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

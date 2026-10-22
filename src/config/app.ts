@@ -20,6 +20,8 @@ export const APP = {
     stockFundamentalsMs: 24 * HOUR,
     /** one month of daily closes: the daily cron job keeps it warm (Twelve Data's free plan allows 8 calls a minute, so 6 symbols take about 48 s cold) */
     stockHistoryMs: 24 * HOUR,
+    /** the IPO calendar: dates and price ranges move through the day, but the list is small and one call serves everyone */
+    ipoCalendarMs: 6 * HOUR,
     newsMs: 15 * MIN,
     /** the official pages the AI assistant may quote (src/assistant/sources.ts) */
     assistantSourcesMs: 24 * HOUR,

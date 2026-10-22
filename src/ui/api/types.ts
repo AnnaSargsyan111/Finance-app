@@ -338,3 +338,19 @@ export interface HistoryList {
   pageSize?: number;
   total?: number;
 }
+
+/* ------------------------------------------------------------------ IPO calendar */
+export type IpoStatus = "expected" | "filed" | "priced" | "withdrawn" | "other";
+export interface IpoItem {
+  /** planned or actual pricing date, YYYY-MM-DD */
+  date: string;
+  name: string;
+  symbol: string | null;
+  exchange: string | null;
+  status: IpoStatus;
+  priceLow: number | null;
+  priceHigh: number | null;
+  shares: number | null;
+  dealSizeUsd: number | null;
+  filingsUrl: string;
+}
