@@ -32,6 +32,8 @@ export async function loadCorpus(opts: { forceRefresh?: boolean } = {}): Promise
   try {
     const r = await cached<CorpusDoc[]>("assistant:corpus:v1", {
       ttlMs: APP.cacheTtl.assistantSourcesMs,
+      // the pages change rarely: after a day the saved texts are used while they are read again, so no question waits for the three sites
+      swrMaxAgeMs: APP.cacheTtl.assistantSourcesSwrMs,
       forceRefresh: opts.forceRefresh,
       fetch: async () => {
         const date = new Date().toISOString().slice(0, 10);

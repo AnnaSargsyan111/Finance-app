@@ -181,13 +181,19 @@ describe("POST /api/assistant", () => {
   });
 
   it("reads each official page once a day, however many questions are asked", async () => {
-    await ask("one");
-    await ask("two");
-    await ask("three");
+    await ask("Whose deposits are guaranteed?");
+    await ask("What is the guarantee limit for deposits?");
+    await ask("Which banks are there?");
     expect(mock!.countHost("adgf.am")).toBe(1);
     expect(mock!.countHost("www.cba.am")).toBe(1);
     expect(mock!.countHost("src.am")).toBe(1);
     expect(modelCalls()).toHaveLength(3);
+  });
+
+  it("a question the official pages cannot touch does not cost a model call on them", async () => {
+    const r = await ask("What is an ETF?");
+    expect(r.status).toBe(200);
+    expect(modelCalls()).toHaveLength(0);
   });
 
   it("does not guess when no official page can be read, and does not call the model", async () => {

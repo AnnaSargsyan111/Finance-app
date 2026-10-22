@@ -27,9 +27,12 @@ export const POST = route({ auth: true }, async ({ body: readBody, user }) => {
 
   // costs are capped per user and for everybody together; every question counts, whether or not it succeeds
   const userKey = user!.id;
-  await enforceLimit({ scope: "assistant-user-hour", key: userKey, limit: APP.assistant.perUserPerHour, windowMs: HOUR });
-  await enforceLimit({ scope: "assistant-user-day", key: userKey, limit: APP.assistant.perUserPerDay, windowMs: DAY });
-  await enforceLimit({ scope: "assistant-global-day", key: "all", limit: APP.assistant.globalPerDay, windowMs: DAY });
+  // the three checks are independent reads: run them together (one wait instead of three)
+  await Promise.all([
+    enforceLimit({ scope: "assistant-user-hour", key: userKey, limit: APP.assistant.perUserPerHour, windowMs: HOUR }),
+    enforceLimit({ scope: "assistant-user-day", key: userKey, limit: APP.assistant.perUserPerDay, windowMs: DAY }),
+    enforceLimit({ scope: "assistant-global-day", key: "all", limit: APP.assistant.globalPerDay, windowMs: DAY }),
+  ]);
   await Promise.all([recordEvent("assistant-user-hour", userKey), recordEvent("assistant-user-day", userKey), recordEvent("assistant-global-day", "all")]);
 
   return json(await answerQuestion(parsed.data.question));

@@ -33,6 +33,8 @@ export const APP = {
     stockSlowSwrMs: 3 * 24 * HOUR,
     /** the official pages the AI assistant may quote (src/assistant/sources.ts) */
     assistantSourcesMs: 24 * HOUR,
+    /** saved official pages up to this old are used while they are read again in the background */
+    assistantSourcesSwrMs: 7 * 24 * HOUR,
     /** manual news refresh only re-fetches upstream when the cache is older than this */
     newsRefreshMinAgeMs: 5 * MIN,
     /** how long a last-good value may still be served (flagged stale) when upstream is failing */

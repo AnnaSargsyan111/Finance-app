@@ -102,6 +102,20 @@ export function verify(raw: unknown, docs: CorpusDoc[], lang: "en" | "hy"): Answ
 
 const callModel = (question: string, docs: CorpusDoc[]) => chatJson(buildMessages(question, docs));
 
+/** everyday words that say nothing about the topic */
+const FILLER = new Set(["what", "which", "when", "where", "does", "have", "with", "this", "that", "from", "about", "much", "many", "tell", "please", "could", "would", "should", "there", "their", "your", "mine", "into", "know", "explain", "mean", "means"]);
+
+/**
+ * Could the allowed official pages say something about this question? True when any meaningful word of the question (4+ letters, no filler)
+ * appears in those pages; an Armenian word is compared by its first 5 letters so an ending does not matter. When nothing matches (for
+ * example "What is an ETF?") the model call on the official pages is skipped: it could only answer "not found", and costs about a second.
+ */
+export function mayBeOfficial(question: string, docs: CorpusDoc[]): boolean {
+  const pages = normalise(docs.map((d) => d.text).join(" "));
+  const words = (question.toLowerCase().match(/\p{L}{4,}/gu) ?? []).filter((w) => !FILLER.has(w)).map((w) => (/[԰-֏]/.test(w) ? w.slice(0, 5) : w.replace(/s$/, "")));
+  return words.some((w) => pages.includes(w));
+}
+
 export async function answerQuestion(question: string, opts: { docs?: CorpusDoc[] } = {}): Promise<Answer> {
   const lang = detectLang(question);
   const docs = opts.docs ?? (await loadCorpus());
@@ -109,7 +123,7 @@ export async function answerQuestion(question: string, opts: { docs?: CorpusDoc[
   // 1. the official pages, with checked quotes
   let official: Answer | null = null;
   let modelFailed = false;
-  if (docs.length > 0) {
+  if (docs.length > 0 && mayBeOfficial(question, docs)) {
     try {
       official = verify(await callModel(question, docs), docs, lang);
     } catch (e) {
